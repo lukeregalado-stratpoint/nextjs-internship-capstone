@@ -7,19 +7,19 @@
 
 // Placeholder middleware - currently allows all routes for development
 // TODO: Replace with actual Clerk authMiddleware when authentication is implemented
-export default function middleware() {
-  // TODO: Implement actual authentication middleware
-  // For now, allow all routes so interns can navigate and see the mock pages
-  console.log("TODO: Implement Clerk authentication middleware")
-
-  // Return undefined to allow all requests through
-  return undefined
-}
-
+import { clerkMiddleware } from "@clerk/nextjs/server"
+ 
+export default clerkMiddleware()
+ 
 export const config = {
-  // TODO: Update matcher when implementing actual authentication
-  // For now, don't match any routes to allow free navigation
-  matcher: [],
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Always run for API routes
+    "/(api|trpc)(.*)",
+    // Always run for Clerk-specific frontend API routes
+    "/__clerk/(.*)",
+  ],
 }
 
 /*

@@ -292,7 +292,7 @@ Track your progress against these milestones:
 The project uses a custom Tailwind color palette:
 - **Primary**: Blue Munsell (`blue_munsell`)
 - **Background**: Platinum, Outer Space (`platinum`, `outer_space`)
-- **Accent**: Payne's Gray, French Gray (`payne's_gray`, `french_gray`)
+- **Accent**: paynes Gray, French Gray (`paynes_gray`, `french_gray`)
 
 ### Component Architecture
 - **Layout Components**: Dashboard layout with sidebar navigation

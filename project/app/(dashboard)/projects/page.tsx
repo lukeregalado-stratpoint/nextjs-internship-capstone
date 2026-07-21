@@ -8,7 +8,7 @@ export default function ProjectsPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">Projects</h1>
-            <p className="text-payne's_gray-500 dark:text-french_gray-500 mt-2">Manage and organize your team projects</p>
+            <p className="text-paynes_gray-500 dark:text-french_gray-500 mt-2">Manage and organize your team projects</p>
           </div>
           <button className="inline-flex items-center px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors">
             <Plus size={20} className="mr-2" />
@@ -33,16 +33,16 @@ export default function ProjectsPage() {
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-payne's_gray-500 dark:text-french_gray-400"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-paynes_gray-500 dark:text-french_gray-400"
               size={16}
             />
             <input
               type="text"
               placeholder="Search projects..."
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-outer_space-500 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg text-outer_space-500 dark:text-platinum-500 placeholder-payne's_gray-500 dark:placeholder-french_gray-400 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-outer_space-500 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg text-outer_space-500 dark:text-platinum-500 placeholder-paynes_gray-500 dark:placeholder-french_gray-400 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
             />
           </div>
-          <button className="inline-flex items-center px-4 py-2 border border-french_gray-300 dark:border-payne's_gray-400 text-outer_space-500 dark:text-platinum-500 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 transition-colors">
+          <button className="inline-flex items-center px-4 py-2 border border-french_gray-300 dark:border-paynes_gray-400 text-outer_space-500 dark:text-platinum-500 rounded-lg hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 transition-colors">
             <Filter size={16} className="mr-2" />
             Filter
           </button>
@@ -53,11 +53,11 @@ export default function ProjectsPage() {
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6 hover:shadow-lg transition-shadow"
+              className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-6 hover:shadow-lg transition-shadow"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="w-3 h-3 bg-blue_munsell-500 rounded-full"></div>
-                <div className="text-sm text-payne's_gray-500 dark:text-french_gray-400">
+                <div className="text-sm text-paynes_gray-500 dark:text-french_gray-400">
                   {Math.floor(Math.random() * 30) + 1} days left
                 </div>
               </div>
@@ -66,16 +66,16 @@ export default function ProjectsPage() {
                 Sample Project {i}
               </h3>
 
-              <p className="text-sm text-payne's_gray-500 dark:text-french_gray-400 mb-4">
+              <p className="text-sm text-paynes_gray-500 dark:text-french_gray-400 mb-4">
                 This is a placeholder project description that will be replaced with actual project data.
               </p>
 
-              <div className="flex items-center justify-between text-sm text-payne's_gray-500 dark:text-french_gray-400 mb-4">
+              <div className="flex items-center justify-between text-sm text-paynes_gray-500 dark:text-french_gray-400 mb-4">
                 <span>{Math.floor(Math.random() * 8) + 2} members</span>
                 <span>{Math.floor(Math.random() * 20) + 5} tasks</span>
               </div>
 
-              <div className="w-full bg-french_gray-300 dark:bg-payne's_gray-400 rounded-full h-2">
+              <div className="w-full bg-french_gray-300 dark:bg-paynes_gray-400 rounded-full h-2">
                 <div
                   className="bg-blue_munsell-500 h-2 rounded-full"
                   style={{ width: `${Math.floor(Math.random() * 80) + 20}%` }}

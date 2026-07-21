@@ -11,29 +11,29 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
           <div className="flex items-center space-x-4">
             <Link
               href="/projects"
-              className="p-2 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg transition-colors"
+              className="p-2 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded-lg transition-colors"
             >
               <ArrowLeft size={20} />
             </Link>
             <div>
               <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">Project #{params.id}</h1>
-              <p className="text-payne's_gray-500 dark:text-french_gray-500 mt-1">
+              <p className="text-paynes_gray-500 dark:text-french_gray-500 mt-1">
                 Kanban board view for project management
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            <button className="p-2 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg transition-colors">
+            <button className="p-2 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded-lg transition-colors">
               <Users size={20} />
             </button>
-            <button className="p-2 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg transition-colors">
+            <button className="p-2 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded-lg transition-colors">
               <Calendar size={20} />
             </button>
-            <button className="p-2 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg transition-colors">
+            <button className="p-2 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded-lg transition-colors">
               <Settings size={20} />
             </button>
-            <button className="p-2 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg transition-colors">
+            <button className="p-2 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded-lg transition-colors">
               <MoreHorizontal size={20} />
             </button>
           </div>
@@ -53,20 +53,20 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
         </div>
 
         {/* Kanban Board Placeholder */}
-        <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6">
+        <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-6">
           <div className="flex space-x-6 overflow-x-auto pb-4">
             {["To Do", "In Progress", "Review", "Done"].map((columnTitle, columnIndex) => (
               <div key={columnTitle} className="flex-shrink-0 w-80">
-                <div className="bg-platinum-800 dark:bg-outer_space-400 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400">
-                  <div className="p-4 border-b border-french_gray-300 dark:border-payne's_gray-400">
+                <div className="bg-platinum-800 dark:bg-outer_space-400 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400">
+                  <div className="p-4 border-b border-french_gray-300 dark:border-paynes_gray-400">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-outer_space-500 dark:text-platinum-500">
                         {columnTitle}
-                        <span className="ml-2 px-2 py-1 text-xs bg-french_gray-300 dark:bg-payne's_gray-400 rounded-full">
+                        <span className="ml-2 px-2 py-1 text-xs bg-french_gray-300 dark:bg-paynes_gray-400 rounded-full">
                           {Math.floor(Math.random() * 5) + 1}
                         </span>
                       </h3>
-                      <button className="p-1 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded">
+                      <button className="p-1 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded">
                         <MoreHorizontal size={16} />
                       </button>
                     </div>
@@ -76,12 +76,12 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
                     {[1, 2, 3].map((taskIndex) => (
                       <div
                         key={taskIndex}
-                        className="p-4 bg-white dark:bg-outer_space-300 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 cursor-pointer hover:shadow-md transition-shadow"
+                        className="p-4 bg-white dark:bg-outer_space-300 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 cursor-pointer hover:shadow-md transition-shadow"
                       >
                         <h4 className="font-medium text-outer_space-500 dark:text-platinum-500 text-sm mb-2">
                           Sample Task {taskIndex}
                         </h4>
-                        <p className="text-xs text-payne's_gray-500 dark:text-french_gray-400 mb-3">
+                        <p className="text-xs text-paynes_gray-500 dark:text-french_gray-400 mb-3">
                           This is a placeholder task description
                         </p>
                         <div className="flex items-center justify-between">
@@ -95,7 +95,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
                       </div>
                     ))}
 
-                    <button className="w-full p-3 border-2 border-dashed border-french_gray-300 dark:border-payne's_gray-400 rounded-lg text-payne's_gray-500 dark:text-french_gray-400 hover:border-blue_munsell-500 hover:text-blue_munsell-500 transition-colors">
+                    <button className="w-full p-3 border-2 border-dashed border-french_gray-300 dark:border-paynes_gray-400 rounded-lg text-paynes_gray-500 dark:text-french_gray-400 hover:border-blue_munsell-500 hover:text-blue_munsell-500 transition-colors">
                       + Add task
                     </button>
                   </div>

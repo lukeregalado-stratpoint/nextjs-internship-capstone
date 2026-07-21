@@ -23,7 +23,7 @@ export function CreateProjectButton() {
               <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500">Create New Project</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded"
+                className="p-1 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded"
               >
                 <X size={20} />
               </button>
@@ -36,7 +36,7 @@ export function CreateProjectButton() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+                  className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
                   placeholder="Enter project name"
                 />
               </div>
@@ -47,7 +47,7 @@ export function CreateProjectButton() {
                 </label>
                 <textarea
                   rows={3}
-                  className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+                  className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
                   placeholder="Project description"
                 />
               </div>
@@ -58,7 +58,7 @@ export function CreateProjectButton() {
                 </label>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+                  className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
                 />
               </div>
 
@@ -66,7 +66,7 @@ export function CreateProjectButton() {
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-2 text-payne's_gray-500 dark:text-french_gray-400 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg transition-colors"
+                  className="px-4 py-2 text-paynes_gray-500 dark:text-french_gray-400 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>

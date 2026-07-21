@@ -76,7 +76,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-payne's_gray-400 mt-8 pt-8 text-center">
+        <div className="border-t border-paynes_gray-400 mt-8 pt-8 text-center">
           <p className="text-french_gray-400">© 2024 TaskFlow. All rights reserved.</p>
         </div>
       </div>

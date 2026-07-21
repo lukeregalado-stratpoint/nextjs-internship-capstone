@@ -2,7 +2,7 @@ import { Calendar, Users, Settings, MoreHorizontal } from "lucide-react"
 
 export function ProjectHeader({ projectId }: { projectId: string }) {
   return (
-    <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6">
+    <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-6">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
@@ -10,11 +10,11 @@ export function ProjectHeader({ projectId }: { projectId: string }) {
             <h1 className="text-2xl font-bold text-outer_space-500 dark:text-platinum-500">Website Redesign</h1>
           </div>
 
-          <p className="text-payne's_gray-500 dark:text-french_gray-400 mb-4">
+          <p className="text-paynes_gray-500 dark:text-french_gray-400 mb-4">
             Complete overhaul of company website with modern design and improved user experience
           </p>
 
-          <div className="flex items-center space-x-6 text-sm text-payne's_gray-500 dark:text-french_gray-400">
+          <div className="flex items-center space-x-6 text-sm text-paynes_gray-500 dark:text-french_gray-400">
             <div className="flex items-center">
               <Users size={16} className="mr-2" />5 members
             </div>
@@ -30,10 +30,10 @@ export function ProjectHeader({ projectId }: { projectId: string }) {
         </div>
 
         <div className="flex items-center space-x-2">
-          <button className="p-2 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg transition-colors">
+          <button className="p-2 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded-lg transition-colors">
             <Settings size={20} />
           </button>
-          <button className="p-2 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg transition-colors">
+          <button className="p-2 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded-lg transition-colors">
             <MoreHorizontal size={20} />
           </button>
         </div>

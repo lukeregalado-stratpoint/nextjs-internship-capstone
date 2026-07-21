@@ -5,7 +5,7 @@ export default function AnalyticsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">Analytics</h1>
-        <p className="text-payne's_gray-500 dark:text-french_gray-500 mt-2">
+        <p className="text-paynes_gray-500 dark:text-french_gray-500 mt-2">
           Track project performance and team productivity
         </p>
       </div>
@@ -31,7 +31,7 @@ export default function AnalyticsPage() {
         ].map((metric, index) => (
           <div
             key={index}
-            className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6"
+            className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payness_gray-400 p-6"
           >
             <div className="flex items-center justify-between mb-4">
               <div
@@ -41,7 +41,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <div className="text-2xl font-bold text-outer_space-500 dark:text-platinum-500 mb-1">{metric.value}</div>
-            <div className="text-sm text-payne's_gray-500 dark:text-french_gray-400 mb-2">{metric.unit}</div>
+            <div className="text-sm text-payness_gray-500 dark:text-french_gray-400 mb-2">{metric.unit}</div>
             <div className="text-xs font-medium text-outer_space-500 dark:text-platinum-500">{metric.title}</div>
           </div>
         ))}
@@ -49,10 +49,10 @@ export default function AnalyticsPage() {
 
       {/* Charts Placeholder */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6">
+        <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payness_gray-400 p-6">
           <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-4">Project Progress</h3>
           <div className="h-64 bg-platinum-800 dark:bg-outer_space-400 rounded-lg flex items-center justify-center">
-            <div className="text-center text-payne's_gray-500 dark:text-french_gray-400">
+            <div className="text-center text-payness_gray-500 dark:text-french_gray-400">
               <BarChart3 size={48} className="mx-auto mb-2" />
               <p>Chart Component Placeholder</p>
               <p className="text-sm">TODO: Implement with Chart.js or Recharts</p>
@@ -60,10 +60,10 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6">
+        <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payness_gray-400 p-6">
           <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-4">Team Activity</h3>
           <div className="h-64 bg-platinum-800 dark:bg-outer_space-400 rounded-lg flex items-center justify-center">
-            <div className="text-center text-payne's_gray-500 dark:text-french_gray-400">
+            <div className="text-center text-payness_gray-500 dark:text-french_gray-400">
               <TrendingUp size={48} className="mx-auto mb-2" />
               <p>Activity Chart Placeholder</p>
               <p className="text-sm">TODO: Implement activity timeline</p>

@@ -37,7 +37,7 @@ export function DashboardStats() {
       {stats.map((stat) => (
         <div
           key={stat.name}
-          className="bg-white dark:bg-outer_space-500 overflow-hidden rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6"
+          className="bg-white dark:bg-outer_space-500 overflow-hidden rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-6"
         >
           <div className="flex items-center">
             <div className="flex-shrink-0">
@@ -47,7 +47,7 @@ export function DashboardStats() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-sm font-medium text-payne's_gray-500 dark:text-french_gray-400 truncate">
+                <dt className="text-sm font-medium text-paynes_gray-500 dark:text-french_gray-400 truncate">
                   {stat.name}
                 </dt>
                 <dd className="flex items-baseline">

@@ -3,12 +3,13 @@
 import { useTheme } from "./theme-provider"
 import { Moon, Sun } from "lucide-react"
 import Link from "next/link"
+import { Show, SignInButton, UserButton } from "@clerk/nextjs"
 
 export function Header() {
   const { theme, setTheme } = useTheme()
 
   return (
-    <header className="border-b border-french_gray-300 dark:border-payne's_gray-400 bg-white/80 dark:bg-outer_space-500/80 backdrop-blur-sm">
+    <header className="border-b border-french_gray-300 dark:border-paynes_gray-400 bg-white/80 dark:bg-outer_space-500/80 backdrop-blur-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
@@ -41,17 +42,34 @@ export function Header() {
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              className="p-2 rounded-lg bg-platinum-500 dark:bg-payne's_gray-500 text-outer_space-500 dark:text-platinum-500 hover:bg-french_gray-500 dark:hover:bg-payne's_gray-400 transition-colors"
+              className="p-2 rounded-lg bg-platinum-500 dark:bg-paynes_gray-500 text-outer_space-500 dark:text-platinum-500 hover:bg-french_gray-500 dark:hover:bg-paynes_gray-400 transition-colors"
             >
               {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
             </button>
 
-            <Link
-              href="/dashboard"
-              className="px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors"
-            >
-              Get Started
-            </Link>
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button className="px-4 py-2 text-outer_space-500 dark:text-platinum-500 hover:text-blue_munsell-500 transition-colors">
+                  Sign In
+                </button>
+              </SignInButton>
+              <Link
+                href="/sign-up"
+                className="px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors"
+              >
+                Get Started
+              </Link>
+            </Show>
+
+            <Show when="signed-in">
+              <Link
+                href="/dashboard"
+                className="px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors"
+              >
+                Dashboard
+              </Link>
+              <UserButton />
+            </Show>
           </div>
         </div>
       </div>

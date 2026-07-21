@@ -69,22 +69,22 @@ export function ProjectGrid() {
       {projects.map((project) => (
         <div
           key={project.id}
-          className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6 hover:shadow-lg transition-shadow cursor-pointer"
+          className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-6 hover:shadow-lg transition-shadow cursor-pointer"
         >
           <div className="flex items-start justify-between mb-4">
             <div className={`w-3 h-3 rounded-full ${project.color}`} />
-            <button className="p-1 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded">
+            <button className="p-1 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded">
               <MoreHorizontal size={16} />
             </button>
           </div>
 
           <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-2">{project.name}</h3>
 
-          <p className="text-sm text-payne's_gray-500 dark:text-french_gray-400 mb-4 line-clamp-2">
+          <p className="text-sm text-paynes_gray-500 dark:text-french_gray-400 mb-4 line-clamp-2">
             {project.description}
           </p>
 
-          <div className="flex items-center justify-between text-sm text-payne's_gray-500 dark:text-french_gray-400 mb-4">
+          <div className="flex items-center justify-between text-sm text-paynes_gray-500 dark:text-french_gray-400 mb-4">
             <div className="flex items-center">
               <Users size={16} className="mr-1" />
               {project.members} members
@@ -97,10 +97,10 @@ export function ProjectGrid() {
 
           <div className="mb-4">
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-payne's_gray-500 dark:text-french_gray-400">Progress</span>
+              <span className="text-paynes_gray-500 dark:text-french_gray-400">Progress</span>
               <span className="text-outer_space-500 dark:text-platinum-500 font-medium">{project.progress}%</span>
             </div>
-            <div className="w-full bg-french_gray-300 dark:bg-payne's_gray-400 rounded-full h-2">
+            <div className="w-full bg-french_gray-300 dark:bg-paynes_gray-400 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all duration-300 ${project.color}`}
                 style={{ width: `${project.progress}%` }}

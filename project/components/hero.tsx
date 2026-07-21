@@ -11,7 +11,7 @@ export function Hero() {
             <span className="text-blue_munsell-500"> Project Management</span>
           </h1>
 
-          <p className="text-xl text-payne's_gray-500 dark:text-french_gray-500 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-paynes_gray-500 dark:text-french_gray-500 mb-8 max-w-2xl mx-auto">
             Organize tasks, collaborate with your team, and deliver projects on time with our intuitive Kanban-style
             project management platform.
           </p>

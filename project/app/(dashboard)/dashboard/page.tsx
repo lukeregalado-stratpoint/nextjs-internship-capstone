@@ -1,9 +1,7 @@
 import { TrendingUp, Users, CheckCircle, Clock, Plus } from "lucide-react"
-import { DashboardLayout } from "@/components/dashboard-layout"
 
 export default function DashboardPage() {
   return (
-    <DashboardLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">Dashboard</h1>
@@ -126,6 +124,5 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   )
 }

@@ -1,10 +1,8 @@
 import { ArrowLeft, Settings, Users, Calendar, MoreHorizontal } from "lucide-react"
 import Link from "next/link"
-import { DashboardLayout } from "@/components/dashboard-layout"
 
 export default function ProjectPage({ params }: { params: { id: string } }) {
   return (
-    <DashboardLayout>
       <div className="space-y-6">
         {/* Project Header */}
         <div className="flex items-center justify-between">
@@ -132,6 +130,5 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   )
 }

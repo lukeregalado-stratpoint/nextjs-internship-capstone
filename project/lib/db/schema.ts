@@ -51,6 +51,7 @@ import { relations } from "drizzle-orm"
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"])
 
 // TABLES
+
 export const users = pgTable(
   "users",
   {
@@ -66,7 +67,7 @@ export const users = pgTable(
     index("users_email_idx").on(table.email),
   ]
 )
-
+ 
 export const projects = pgTable(
   "projects",
   {
@@ -82,7 +83,7 @@ export const projects = pgTable(
   },
   (table) => [index("projects_owner_id_idx").on(table.ownerId)]
 )
-
+ 
 export const lists = pgTable(
   "lists",
   {
@@ -97,7 +98,7 @@ export const lists = pgTable(
   },
   (table) => [index("lists_project_id_idx").on(table.projectId)]
 )
-
+ 
 export const tasks = pgTable(
   "tasks",
   {
@@ -121,7 +122,7 @@ export const tasks = pgTable(
     index("tasks_assignee_id_idx").on(table.assigneeId),
   ]
 )
-
+ 
 export const comments = pgTable(
   "comments",
   {
@@ -143,6 +144,7 @@ export const comments = pgTable(
 )
 
 
+
 // RELATIONS
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -150,7 +152,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   assignedTasks: many(tasks),
   comments: many(comments),
 }))
-
+ 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
   owner: one(users, {
     fields: [projects.ownerId],
@@ -158,7 +160,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   }),
   lists: many(lists),
 }))
-
+ 
 export const listsRelations = relations(lists, ({ one, many }) => ({
   project: one(projects, {
     fields: [lists.projectId],
@@ -166,7 +168,7 @@ export const listsRelations = relations(lists, ({ one, many }) => ({
   }),
   tasks: many(tasks),
 }))
-
+ 
 export const tasksRelations = relations(tasks, ({ one, many }) => ({
   list: one(lists, {
     fields: [tasks.listId],
@@ -178,7 +180,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   }),
   comments: many(comments),
 }))
-
+ 
 export const commentsRelations = relations(comments, ({ one }) => ({
   task: one(tasks, {
     fields: [comments.taskId],
@@ -189,3 +191,19 @@ export const commentsRelations = relations(comments, ({ one }) => ({
     references: [users.id],
   }),
 }))
+
+// INFERRED-TYPES
+export type User = typeof users.$inferSelect
+export type NewUser = typeof users.$inferInsert
+ 
+export type Project = typeof projects.$inferSelect
+export type NewProject = typeof projects.$inferInsert
+ 
+export type List = typeof lists.$inferSelect
+export type NewList = typeof lists.$inferInsert
+ 
+export type Task = typeof tasks.$inferSelect
+export type NewTask = typeof tasks.$inferInsert
+ 
+export type Comment = typeof comments.$inferSelect
+export type NewComment = typeof comments.$inferInsert

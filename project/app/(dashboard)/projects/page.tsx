@@ -1,9 +1,7 @@
 import { Plus, Search, Filter } from "lucide-react"
-import { DashboardLayout } from "@/components/dashboard-layout"
 
 export default function ProjectsPage() {
   return (
-    <DashboardLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -108,6 +106,5 @@ export default function ProjectsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   )
 }

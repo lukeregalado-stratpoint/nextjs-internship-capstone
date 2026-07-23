@@ -10,7 +10,7 @@ export default function DashboardPage() {
           <p className="text-paynes_gray-500 dark:text-french_gray-500 mt-2">
             Welcome back! Here's an overview of your projects and tasks.
           </p>
-        </div>
+        </div>``
 
         {/* Implementation Status Banner */}
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">

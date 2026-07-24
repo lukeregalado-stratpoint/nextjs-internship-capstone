@@ -1,8 +1,49 @@
-import { and, asc, eq } from "drizzle-orm"
+import { and, asc, eq, inArray, isNotNull, lte } from "drizzle-orm"
 import { db } from "./index"
 import { comments, lists, projects, tasks, users } from "./schema"
 import type { NewComment, NewList, NewProject, NewTask } from "./schema"
 
+// DASHBOARD
+export async function getDashboardStatsForOwner(ownerId: string) {
+  const ownerProjects = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(eq(projects.ownerId, ownerId))
+
+  const projectIds = ownerProjects.map((p) => p.id)
+
+  if (projectIds.length === 0) {
+    return { activeProjects: 0, completedTasks: 0, inProgressTasks: 0, backlogTasks: 0 }
+  }
+
+  const taskRows = await db
+    .select({ listName: lists.name })
+    .from(tasks)
+    .innerJoin(lists, eq(tasks.listId, lists.id))
+    .where(inArray(lists.projectId, projectIds))
+
+  let completedTasks = 0
+  let inProgressTasks = 0
+  let backlogTasks = 0
+
+  for (const { listName } of taskRows) {
+    const normalized = listName.toLowerCase()
+    if (normalized.includes("done") || normalized.includes("complete")) {
+      completedTasks++
+    } else if (normalized.includes("progress") || normalized.includes("doing")) {
+      inProgressTasks++
+    } else {
+      backlogTasks++
+    }
+  }
+
+  return {
+    activeProjects: projectIds.length,
+    completedTasks,
+    inProgressTasks,
+    backlogTasks,
+  }
+}
 
 // USERS
 export async function getUserByClerkId(clerkId: string) {
@@ -22,9 +63,35 @@ export async function getUserById(id: string) {
 
 // PROJECTS
 export async function getProjectsForOwner(ownerId: string) {
-  return db.query.projects.findMany({
+  const ownerProjects = await db.query.projects.findMany({
     where: eq(projects.ownerId, ownerId),
     orderBy: (p, { desc }) => desc(p.updatedAt),
+    with: {
+      lists: {
+        with: {
+          tasks: {
+            with: { assignee: true },
+          },
+        },
+      },
+    },
+  })
+
+  return ownerProjects.map(({ lists: projectLists, ...project }) => {
+    const memberMap = new Map<string, { id: string; name: string }>()
+
+    for (const list of projectLists) {
+      for (const task of list.tasks) {
+        if (task.assignee) {
+          memberMap.set(task.assignee.id, {
+            id: task.assignee.id,
+            name: task.assignee.name,
+          })
+        }
+      }
+    }
+
+    return { ...project, members: Array.from(memberMap.values()) }
   })
 }
  

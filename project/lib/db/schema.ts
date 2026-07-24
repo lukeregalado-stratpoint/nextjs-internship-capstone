@@ -49,6 +49,7 @@ import { relations } from "drizzle-orm"
 
 
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"])
+export const projectRoleEnum = pgEnum("project_role", ["product_owner", "scrum_master", "developer", "stakeholder"])
 
 // TABLES
 
@@ -82,6 +83,25 @@ export const projects = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [index("projects_owner_id_idx").on(table.ownerId)]
+)
+
+export const projectMembers = pgTable(
+  "project_members",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: projectRoleEnum("role").notNull().default("developer"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("project_members_project_id_idx").on(table.projectId),
+    index("project_members_user_id_idx").on(table.userId),
+  ]
 )
  
 export const lists = pgTable(
@@ -151,6 +171,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   ownedProjects: many(projects),
   assignedTasks: many(tasks),
   comments: many(comments),
+  projectMemberships: many(projectMembers),
 }))
  
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -159,6 +180,18 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     references: [users.id],
   }),
   lists: many(lists),
+  members: many(projectMembers),
+}))
+
+export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectMembers.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [projectMembers.userId],
+    references: [users.id],
+  }),
 }))
  
 export const listsRelations = relations(lists, ({ one, many }) => ({
@@ -198,6 +231,9 @@ export type NewUser = typeof users.$inferInsert
  
 export type Project = typeof projects.$inferSelect
 export type NewProject = typeof projects.$inferInsert
+
+export type ProjectMember = typeof projectMembers.$inferSelect
+export type NewProjectMember = typeof projectMembers.$inferInsert
  
 export type List = typeof lists.$inferSelect
 export type NewList = typeof lists.$inferInsert

@@ -1,32 +1,11 @@
 import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-// import "@/app/globals.css"
-import { ClerkProvider } from "@clerk/nextjs"
-import { ThemeProvider } from "@/components/theme-provider"
 import { auth } from "@clerk/nextjs/server"
 
-const inter = Inter({ subsets: ["latin"] })
-
-export const metadata: Metadata = {
-  title: "Project Management Tool",
-  description: "Team collaboration and project management platform",
-  generator: "v0.dev",
-}
-
-export default async function RootLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   await auth.protect()
-  return (
-    <ClerkProvider afterSignOutUrl="/">
-      <html lang="en" suppressHydrationWarning>
-        <body className={inter.className}>
-          <ThemeProvider>{children}</ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
-  )
+  return <>{children}</>
 }

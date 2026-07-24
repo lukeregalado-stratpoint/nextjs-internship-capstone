@@ -1,278 +1,230 @@
-import { and, asc, eq, inArray, isNotNull, lte } from "drizzle-orm"
-import { db } from "./index"
-import { comments, lists, projects, tasks, users } from "./schema"
-import type { NewComment, NewList, NewProject, NewTask } from "./schema"
+import { and, asc, desc, eq } from "drizzle-orm"
+import { db } from "@/lib/db"
+import { lists, projects, tasks, type NewList, type NewProject } from "@/lib/db/schema"
 
-// DASHBOARD
-export async function getDashboardStatsForOwner(ownerId: string) {
-  const ownerProjects = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.ownerId, ownerId))
+// =========================================================
+// Projects
+// =========================================================
 
-  const projectIds = ownerProjects.map((p) => p.id)
+/**
+ * Listing view: one row per project the user owns, with the counts
+ * needed for the project cards (members, tasks, columns, progress).
+ *
+ * Convention: the right-most column (highest `position`) is treated
+ * as "Done" for the purposes of the progress bar. This avoids adding
+ * a status/boolean column to `tasks` for now — revisit if you want a
+ * project to have more than one "done-like" column.
+ */
+export async function getProjectsForUser(userId: string) {
+  const rows = await db.query.projects.findMany({
+    where: eq(projects.ownerId, userId),
+    orderBy: [asc(projects.createdAt)],
+    with: {
+      members: true,
+      lists: {
+        orderBy: [asc(lists.position)],
+        with: { tasks: true },
+      },
+    },
+  })
 
-  if (projectIds.length === 0) {
-    return { activeProjects: 0, completedTasks: 0, inProgressTasks: 0, backlogTasks: 0 }
-  }
+  return rows.map((project) => {
+    const allTasks = project.lists.flatMap((l) => l.tasks)
+    const lastList = project.lists[project.lists.length - 1]
+    const doneCount = lastList?.tasks.length ?? 0
 
-  const taskRows = await db
-    .select({ listName: lists.name })
-    .from(tasks)
-    .innerJoin(lists, eq(tasks.listId, lists.id))
-    .where(inArray(lists.projectId, projectIds))
+    return {
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      dueDate: project.dueDate,
+      createdAt: project.createdAt,
+      memberCount: project.members.length + 1, // +1 for the owner
+      taskCount: allTasks.length,
+      listCount: project.lists.length,
+      progress: allTasks.length === 0 ? 0 : Math.round((doneCount / allTasks.length) * 100),
+    }
+  })
+}
+
+/** Detail view: project + owner + members + lists + tasks, ordered for the board. */
+export async function getProjectById(projectId: string) {
+  return db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    with: {
+      owner: true,
+      members: { with: { user: true } },
+      lists: {
+        orderBy: [asc(lists.position)],
+        with: {
+          tasks: { orderBy: [asc(tasks.position)] },
+        },
+      },
+    },
+  })
+}
+
+export async function createProject(data: NewProject) {
+  const [project] = await db.insert(projects).values(data).returning()
+  return project
+}
+
+export async function updateProject(
+  projectId: string,
+  data: Partial<Omit<NewProject, "id" | "ownerId">>
+) {
+  const [project] = await db
+    .update(projects)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(projects.id, projectId))
+    .returning()
+  return project ?? null
+}
+
+export async function deleteProject(projectId: string) {
+  await db.delete(projects).where(eq(projects.id, projectId))
+}
+
+/**
+ * Ownership check used by the server actions before any mutation.
+ * NOTE: this only checks `projects.ownerId`. `projectMembers` (with
+ * roles like product_owner/scrum_master) exists in the schema but
+ * isn't wired into permissions yet — extend this if members other
+ * than the owner should be able to edit/delete.
+ */
+export async function ownsProject(projectId: string, userId: string) {
+  const project = await db.query.projects.findFirst({
+    where: and(eq(projects.id, projectId), eq(projects.ownerId, userId)),
+    columns: { id: true },
+  })
+  return !!project
+}
+
+/**
+ * Dashboard view: projects owned by the user, most-recently-updated first,
+ * with members (and each member's user) loaded for the avatar stack in
+ * RecentProjects. Callers slice to however many they want to show.
+ */
+export async function getProjectsForOwner(userId: string) {
+  return db.query.projects.findMany({
+    where: eq(projects.ownerId, userId),
+    orderBy: [desc(projects.updatedAt)],
+    with: {
+      members: {
+        with: { user: { columns: { id: true, name: true } } },
+      },
+    },
+  })
+}
+
+/**
+ * Dashboard stat tiles. Reuses the same "right-most column = done, first
+ * column = backlog, everything between = in progress" convention as the
+ * project-card progress bar (see getProjectsForUser above), since `tasks`
+ * has no explicit status column yet.
+ *
+ * - A project with a single list: all its tasks count as backlog (a lone
+ *   column isn't necessarily "done").
+ * - `activeProjects` is just a count of projects owned by the user — there's
+ *   no archived/completed state on `projects` yet to distinguish "active"
+ *   from anything else.
+ */
+export async function getDashboardStatsForOwner(userId: string) {
+  const rows = await db.query.projects.findMany({
+    where: eq(projects.ownerId, userId),
+    with: {
+      lists: {
+        orderBy: [asc(lists.position)],
+        with: { tasks: { columns: { id: true } } },
+      },
+    },
+  })
 
   let completedTasks = 0
   let inProgressTasks = 0
   let backlogTasks = 0
 
-  for (const { listName } of taskRows) {
-    const normalized = listName.toLowerCase()
-    if (normalized.includes("done") || normalized.includes("complete")) {
-      completedTasks++
-    } else if (normalized.includes("progress") || normalized.includes("doing")) {
-      inProgressTasks++
-    } else {
-      backlogTasks++
+  for (const project of rows) {
+    const projectLists = project.lists
+    if (projectLists.length === 0) continue
+
+    if (projectLists.length === 1) {
+      backlogTasks += projectLists[0].tasks.length
+      continue
     }
+
+    const first = projectLists[0]
+    const last = projectLists[projectLists.length - 1]
+    const middle = projectLists.slice(1, -1)
+
+    backlogTasks += first.tasks.length
+    completedTasks += last.tasks.length
+    inProgressTasks += middle.reduce((sum, l) => sum + l.tasks.length, 0)
   }
 
   return {
-    activeProjects: projectIds.length,
+    activeProjects: rows.length,
     completedTasks,
     inProgressTasks,
     backlogTasks,
   }
 }
 
-// USERS
-export async function getUserByClerkId(clerkId: string) {
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.clerkId, clerkId))
-    .limit(1)
-  return user ?? null
-}
- 
-export async function getUserById(id: string) {
-  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1)
-  return user ?? null
-}
-
-
-// PROJECTS
-export async function getProjectsForOwner(ownerId: string) {
-  const ownerProjects = await db.query.projects.findMany({
-    where: eq(projects.ownerId, ownerId),
-    orderBy: (p, { desc }) => desc(p.updatedAt),
-    with: {
-      lists: {
-        with: {
-          tasks: {
-            with: { assignee: true },
-          },
-        },
-      },
-    },
-  })
-
-  return ownerProjects.map(({ lists: projectLists, ...project }) => {
-    const memberMap = new Map<string, { id: string; name: string }>()
-
-    for (const list of projectLists) {
-      for (const task of list.tasks) {
-        if (task.assignee) {
-          memberMap.set(task.assignee.id, {
-            id: task.assignee.id,
-            name: task.assignee.name,
-          })
-        }
-      }
-    }
-
-    return { ...project, members: Array.from(memberMap.values()) }
-  })
-}
- 
-/** full board: 
- * project 
- * -> lists (ordered) 
- * -> tasks (ordered) with assignees. */
-export async function getProjectWithBoard(projectId: string) {
-  return db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-    with: {
-      owner: true,
-      lists: {
-        orderBy: asc(lists.position),
-        with: {
-          tasks: {
-            orderBy: asc(tasks.position),
-            with: { assignee: true },
-          },
-        },
-      },
-    },
-  })
-}
-
-export async function ownsProject(projectId: string, userId: string) {
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-    columns: { ownerId: true },
-  })
-  return project?.ownerId === userId
-}
- 
-export async function createProject(input: NewProject) {
-  const [project] = await db.insert(projects).values(input).returning()
-  return project
-}
- 
-export async function updateProject(
-  projectId: string,
-  input: Partial<Omit<NewProject, "id" | "ownerId">>
-) {
-  const [project] = await db
-    .update(projects)
-    .set({ ...input, updatedAt: new Date() })
-    .where(eq(projects.id, projectId))
-    .returning()
-  return project
-}
- 
-export async function deleteProject(projectId: string) {
-  await db.delete(projects).where(eq(projects.id, projectId))
-}
+// LISTS 
 
 export async function getListsForProject(projectId: string) {
   return db.query.lists.findMany({
     where: eq(lists.projectId, projectId),
-    orderBy: asc(lists.position),
+    orderBy: [asc(lists.position)],
   })
 }
- 
-/** create list to end of project's board */
-export async function createList(input: Omit<NewList, "position">) {
-  const existing = await db
-    .select({ position: lists.position })
-    .from(lists)
-    .where(eq(lists.projectId, input.projectId))
- 
-  const nextPosition = existing.length
-    ? Math.max(...existing.map((l) => l.position)) + 1
-    : 0
- 
-  const [list] = await db
-    .insert(lists)
-    .values({ ...input, position: nextPosition })
-    .returning()
+
+export async function getNextListPosition(projectId: string) {
+  const existing = await db.query.lists.findMany({
+    where: eq(lists.projectId, projectId),
+    columns: { position: true },
+  })
+  if (existing.length === 0) return 0
+  return Math.max(...existing.map((l) => l.position)) + 1
+}
+
+export async function createList(data: NewList) {
+  const [list] = await db.insert(lists).values(data).returning()
   return list
 }
- 
+
 export async function updateList(
   listId: string,
-  input: Partial<Pick<NewList, "name" | "position">>
+  data: Partial<Pick<NewList, "name" | "position">>
 ) {
   const [list] = await db
     .update(lists)
-    .set({ ...input, updatedAt: new Date() })
+    .set({ ...data, updatedAt: new Date() })
     .where(eq(lists.id, listId))
     .returning()
-  return list
+  return list ?? null
 }
- 
+
 export async function deleteList(listId: string) {
   await db.delete(lists).where(eq(lists.id, listId))
 }
- 
-// TASKS
- 
-export async function getTasksForProject(projectId: string) {
-  return db
-    .select({ task: tasks })
-    .from(tasks)
-    .innerJoin(lists, eq(tasks.listId, lists.id))
-    .where(eq(lists.projectId, projectId))
-    .then((rows) => rows.map((r) => r.task))
+
+/** Persists a full reorder. Called after a drag-and-drop reorder on the board. */
+export async function reorderLists(projectId: string, orderedListIds: string[]) {
+  await Promise.all(
+    orderedListIds.map((id, index) =>
+      db
+        .update(lists)
+        .set({ position: index, updatedAt: new Date() })
+        .where(and(eq(lists.id, id), eq(lists.projectId, projectId)))
+    )
+  )
 }
- 
-/** append: new task at the end of a list */
-export async function createTask(input: Omit<NewTask, "position">) {
-  const existing = await db
-    .select({ position: tasks.position })
-    .from(tasks)
-    .where(eq(tasks.listId, input.listId))
- 
-  const nextPosition = existing.length
-    ? Math.max(...existing.map((t) => t.position)) + 1
-    : 0
- 
-  const [task] = await db
-    .insert(tasks)
-    .values({ ...input, position: nextPosition })
-    .returning()
-  return task
-}
- 
-export async function updateTask(
-  taskId: string,
-  input: Partial<
-    Pick<
-      NewTask,
-      "title" | "description" | "assigneeId" | "priority" | "dueDate"
-    >
-  >
-) {
-  const [task] = await db
-    .update(tasks)
-    .set({ ...input, updatedAt: new Date() })
-    .where(eq(tasks.id, taskId))
-    .returning()
-  return task
-}
- 
-/** move task to new list OR position */
-export async function moveTask(
-  taskId: string,
-  toListId: string,
-  toPosition: number
-) {
-  const [task] = await db
-    .update(tasks)
-    .set({ listId: toListId, position: toPosition, updatedAt: new Date() })
-    .where(eq(tasks.id, taskId))
-    .returning()
-  return task
-}
- 
-export async function deleteTask(taskId: string) {
-  await db.delete(tasks).where(eq(tasks.id, taskId))
-}
- 
-// COMMENTS
-export async function getCommentsForTask(taskId: string) {
-  return db.query.comments.findMany({
-    where: eq(comments.taskId, taskId),
-    orderBy: (c, { asc }) => asc(c.createdAt),
-    with: { author: true },
+
+export async function ownsList(listId: string, userId: string) {
+  const list = await db.query.lists.findFirst({
+    where: eq(lists.id, listId),
+    with: { project: { columns: { ownerId: true } } },
   })
-}
- 
-export async function createComment(input: NewComment) {
-  const [comment] = await db.insert(comments).values(input).returning()
-  return comment
-}
- 
-export async function deleteComment(commentId: string) {
-  await db.delete(comments).where(eq(comments.id, commentId))
-}
- 
-export async function isCommentAuthor(commentId: string, userId: string) {
-  const comment = await db.query.comments.findFirst({
-    where: and(eq(comments.id, commentId), eq(comments.authorId, userId)),
-    columns: { id: true },
-  })
-  return Boolean(comment)
+  return list?.project.ownerId === userId
 }

@@ -1,36 +1,52 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { X } from "lucide-react"
 import { useProjects } from "@/hooks/use-projects"
 
-interface CreateProjectModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+interface EditableProject {
+  id: string
+  name: string
+  description: string | null
+  dueDate: Date | null
 }
 
-export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalProps) {
-  const { createProject, isPending, error } = useProjects()
-  const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
-  const [dueDate, setDueDate] = useState("")
+export function EditProjectModal({
+  project,
+  open,
+  onOpenChange,
+}: {
+  project: EditableProject
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const { updateProject, isPending, error } = useProjects()
+  const [name, setName] = useState(project.name)
+  const [description, setDescription] = useState(project.description ?? "")
+  const [dueDate, setDueDate] = useState(
+    project.dueDate ? new Date(project.dueDate).toISOString().slice(0, 10) : ""
+  )
+
+  useEffect(() => {
+    if (open) {
+      setName(project.name)
+      setDescription(project.description ?? "")
+      setDueDate(project.dueDate ? new Date(project.dueDate).toISOString().slice(0, 10) : "")
+    }
+  }, [open, project])
 
   if (!open) return null
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    createProject(
+    updateProject(
+      project.id,
       {
         name,
         description: description || undefined,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
+        dueDate: dueDate ? new Date(dueDate) : null,
       },
-      () => {
-        setName("")
-        setDescription("")
-        setDueDate("")
-        onOpenChange(false)
-      }
+      () => onOpenChange(false)
     )
   }
 
@@ -39,7 +55,7 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
       <div className="w-full max-w-md rounded-lg bg-white dark:bg-outer_space-500 p-6 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500">
-            New Project
+            Edit Project
           </h2>
           <button
             type="button"
@@ -60,7 +76,6 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
               maxLength={120}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Website redesign"
               className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
             />
           </div>
@@ -74,7 +89,6 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               maxLength={2000}
-              placeholder="What's this project about?"
               className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
             />
           </div>
@@ -106,7 +120,7 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
               disabled={isPending || !name.trim()}
               className="px-4 py-2 rounded-lg bg-blue_munsell-500 text-white hover:bg-blue_munsell-600 disabled:opacity-50 transition-colors"
             >
-              {isPending ? "Creating…" : "Create project"}
+              {isPending ? "Saving…" : "Save changes"}
             </button>
           </div>
         </form>

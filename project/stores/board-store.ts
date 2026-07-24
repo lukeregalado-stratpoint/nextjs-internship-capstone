@@ -1,70 +1,40 @@
-// TODO: Task 5.3 - Set up client-side state management with Zustand
-// TODO: Task 5.4 - Implement optimistic UI updates for smooth interactions
+import { create } from "zustand"
+import type { List, Task } from "@/lib/db/schema"
 
-/*
-TODO: Implementation Notes for Interns:
-
-Board state management for Kanban functionality:
-- Current project data
-- Lists/columns
-- Tasks
-- Drag and drop state
-- Optimistic updates
-- Sync with server
-
-Key features:
-- Optimistic task creation/updates
-- Drag and drop state management
-- Real-time synchronization
-- Conflict resolution
-- Offline support (optional)
-
-Example structure:
-import { create } from 'zustand'
-import { subscribeWithSelector } from 'zustand/middleware'
+export type ListWithTasks = List & { tasks: Task[] }
 
 interface BoardState {
-  // Data
-  currentProject: Project | null
-  lists: List[]
-  tasks: Task[]
-  
-  // UI state
-  draggedTask: Task | null
-  draggedOverList: string | null
-  
-  // Loading states
-  isLoading: boolean
-  isSaving: boolean
-  
-  // Actions
-  loadProject: (projectId: string) => Promise<void>
-  createTask: (listId: string, task: Partial<Task>) => Promise<void>
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>
-  moveTask: (taskId: string, newListId: string, newPosition: number) => Promise<void>
-  deleteTask: (taskId: string) => Promise<void>
-  
-  // Drag and drop
-  setDraggedTask: (task: Task | null) => void
-  setDraggedOverList: (listId: string | null) => void
+  lists: ListWithTasks[]
+  setLists: (lists: ListWithTasks[]) => void
+  reorder: (orderedIds: string[]) => void
+  addList: (list: List) => void
+  renameList: (id: string, name: string) => void
+  removeList: (id: string) => void
 }
 
-export const useBoardStore = create<BoardState>()(
-  subscribeWithSelector((set, get) => ({
-    // ... implementation
-  }))
-)
-*/
+export const useBoardStore = create<BoardState>((set) => ({
+  lists: [],
 
-// Placeholder to prevent import errors
-export const useBoardStore = () => {
-  console.log("TODO: Implement board store with Zustand")
-  return {
-    currentProject: null,
-    lists: [],
-    tasks: [],
-    isLoading: false,
-    loadProject: (projectId: string) => console.log(`TODO: Load project ${projectId}`),
-    createTask: (listId: string, task: any) => console.log(`TODO: Create task in list ${listId}`, task),
-  }
-}
+  setLists: (lists) => set({ lists }),
+
+  reorder: (orderedIds) =>
+    set((state) => {
+      const byId = new Map(state.lists.map((l) => [l.id, l]))
+      const reordered = orderedIds
+        .map((id) => byId.get(id))
+        .filter((l): l is ListWithTasks => Boolean(l))
+        .map((l, index) => ({ ...l, position: index }))
+      return { lists: reordered }
+    }),
+
+  addList: (list) =>
+    set((state) => ({ lists: [...state.lists, { ...list, tasks: [] }] })),
+
+  renameList: (id, name) =>
+    set((state) => ({
+      lists: state.lists.map((l) => (l.id === id ? { ...l, name } : l)),
+    })),
+
+  removeList: (id) =>
+    set((state) => ({ lists: state.lists.filter((l) => l.id !== id) })),
+}))

@@ -1,6 +1,6 @@
 import { and, asc, desc, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { lists, projects, tasks, type NewList, type NewProject } from "@/lib/db/schema"
+import { lists, projects, tasks, type NewList, type NewProject, type NewTask } from "@/lib/db/schema"
 
 // =========================================================
 // Projects
@@ -209,7 +209,7 @@ export async function deleteList(listId: string) {
   await db.delete(lists).where(eq(lists.id, listId))
 }
 
-/** Persists a full reorder. Called after a drag-and-drop reorder on the board. */
+/** reorders lists. called after drag and drop  */
 export async function reorderLists(projectId: string, orderedListIds: string[]) {
   await Promise.all(
     orderedListIds.map((id, index) =>
@@ -227,4 +227,60 @@ export async function ownsList(listId: string, userId: string) {
     with: { project: { columns: { ownerId: true } } },
   })
   return list?.project.ownerId === userId
+}
+
+// TASKS
+
+export async function getNextTaskPosition(listId: string) {
+  const existing = await db.query.tasks.findMany({
+    where: eq(tasks.listId, listId),
+    columns: { position: true },
+  })
+  if (existing.length === 0) return 0
+  return Math.max(...existing.map((t) => t.position)) + 1
+}
+
+export async function createTask(data: NewTask) {
+  const [task] = await db.insert(tasks).values(data).returning()
+  return task
+}
+
+export async function updateTask(taskId: string, data: Partial<Omit<NewTask, "id">>) {
+  const [task] = await db
+    .update(tasks)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(tasks.id, taskId))
+    .returning()
+  return task ?? null
+}
+
+export async function deleteTask(taskId: string) {
+  await db.delete(tasks).where(eq(tasks.id, taskId))
+}
+
+/**
+ * for drag + drop of tasks across/within columns
+ */
+export async function moveTask(taskId: string, destListId: string, orderedTaskIds: string[]) {
+  await db
+    .update(tasks)
+    .set({ listId: destListId, updatedAt: new Date() })
+    .where(eq(tasks.id, taskId))
+
+  await Promise.all(
+    orderedTaskIds.map((id, index) =>
+      db
+        .update(tasks)
+        .set({ position: index, updatedAt: new Date() })
+        .where(and(eq(tasks.id, id), eq(tasks.listId, destListId)))
+    )
+  )
+}
+
+export async function ownsTask(taskId: string, userId: string) {
+  const task = await db.query.tasks.findFirst({
+    where: eq(tasks.id, taskId),
+    with: { list: { with: { project: { columns: { ownerId: true } } } } },
+  })
+  return task?.list.project.ownerId === userId
 }

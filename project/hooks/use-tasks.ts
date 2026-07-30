@@ -1,77 +1,101 @@
-// TODO: Task 4.4 - Build task creation and editing functionality
-// TODO: Task 5.4 - Implement optimistic UI updates for smooth interactions
+"use client"
 
-/*
-TODO: Implementation Notes for Interns:
+import { useState, useTransition } from "react"
+import { useBoardStore } from "@/stores/board-store"
+import { createTaskAction, deleteTaskAction, moveTaskAction, updateTaskAction } from "@/lib/actions/tasks"
+import type { Task } from "@/lib/db/schema"
+import type { ListWithTasks } from "@/stores/board-store"
+import type { TaskInput, TaskUpdateInput } from "@/lib/validations"
 
-Custom hook for task data management:
-- Fetch tasks for a project
-- Create new task
-- Update task
-- Delete task
-- Move task between lists
-- Bulk operations
-
-Features:
-- Optimistic updates for smooth UX
-- Real-time synchronization
-- Conflict resolution
-- Undo functionality
-- Batch operations
-
-Example structure:
 export function useTasks(projectId: string) {
-  const queryClient = useQueryClient()
-  
-  const {
-    data: tasks,
-    isLoading,
-    error
-  } = useQuery({
-    queryKey: ['tasks', projectId],
-    queryFn: () => queries.tasks.getByProject(projectId),
-    enabled: !!projectId
-  })
-  
-  const createTask = useMutation({
-    mutationFn: queries.tasks.create,
-    onMutate: async (newTask) => {
-      // Optimistic update
-      await queryClient.cancelQueries({ queryKey: ['tasks', projectId] })
-      const previousTasks = queryClient.getQueryData(['tasks', projectId])
-      queryClient.setQueryData(['tasks', projectId], (old: Task[]) => [...old, { ...newTask, id: 'temp-' + Date.now() }])
-      return { previousTasks }
-    },
-    onError: (err, newTask, context) => {
-      // Rollback on error
-      queryClient.setQueryData(['tasks', projectId], context?.previousTasks)
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] })
-    }
-  })
-  
-  return {
-    tasks,
-    isLoading,
-    error,
-    createTask: createTask.mutate,
-    isCreating: createTask.isPending
+  const addTaskInStore = useBoardStore((s) => s.addTask)
+  const updateTaskInStore = useBoardStore((s) => s.updateTask)
+  const removeTaskInStore = useBoardStore((s) => s.removeTask)
+  const moveTaskInStore = useBoardStore((s) => s.moveTask)
+
+  const [isPending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+
+  function createTask(input: TaskInput, onSuccess?: (task: Task) => void) {
+    setError(null)
+    startTransition(async () => {
+      const result = await createTaskAction(projectId, input)
+      if (!result.success) {
+        setError(result.error)
+        return
+      }
+      addTaskInStore(result.data.listId, result.data)
+      onSuccess?.(result.data)
+    })
   }
-}
-*/
 
-// Placeholder to prevent import errors
-export function useTasks(projectId: string) {
-  console.log(`TODO: Implement useTasks hook for project ${projectId}`)
+  function updateTask(
+    taskId: string,
+    input: TaskUpdateInput,
+    onSuccess?: (task: Task) => void
+  ) {
+    setError(null)
+
+    // apply immediately (optimistic update)
+    const snapshot = useBoardStore.getState().lists
+    if (input.listId) moveTaskInStore(taskId, input.listId)
+    const { listId, ...fields } = input
+    updateTaskInStore(taskId, fields)
+
+    startTransition(async () => {
+      const result = await updateTaskAction(taskId, projectId, input)
+      if (!result.success) {
+        setError(result.error)
+        useBoardStore.getState().setLists(snapshot)
+        return
+      }
+      updateTaskInStore(taskId, result.data)
+      onSuccess?.(result.data)
+    })
+  }
+
+  function deleteTask(taskId: string, onSuccess?: () => void) {
+    setError(null)
+
+    const snapshot = useBoardStore.getState().lists
+    removeTaskInStore(taskId)
+
+    startTransition(async () => {
+      const result = await deleteTaskAction(taskId, projectId)
+      if (!result.success) {
+        setError(result.error)
+        useBoardStore.getState().setLists(snapshot)
+        return
+      }
+      onSuccess?.()
+    })
+  }
+
+  /**
+   * retains drag + drop result
+   */
+  function moveTask(
+    taskId: string,
+    destListId: string,
+    orderedTaskIds: string[],
+    rollbackTo: ListWithTasks[]
+  ) {
+    setError(null)
+    startTransition(async () => {
+      const result = await moveTaskAction(projectId, { taskId, destListId, orderedTaskIds })
+      if (!result.success) {
+        setError(result.error)
+        useBoardStore.getState().setLists(rollbackTo)
+      }
+    })
+  }
+
   return {
-    tasks: [],
-    isLoading: false,
-    error: null,
-    createTask: (data: any) => console.log("TODO: Create task", data),
-    updateTask: (id: string, data: any) => console.log(`TODO: Update task ${id}`, data),
-    deleteTask: (id: string) => console.log(`TODO: Delete task ${id}`),
-    moveTask: (taskId: string, newListId: string, position: number) =>
-      console.log(`TODO: Move task ${taskId} to list ${newListId} at position ${position}`),
+    isPending,
+    error,
+    createTask,
+    updateTask,
+    deleteTask,
+    moveTask,
   }
 }

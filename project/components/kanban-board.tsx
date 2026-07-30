@@ -1,24 +1,33 @@
 "use client"
 
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
-  closestCenter,
+  closestCorners,
+  useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core"
 import {
   SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
+  verticalListSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { GripVertical, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react"
 import { useLists } from "@/hooks/use-lists"
-import type { ListWithTasks } from "@/stores/board-store"
+import { useTasks } from "@/hooks/use-tasks"
+import { CreateTaskModal, type TaskFormSubmitValues } from "@/components/modals/create-task-modal"
+import { TaskCard } from "@/components/task-card"
+import { useBoardStore, type ListWithTasks } from "@/stores/board-store"
+import type { Task } from "@/lib/db/schema"
 
 export function KanbanBoard({
   projectId,
@@ -29,8 +38,25 @@ export function KanbanBoard({
 }) {
   const { lists, setLists, createList, renameList, deleteList, reorderLists, isPending, error } =
     useLists(projectId)
+  const {
+    createTask,
+    updateTask,
+    deleteTask,
+    moveTask,
+    isPending: taskPending,
+    error: taskError,
+  } = useTasks(projectId)
   const [addingColumn, setAddingColumn] = useState(false)
   const [newColumnName, setNewColumnName] = useState("")
+  // `task` present = editing that task; absent = creating a new one in `listId`.
+  const [taskModal, setTaskModal] = useState<{ listId: string; task?: Task } | null>(null)
+  const [activeTask, setActiveTask] = useState<Task | null>(null)
+
+  // Snapshot of the board taken the moment a task drag starts, so a failed
+  // save can restore exactly what was on screen before the drag — not
+  // whatever the board happens to look like once the drag (with its
+  // in-flight optimistic moves) has finished.
+  const dragSnapshotRef = useRef<ListWithTasks[] | null>(null)
 
   // Hydrate the shared board store with what the server already loaded.
   useEffect(() => {
@@ -40,10 +66,69 @@ export function KanbanBoard({
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
+  function findListIdForTask(taskId: string) {
+    return lists.find((l) => l.tasks.some((t) => t.id === taskId))?.id
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    if (event.active.data.current?.type !== "task") return
+    dragSnapshotRef.current = lists.map((l) => ({ ...l, tasks: [...l.tasks] }))
+    const task = lists.flatMap((l) => l.tasks).find((t) => t.id === event.active.id)
+    setActiveTask(task ?? null)
+  }
+
+  // Moves the dragged task into whichever column it's currently hovering
+  // over, so the board visually reflects the move before the drop.
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event
+    if (!over || active.data.current?.type !== "task") return
+
+    const activeId = String(active.id)
+    const overId = String(over.id)
+    if (activeId === overId) return
+
+    const activeListId = findListIdForTask(activeId)
+    const overListId = findListIdForTask(overId) ?? overId // dropping in empty column space
+    if (!activeListId || activeListId === overListId) return
+
+    const overList = lists.find((l) => l.id === overListId)
+    if (!overList) return
+
+    const overIndex = overList.tasks.findIndex((t) => t.id === overId)
+    useBoardStore
+      .getState()
+      .moveTask(activeId, overListId, overIndex === -1 ? undefined : overIndex)
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
-    if (!over || active.id === over.id) return
 
+    if (active.data.current?.type === "task") {
+      const snapshot = dragSnapshotRef.current
+      dragSnapshotRef.current = null
+      setActiveTask(null)
+      if (!over) return
+
+      const activeId = String(active.id)
+      const overId = String(over.id)
+      const destListId = findListIdForTask(overId) ?? overId
+      const destList = useBoardStore.getState().lists.find((l) => l.id === destListId)
+      if (!destList) return
+
+      let orderedTaskIds = destList.tasks.map((t) => t.id)
+      const activeIndex = orderedTaskIds.indexOf(activeId)
+      const overIndex = orderedTaskIds.indexOf(overId)
+      if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
+        orderedTaskIds = arrayMove(orderedTaskIds, activeIndex, overIndex)
+        useBoardStore.getState().reorderTasksInList(destListId, orderedTaskIds)
+      }
+
+      moveTask(activeId, destListId, orderedTaskIds, snapshot ?? lists)
+      return
+    }
+
+    // Column reorder (unchanged from before).
+    if (!over || active.id === over.id) return
     const oldIndex = lists.findIndex((l) => l.id === active.id)
     const newIndex = lists.findIndex((l) => l.id === over.id)
     if (oldIndex === -1 || newIndex === -1) return
@@ -61,11 +146,52 @@ export function KanbanBoard({
     })
   }
 
+  function handleTaskSubmit(values: TaskFormSubmitValues) {
+    if (taskModal?.task) {
+      updateTask(
+        taskModal.task.id,
+        {
+          title: values.title,
+          description: values.description,
+          listId: values.listId,
+          priority: values.priority,
+          dueDate: values.dueDate,
+        },
+        () => setTaskModal(null)
+      )
+    } else if (taskModal) {
+      createTask(
+        {
+          title: values.title,
+          description: values.description,
+          listId: values.listId ?? taskModal.listId,
+          priority: values.priority,
+          dueDate: values.dueDate,
+        },
+        () => setTaskModal(null)
+      )
+    }
+  }
+
+  function handleTaskDelete() {
+    if (!taskModal?.task) return
+    if (confirm(`Delete "${taskModal.task.title}"? This can't be undone.`)) {
+      deleteTask(taskModal.task.id, () => setTaskModal(null))
+    }
+  }
+
   return (
     <div className="space-y-3">
       {error && <p className="text-sm text-red-500">{error}</p>}
+      {taskError && <p className="text-sm text-red-500">{taskError}</p>}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
         <SortableContext items={lists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
           <div className="flex items-start gap-4 overflow-x-auto pb-4">
             {lists.map((list) => (
@@ -75,6 +201,8 @@ export function KanbanBoard({
                 isPending={isPending}
                 onRename={(name) => renameList(list.id, name)}
                 onDelete={() => deleteList(list.id)}
+                onAddTask={() => setTaskModal({ listId: list.id })}
+                onTaskClick={(task) => setTaskModal({ listId: list.id, task })}
               />
             ))}
 
@@ -123,7 +251,22 @@ export function KanbanBoard({
             </div>
           </div>
         </SortableContext>
+
+        <DragOverlay>{activeTask ? <TaskCard task={activeTask} /> : null}</DragOverlay>
       </DndContext>
+
+      {taskModal && (
+        <CreateTaskModal
+          lists={lists}
+          task={taskModal.task}
+          defaultListId={taskModal.listId}
+          isPending={taskPending}
+          error={taskError}
+          onClose={() => setTaskModal(null)}
+          onSubmit={handleTaskSubmit}
+          onDelete={taskModal.task ? handleTaskDelete : undefined}
+        />
+      )}
     </div>
   )
 }
@@ -133,14 +276,25 @@ function BoardColumn({
   isPending,
   onRename,
   onDelete,
+  onAddTask,
+  onTaskClick,
 }: {
   list: ListWithTasks
   isPending: boolean
   onRename: (name: string) => void
   onDelete: () => void
+  onAddTask: () => void
+  onTaskClick: (task: Task) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: list.id,
+    data: { type: "list" },
+  })
+  // Lets a task be dropped into an empty column, or below the last card,
+  // where there's no other sortable task item to register the hover.
+  const { setNodeRef: setDroppableRef } = useDroppable({
+    id: list.id,
+    data: { type: "list" },
   })
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -248,22 +402,45 @@ function BoardColumn({
         </div>
       </div>
 
-      <div className="px-3 pb-3 space-y-2 min-h-[40px]">
-        {list.tasks.length === 0 ? (
-          <p className="text-xs text-paynes_gray-500 dark:text-french_gray-400 px-1 py-2">
-            No tasks yet
-          </p>
-        ) : (
-          list.tasks.map((task) => (
-            <div
-              key={task.id}
-              className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 px-3 py-2 text-sm text-outer_space-500 dark:text-platinum-500"
-            >
-              {task.title}
-            </div>
-          ))
-        )}
-      </div>
+      <SortableContext items={list.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+        <div ref={setDroppableRef} className="px-3 pb-3 space-y-2 min-h-[40px]">
+          {list.tasks.length === 0 ? (
+            <p className="text-xs text-paynes_gray-500 dark:text-french_gray-400 px-1 py-2">
+              No tasks yet
+            </p>
+          ) : (
+            list.tasks.map((task) => (
+              <SortableTaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+            ))
+          )}
+
+          <button
+            onClick={onAddTask}
+            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs text-paynes_gray-500 dark:text-french_gray-400 hover:text-blue_munsell-500 rounded-md hover:bg-white dark:hover:bg-outer_space-500 transition-colors"
+          >
+            <Plus size={13} /> Add task
+          </button>
+        </div>
+      </SortableContext>
+    </div>
+  )
+}
+
+function SortableTaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: task.id,
+    data: { type: "task" },
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none">
+      <TaskCard task={task} onClick={onClick} />
     </div>
   )
 }

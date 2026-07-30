@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import {
   DndContext,
   DragOverlay,
@@ -26,15 +26,19 @@ import { useLists } from "@/hooks/use-lists"
 import { useTasks } from "@/hooks/use-tasks"
 import { CreateTaskModal, type TaskFormSubmitValues } from "@/components/modals/create-task-modal"
 import { TaskCard } from "@/components/task-card"
+import { TaskSearchBar } from "@/components/task-search-bar"
 import { useBoardStore, type ListWithTasks } from "@/stores/board-store"
+import { filterTasks } from "@/lib/task-search"
 import type { Task } from "@/lib/db/schema"
 
 export function KanbanBoard({
   projectId,
   initialLists,
+  members = [],
 }: {
   projectId: string
   initialLists: ListWithTasks[]
+  members?: { id: string; name: string }[]
 }) {
   const { lists, setLists, createList, renameList, deleteList, reorderLists, isPending, error } =
     useLists(projectId)
@@ -51,14 +55,29 @@ export function KanbanBoard({
   // `task` present = editing that task; absent = creating a new one in `listId`.
   const [taskModal, setTaskModal] = useState<{ listId: string; task?: Task } | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
 
-  // Snapshot of the board taken the moment a task drag starts, so a failed
-  // save can restore exactly what was on screen before the drag — not
-  // whatever the board happens to look like once the drag (with its
-  // in-flight optimistic moves) has finished.
+  const isSearching = searchQuery.trim().length > 0
+  const memberNameById = useMemo(() => new Map(members.map((m) => [m.id, m.name])), [members])
+  const memberNames = useMemo(() => members.map((m) => m.name), [members])
+
+  const displayLists = useMemo(() => {
+    if (!isSearching) return lists
+    return lists.map((list) => ({
+      ...list,
+      tasks: filterTasks(list.tasks, searchQuery, memberNameById),
+    }))
+  }, [lists, isSearching, searchQuery, memberNameById])
+
+  const totalTaskCount = useMemo(() => lists.reduce((sum, l) => sum + l.tasks.length, 0), [lists])
+  const matchedTaskCount = useMemo(
+    () => displayLists.reduce((sum, l) => sum + l.tasks.length, 0),
+    [displayLists]
+  )
+
   const dragSnapshotRef = useRef<ListWithTasks[] | null>(null)
 
-  // Hydrate the shared board store with what the server already loaded.
+  // hydrate
   useEffect(() => {
     setLists(initialLists)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,8 +96,7 @@ export function KanbanBoard({
     setActiveTask(task ?? null)
   }
 
-  // Moves the dragged task into whichever column it's currently hovering
-  // over, so the board visually reflects the move before the drop.
+  // move task into column cursor is hovering
   function handleDragOver(event: DragOverEvent) {
     const { active, over } = event
     if (!over || active.data.current?.type !== "task") return
@@ -127,7 +145,6 @@ export function KanbanBoard({
       return
     }
 
-    // Column reorder (unchanged from before).
     if (!over || active.id === over.id) return
     const oldIndex = lists.findIndex((l) => l.id === active.id)
     const newIndex = lists.findIndex((l) => l.id === over.id)
@@ -185,6 +202,14 @@ export function KanbanBoard({
       {error && <p className="text-sm text-red-500">{error}</p>}
       {taskError && <p className="text-sm text-red-500">{taskError}</p>}
 
+      <TaskSearchBar
+        query={searchQuery}
+        onQueryChange={setSearchQuery}
+        memberNames={memberNames}
+        matchCount={matchedTaskCount}
+        totalCount={totalTaskCount}
+      />
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -194,11 +219,12 @@ export function KanbanBoard({
       >
         <SortableContext items={lists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
           <div className="flex items-start gap-4 overflow-x-auto pb-4">
-            {lists.map((list) => (
+            {displayLists.map((list) => (
               <BoardColumn
                 key={list.id}
                 list={list}
                 isPending={isPending}
+                isSearching={isSearching}
                 onRename={(name) => renameList(list.id, name)}
                 onDelete={() => deleteList(list.id)}
                 onAddTask={() => setTaskModal({ listId: list.id })}
@@ -210,7 +236,7 @@ export function KanbanBoard({
               {addingColumn ? (
                 <form
                   onSubmit={handleAddColumn}
-                  className="bg-platinum-500/50 dark:bg-paynes_gray-400/20 rounded-lg p-3 space-y-2"
+                  className="bg-lavender-50 dark:bg-paynes_gray-400/20 rounded-2xl p-3 space-y-2"
                 >
                   <input
                     autoFocus
@@ -218,13 +244,16 @@ export function KanbanBoard({
                     onChange={(e) => setNewColumnName(e.target.value)}
                     placeholder="Column name"
                     maxLength={60}
-                    className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+                    className="w-full px-3 py-2 border border-lavender-200 dark:border-paynes_gray-400
+                     rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500
+                      focus:outline-none focus:ring-2 focus:ring-lavender-400"
                   />
                   <div className="flex gap-2">
                     <button
                       type="submit"
                       disabled={isPending || !newColumnName.trim()}
-                      className="px-3 py-1.5 text-sm rounded-lg bg-blue_munsell-500 text-white hover:bg-blue_munsell-600 disabled:opacity-50"
+                      className="px-3 py-1.5 text-sm rounded-xl bg-lavender-500 text-white hover:bg-lavender-600
+                       disabled:opacity-50"
                     >
                       Add column
                     </button>
@@ -234,7 +263,8 @@ export function KanbanBoard({
                         setAddingColumn(false)
                         setNewColumnName("")
                       }}
-                      className="px-3 py-1.5 text-sm rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 text-outer_space-500 dark:text-platinum-500"
+                      className="px-3 py-1.5 text-sm rounded-xl border border-lavender-200 dark:border-paynes_gray-400
+                       text-outer_space-500 dark:text-platinum-500"
                     >
                       Cancel
                     </button>
@@ -243,7 +273,9 @@ export function KanbanBoard({
               ) : (
                 <button
                   onClick={() => setAddingColumn(true)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-french_gray-300 dark:border-paynes_gray-400 rounded-lg text-paynes_gray-500 dark:text-french_gray-400 hover:border-blue_munsell-500 hover:text-blue_munsell-500 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-lavender-200
+                   dark:border-paynes_gray-400 rounded-2xl text-paynes_gray-500 dark:text-french_gray-400
+                    hover:border-lavender-400 hover:text-lavender-600 hover:bg-lavender-50 transition-colors"
                 >
                   <Plus size={16} /> Add column
                 </button>
@@ -274,6 +306,7 @@ export function KanbanBoard({
 function BoardColumn({
   list,
   isPending,
+  isSearching,
   onRename,
   onDelete,
   onAddTask,
@@ -281,6 +314,7 @@ function BoardColumn({
 }: {
   list: ListWithTasks
   isPending: boolean
+  isSearching: boolean
   onRename: (name: string) => void
   onDelete: () => void
   onAddTask: () => void
@@ -290,8 +324,7 @@ function BoardColumn({
     id: list.id,
     data: { type: "list" },
   })
-  // Lets a task be dropped into an empty column, or below the last card,
-  // where there's no other sortable task item to register the hover.
+
   const { setNodeRef: setDroppableRef } = useDroppable({
     id: list.id,
     data: { type: "list" },
@@ -329,7 +362,8 @@ function BoardColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className="w-72 shrink-0 bg-platinum-500/50 dark:bg-paynes_gray-400/20 rounded-lg"
+      className="w-72 shrink-0 bg-lavender-50 dark:bg-paynes_gray-400/20 rounded-2xl border
+       border-lavender-100/80 dark:border-transparent"
     >
       <div className="flex items-center justify-between px-3 py-2">
         <div className="flex items-center gap-1 flex-1 min-w-0">
@@ -356,44 +390,54 @@ function BoardColumn({
                 }
               }}
               maxLength={60}
-              className="flex-1 min-w-0 px-2 py-1 text-sm font-semibold bg-white dark:bg-outer_space-500 border border-blue_munsell-500 rounded"
+              className="flex-1 min-w-0 px-2 py-1 text-sm font-semibold bg-white dark:bg-outer_space-500
+               border border-lavender-400 rounded-lg"
             />
           ) : (
             <button
               onClick={() => setEditing(true)}
-              className="flex-1 min-w-0 text-left truncate text-sm font-semibold text-outer_space-500 dark:text-platinum-500"
+              className="flex-1 min-w-0 text-left truncate text-sm font-semibold text-outer_space-500
+               dark:text-platinum-500"
             >
               {list.name}
             </button>
           )}
 
-          <span className="text-xs text-paynes_gray-500 dark:text-french_gray-400 shrink-0">
+          <span className="text-xs text-paynes_gray-500 dark:text-french_gray-400 shrink-0 pb-1">
             {list.tasks.length}
           </span>
+          {isSearching && (
+            <span className="text-[10px] uppercase tracking-wide text-lavender-500 shrink-0 pb-1">
+              matches
+            </span>
+          )}
         </div>
 
         <div className="relative shrink-0">
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="p-1 rounded hover:bg-white dark:hover:bg-outer_space-500"
+            className="p-1 rounded-lg hover:bg-white dark:hover:bg-outer_space-500"
           >
             <MoreVertical size={14} className="text-paynes_gray-500 dark:text-french_gray-400" />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 mt-1 w-32 bg-white dark:bg-outer_space-500 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg shadow-lg z-10">
+            <div className="absolute right-0 mt-1 w-32 bg-white dark:bg-outer_space-500 border
+             border-lavender-100 dark:border-paynes_gray-400 rounded-xl shadow-lg z-10 overflow-hidden">
               <button
                 onClick={() => {
                   setMenuOpen(false)
                   setEditing(true)
                 }}
-                className="w-full flex items-center px-3 py-2 text-sm text-outer_space-500 dark:text-platinum-500 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400"
+                className="w-full flex items-center px-3 py-2 text-sm text-outer_space-500
+                 dark:text-platinum-500 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
               >
                 <Pencil size={14} className="mr-2" /> Rename
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isPending}
-                className="w-full flex items-center px-3 py-2 text-sm text-red-500 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400"
+                className="w-full flex items-center px-3 py-2 text-sm text-rose-500
+                 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
               >
                 <Trash2 size={14} className="mr-2" /> Delete
               </button>
@@ -406,8 +450,13 @@ function BoardColumn({
         <div ref={setDroppableRef} className="px-3 pb-3 space-y-2 min-h-[40px]">
           {list.tasks.length === 0 ? (
             <p className="text-xs text-paynes_gray-500 dark:text-french_gray-400 px-1 py-2">
-              No tasks yet
+              {isSearching ? "No matching tasks" : "No tasks yet"}
             </p>
+          ) : isSearching ? (
+            // if filter is active, tasks can't be dragged to avoid order scrambling
+            list.tasks.map((task) => (
+              <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+            ))
           ) : (
             list.tasks.map((task) => (
               <SortableTaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
@@ -416,7 +465,9 @@ function BoardColumn({
 
           <button
             onClick={onAddTask}
-            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs text-paynes_gray-500 dark:text-french_gray-400 hover:text-blue_munsell-500 rounded-md hover:bg-white dark:hover:bg-outer_space-500 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs
+             text-paynes_gray-500 dark:text-french_gray-400 hover:text-lavender-600
+              rounded-lg hover:bg-white dark:hover:bg-outer_space-500 transition-colors"
           >
             <Plus size={13} /> Add task
           </button>

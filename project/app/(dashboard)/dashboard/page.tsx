@@ -1,27 +1,31 @@
+import { notFound } from "next/navigation"
 import { requireUser } from "@/lib/auth"
-import { getProjectsForOwner, getDashboardStatsForOwner } from "@/lib/db/queries"
-import { DashboardStats } from "@/components/dashboard-stats"
-import { RecentProjects } from "@/components/recent-projects"
+import { getProjectById } from "@/lib/db/queries"
+import { ProjectHeader } from "@/components/project-header"
+import { KanbanBoard } from "@/components/kanban-board"
 
-export default async function DashboardPage() {
+export default async function ProjectDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
   const user = await requireUser()
-  const [projects, stats] = await Promise.all([
-    getProjectsForOwner(user.id),
-    getDashboardStatsForOwner(user.id),
-  ])
+  const project = await getProjectById(id)
+
+  if (!project || project.ownerId !== user.id) {
+    notFound()
+  }
+
+  const assignableMembers = [
+    { id: project.owner.id, name: project.owner.name },
+    ...project.members.map((m) => ({ id: m.user.id, name: m.user.name })),
+  ]
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">Dashboard</h1>
-        <p className="text-paynes_gray-500 dark:text-french_gray-500 mt-2">
-          Welcome back, {user.name}! Here's an overview of your projects and tasks.
-        </p>
-      </div>
-
-      <DashboardStats {...stats} />
-
-      <RecentProjects projects={projects.slice(0, 3)} />
+      <ProjectHeader project={project} />
+      <KanbanBoard projectId={project.id} initialLists={project.lists} members={assignableMembers} />
     </div>
   )
 }

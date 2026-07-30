@@ -43,9 +43,9 @@ import { Calendar } from "lucide-react"
 import type { Task } from "@/lib/db/schema"
 
 const priorityStyles: Record<Task["priority"], string> = {
-  low: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  medium: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  high: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  low: "bg-mint-100 text-mint-700 dark:bg-mint-900/30 dark:text-mint-300",
+  medium: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  high: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
 }
 
 export function TaskCard({ task, onClick }: { task: Task; onClick?: () => void }) {
@@ -55,7 +55,7 @@ export function TaskCard({ task, onClick }: { task: Task; onClick?: () => void }
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 px-3 py-2.5 hover:border-blue_munsell-500 transition-colors space-y-2"
+      className="w-full text-left bg-white dark:bg-outer_space-500 rounded-xl border border-lavender-100 dark:border-paynes_gray-400 px-3 py-2.5 hover:border-lavender-300 hover:shadow-sm transition-all space-y-2"
     >
       <p className="text-sm font-medium text-outer_space-500 dark:text-platinum-500 leading-snug">
         {task.title}
@@ -69,7 +69,7 @@ export function TaskCard({ task, onClick }: { task: Task; onClick?: () => void }
 
       <div className="flex items-center gap-2 flex-wrap">
         <span
-          className={`text-[11px] font-medium px-1.5 py-0.5 rounded capitalize ${priorityStyles[task.priority]}`}
+          className={`text-[11px] font-medium px-2 py-0.5 rounded-full capitalize ${priorityStyles[task.priority]}`}
         >
           {task.priority}
         </span>
@@ -77,7 +77,7 @@ export function TaskCard({ task, onClick }: { task: Task; onClick?: () => void }
         {task.dueDate && (
           <span
             className={`inline-flex items-center gap-1 text-[11px] ${
-              isOverdue ? "text-red-500" : "text-paynes_gray-500 dark:text-french_gray-400"
+              isOverdue ? "text-rose-500" : "text-paynes_gray-500 dark:text-french_gray-400"
             }`}
           >
             <Calendar size={11} />

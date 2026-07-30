@@ -8,10 +8,10 @@ interface DashboardStatsProps {
 }
 
 const STAT_CONFIG = [
-  { key: "activeProjects", label: "Active Projects", icon: FolderKanban, iconClass: "text-blue-500 bg-blue-500/10" },
-  { key: "completedTasks", label: "Completed Tasks", icon: CheckCircle2, iconClass: "text-green-500 bg-green-500/10" },
-  { key: "inProgressTasks", label: "In Progress", icon: Clock, iconClass: "text-amber-500 bg-amber-500/10" },
-  { key: "backlogTasks", label: "Backlog", icon: ListTodo, iconClass: "text-paynes_gray-500 bg-paynes_gray-500/10" },
+  { key: "activeProjects", label: "Active Projects", icon: FolderKanban, iconClass: "text-lavender-600 bg-lavender-100" },
+  { key: "completedTasks", label: "Completed Tasks", icon: CheckCircle2, iconClass: "text-mint-600 bg-mint-100" },
+  { key: "inProgressTasks", label: "In Progress", icon: Clock, iconClass: "text-amber-600 bg-amber-100" },
+  { key: "backlogTasks", label: "Backlog", icon: ListTodo, iconClass: "text-paynes_gray-500 bg-french_gray-100" },
 ] as const
 
 export function DashboardStats(stats: DashboardStatsProps) {
@@ -20,9 +20,9 @@ export function DashboardStats(stats: DashboardStatsProps) {
       {STAT_CONFIG.map(({ key, label, icon: Icon, iconClass }) => (
         <div
           key={key}
-          className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-6 flex items-center gap-4"
+          className="bg-white dark:bg-outer_space-500 rounded-2xl border border-lavender-100 dark:border-paynes_gray-400 p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow"
         >
-          <div className={`h-11 w-11 rounded-lg flex items-center justify-center ${iconClass}`}>
+          <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${iconClass}`}>
             <Icon className="h-5 w-5" />
           </div>
           <div>

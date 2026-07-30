@@ -33,7 +33,7 @@ interface RecentProjectsProps {
 
 export function RecentProjects({ projects }: RecentProjectsProps) {
   return (
-    <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-6">
+    <div className="bg-white dark:bg-outer_space-500 rounded-2xl border border-lavender-100 dark:border-paynes_gray-400 p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500">Recent Projects</h3>
         <CreateProjectButton />
@@ -52,7 +52,7 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
           return (
             <div
               key={project.id}
-              className="rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-4 flex items-center justify-between gap-4"
+              className="rounded-xl border border-lavender-100 dark:border-paynes_gray-400 p-4 flex items-center justify-between gap-4 hover:border-lavender-300 transition-colors"
             >
               <div className="min-w-0">
                 <Link
@@ -73,13 +73,13 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
                       <div
                         key={member.userId}
                         title={`${member.user.name} — ${ROLE_LABELS[member.role]}`}
-                        className="h-7 w-7 rounded-full ring-2 ring-white dark:ring-outer_space-500 bg-french_gray-300 dark:bg-paynes_gray-400 flex items-center justify-center text-xs font-medium text-outer_space-500 dark:text-platinum-500"
+                        className="h-7 w-7 rounded-full ring-2 ring-white dark:ring-outer_space-500 bg-lavender-100 dark:bg-paynes_gray-400 flex items-center justify-center text-xs font-medium text-lavender-700 dark:text-platinum-500"
                       >
                         {member.user.name.charAt(0).toUpperCase()}
                       </div>
                     ))}
                     {members.length > 4 && (
-                      <div className="h-7 w-7 rounded-full ring-2 ring-white dark:ring-outer_space-500 bg-paynes_gray-500 flex items-center justify-center text-xs font-medium text-white">
+                      <div className="h-7 w-7 rounded-full ring-2 ring-white dark:ring-outer_space-500 bg-lavender-500 flex items-center justify-center text-xs font-medium text-white">
                         +{members.length - 4}
                       </div>
                     )}

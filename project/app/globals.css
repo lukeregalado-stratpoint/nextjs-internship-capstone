@@ -143,6 +143,29 @@
   --color-blue_munsell-800: #051a20;
   --color-blue_munsell-900: #c7edf6;
 
+  /* lavender (primary accent) + mint (secondary accent) */
+  --color-lavender-50: #f5f3ff;
+  --color-lavender-100: #ede9fe;
+  --color-lavender-200: #ddd6fe;
+  --color-lavender-300: #c4b5fd;
+  --color-lavender-400: #a78bfa;
+  --color-lavender-500: #8b7cf6;
+  --color-lavender-600: #7c6ae8;
+  --color-lavender-700: #6552c7;
+  --color-lavender-800: #4c3d96;
+  --color-lavender-900: #362b6e;
+
+  --color-mint-50: #f0fdf9;
+  --color-mint-100: #d8f8ec;
+  --color-mint-200: #b4f0d9;
+  --color-mint-300: #86e4c1;
+  --color-mint-400: #55d1a4;
+  --color-mint-500: #2fbb8a;
+  --color-mint-600: #1f9c71;
+  --color-mint-700: #167a5a;
+  --color-mint-800: #135f47;
+  --color-mint-900: #114d3b;
+
   /* font + radius */
   --font-sans: "Inter", sans-serif;
   --radius-lg: var(--radius);

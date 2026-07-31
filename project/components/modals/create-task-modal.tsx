@@ -36,7 +36,7 @@ Integration:
 "use client"
 
 import { useState, type FormEvent } from "react"
-import { X } from "lucide-react"
+import { Check, X } from "lucide-react"
 import type { Task } from "@/lib/db/schema"
 import type { ListWithTasks } from "@/stores/board-store"
 
@@ -62,6 +62,13 @@ interface CreateTaskModalProps {
   onDelete?: () => void
   isPending?: boolean
   error?: string | null
+  /**
+   * Lifted to the parent (rather than local state) so the checkbox keeps
+   * its value across the "create another" remount — a fresh modal instance
+   * still reflects whatever the user last chose.
+   */
+  createAnother: boolean
+  onCreateAnotherChange: (value: boolean) => void
 }
 
 export function CreateTaskModal({
@@ -73,6 +80,8 @@ export function CreateTaskModal({
   onDelete,
   isPending,
   error,
+  createAnother,
+  onCreateAnotherChange,
 }: CreateTaskModalProps) {
   const isEditing = Boolean(task)
 
@@ -102,11 +111,11 @@ export function CreateTaskModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-white/20 dark:bg-black/20 px-4"
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-outer_space-500 rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-outer_space-500 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -116,7 +125,7 @@ export function CreateTaskModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded hover:bg-french_gray-100 dark:hover:bg-paynes_gray-500/20 text-paynes_gray-500 dark:text-french_gray-400"
+            className="p-1 rounded-full hover:bg-lavender-50 dark:hover:bg-paynes_gray-500/20 text-paynes_gray-500 dark:text-french_gray-400"
             aria-label="Close"
           >
             <X size={18} />
@@ -124,7 +133,7 @@ export function CreateTaskModal({
         </div>
 
         {error && (
-          <p className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded">
+          <p className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl">
             {error}
           </p>
         )}
@@ -142,7 +151,7 @@ export function CreateTaskModal({
               maxLength={200}
               required
               placeholder="e.g. Design the onboarding flow"
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
             />
           </div>
 
@@ -157,7 +166,7 @@ export function CreateTaskModal({
               maxLength={5000}
               rows={3}
               placeholder="Add more detail (optional)"
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500 resize-none"
+              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400 resize-none"
             />
           </div>
 
@@ -170,7 +179,7 @@ export function CreateTaskModal({
                 id="task-list"
                 value={listId}
                 onChange={(e) => setListId(e.target.value)}
-                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
               >
                 {lists.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -188,7 +197,7 @@ export function CreateTaskModal({
                 id="task-priority"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as Priority)}
-                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -206,9 +215,36 @@ export function CreateTaskModal({
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
             />
           </div>
+
+          {!isEditing && (
+            <label className="flex items-center gap-2.5 text-sm text-outer_space-500 dark:text-platinum-500 select-none cursor-pointer w-fit">
+              <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center">
+                <input
+                  type="checkbox"
+                  checked={createAnother}
+                  onChange={(e) => onCreateAnotherChange(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <span
+                  className="h-5 w-5 rounded-full border-2 border-lavender-200 dark:border-lavender-700/50
+                   bg-lavender-50 dark:bg-paynes_gray-400/20 transition-colors duration-150
+                    peer-checked:bg-lavender-300 peer-checked:border-lavender-300
+                     dark:peer-checked:bg-lavender-500 dark:peer-checked:border-lavender-500
+                      peer-focus-visible:ring-2 peer-focus-visible:ring-lavender-300 peer-focus-visible:ring-offset-1"
+                />
+                <Check
+                  size={12}
+                  strokeWidth={3}
+                  className="absolute text-white opacity-0 scale-50 peer-checked:opacity-100 peer-checked:scale-100
+                   transition-all duration-150 pointer-events-none"
+                />
+              </span>
+              Create another task after this one
+            </label>
+          )}
 
           <div className="flex items-center justify-between pt-2">
             {isEditing && onDelete ? (
@@ -228,16 +264,22 @@ export function CreateTaskModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 text-outer_space-500 dark:text-platinum-500"
+                className="px-4 py-2 text-sm rounded-xl border border-french_gray-300 dark:border-paynes_gray-400 text-outer_space-500 dark:text-platinum-500"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isPending || !title.trim()}
-                className="px-4 py-2 text-sm rounded-lg bg-blue_munsell-500 text-white hover:bg-blue_munsell-600 disabled:opacity-50"
+                className="px-4 py-2 text-sm rounded-xl bg-lavender-500 text-white hover:bg-lavender-600 disabled:opacity-50"
               >
-                {isPending ? "Saving..." : isEditing ? "Save changes" : "Create task"}
+                {isPending
+                  ? "Saving..."
+                  : isEditing
+                    ? "Save changes"
+                    : createAnother
+                      ? "Create & add another"
+                      : "Create task"}
               </button>
             </div>
           </div>

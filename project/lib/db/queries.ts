@@ -1,20 +1,8 @@
-import { and, asc, desc, eq } from "drizzle-orm"
+import { and, asc, desc, eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { lists, projects, tasks, type NewList, type NewProject, type NewTask } from "@/lib/db/schema"
 
-// =========================================================
-// Projects
-// =========================================================
-
-/**
- * Listing view: one row per project the user owns, with the counts
- * needed for the project cards (members, tasks, columns, progress).
- *
- * Convention: the right-most column (highest `position`) is treated
- * as "Done" for the purposes of the progress bar. This avoids adding
- * a status/boolean column to `tasks` for now — revisit if you want a
- * project to have more than one "done-like" column.
- */
+// PROJECTS
 export async function getProjectsForUser(userId: string) {
   const rows = await db.query.projects.findMany({
     where: eq(projects.ownerId, userId),
@@ -85,13 +73,7 @@ export async function deleteProject(projectId: string) {
   await db.delete(projects).where(eq(projects.id, projectId))
 }
 
-/**
- * Ownership check used by the server actions before any mutation.
- * NOTE: this only checks `projects.ownerId`. `projectMembers` (with
- * roles like product_owner/scrum_master) exists in the schema but
- * isn't wired into permissions yet — extend this if members other
- * than the owner should be able to edit/delete.
- */
+// projects.ownderId only
 export async function ownsProject(projectId: string, userId: string) {
   const project = await db.query.projects.findFirst({
     where: and(eq(projects.id, projectId), eq(projects.ownerId, userId)),
@@ -100,11 +82,6 @@ export async function ownsProject(projectId: string, userId: string) {
   return !!project
 }
 
-/**
- * Dashboard view: projects owned by the user, most-recently-updated first,
- * with members (and each member's user) loaded for the avatar stack in
- * RecentProjects. Callers slice to however many they want to show.
- */
 export async function getProjectsForOwner(userId: string) {
   return db.query.projects.findMany({
     where: eq(projects.ownerId, userId),
@@ -117,18 +94,6 @@ export async function getProjectsForOwner(userId: string) {
   })
 }
 
-/**
- * Dashboard stat tiles. Reuses the same "right-most column = done, first
- * column = backlog, everything between = in progress" convention as the
- * project-card progress bar (see getProjectsForUser above), since `tasks`
- * has no explicit status column yet.
- *
- * - A project with a single list: all its tasks count as backlog (a lone
- *   column isn't necessarily "done").
- * - `activeProjects` is just a count of projects owned by the user — there's
- *   no archived/completed state on `projects` yet to distinguish "active"
- *   from anything else.
- */
 export async function getDashboardStatsForOwner(userId: string) {
   const rows = await db.query.projects.findMany({
     where: eq(projects.ownerId, userId),
@@ -171,7 +136,6 @@ export async function getDashboardStatsForOwner(userId: string) {
 }
 
 // LISTS 
-
 export async function getListsForProject(projectId: string) {
   return db.query.lists.findMany({
     where: eq(lists.projectId, projectId),
@@ -211,14 +175,23 @@ export async function deleteList(listId: string) {
 
 /** reorders lists. called after drag and drop  */
 export async function reorderLists(projectId: string, orderedListIds: string[]) {
-  await Promise.all(
-    orderedListIds.map((id, index) =>
-      db
-        .update(lists)
-        .set({ position: index, updatedAt: new Date() })
-        .where(and(eq(lists.id, id), eq(lists.projectId, projectId)))
-    )
+  if (orderedListIds.length === 0) return
+
+  const positionCase = sql.join(
+    orderedListIds.map((id, index) => sql`WHEN ${id} THEN ${index}`),
+    sql` `
   )
+
+  await db.execute(sql`
+    UPDATE lists
+    SET position = CASE id
+      ${positionCase}
+      ELSE position
+    END,
+    updated_at = now()
+    WHERE project_id = ${projectId}
+      AND id IN ${orderedListIds}
+  `)
 }
 
 export async function ownsList(listId: string, userId: string) {

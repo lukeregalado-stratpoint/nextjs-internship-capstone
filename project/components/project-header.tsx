@@ -46,7 +46,7 @@ export function ProjectHeader({ project }: { project: ProjectHeaderData }) {
           )}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 pr-8 shrink-0">
           <button
             onClick={() => setEditOpen(true)}
             className="inline-flex items-center px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 text-outer_space-500 dark:text-platinum-500 rounded-lg hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 transition-colors"
@@ -56,7 +56,8 @@ export function ProjectHeader({ project }: { project: ProjectHeaderData }) {
           <button
             onClick={handleDelete}
             disabled={isPending}
-            className="inline-flex items-center px-3 py-2 border border-red-300 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="inline-flex items-center px-3 py-2 border border-red-300 text-red-500 rounded-lg
+             hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             <Trash2 size={16} className="mr-2" /> Delete
           </button>

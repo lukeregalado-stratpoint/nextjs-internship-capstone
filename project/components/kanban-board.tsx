@@ -54,6 +54,13 @@ export function KanbanBoard({
   const [newColumnName, setNewColumnName] = useState("")
   // `task` present = editing that task; absent = creating a new one in `listId`.
   const [taskModal, setTaskModal] = useState<{ listId: string; task?: Task } | null>(null)
+  // Bumped every time we (re)open a fresh create modal so React remounts
+  // CreateTaskModal instead of reusing one with stale field values —
+  // needed for the "create another" flow below.
+  const [taskModalKey, setTaskModalKey] = useState(0)
+  // Lives here (not inside CreateTaskModal) so the checkbox's value
+  // survives that remount instead of resetting to false each time.
+  const [createAnother, setCreateAnother] = useState(false)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -83,10 +90,26 @@ export function KanbanBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  // On touch devices, require a slightly longer press-hold before a drag
+  // starts so a normal horizontal swipe/scroll isn't hijacked as a drag.
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6, delay: 150, tolerance: 8 },
+    })
+  )
 
   function findListIdForTask(taskId: string) {
     return lists.find((l) => l.tasks.some((t) => t.id === taskId))?.id
+  }
+
+  // `over.id` can be a task id, a column's own sortable id, or the
+  // dropzone id nested inside a column (used for dropping tasks into a
+  // short/empty column). This unwraps it back to a real list id.
+  function resolveOverListId(over: { id: string | number; data: { current?: Record<string, unknown> } }) {
+    if (over.data.current?.type === "column-dropzone") {
+      return over.data.current.listId as string
+    }
+    return String(over.id)
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -106,7 +129,7 @@ export function KanbanBoard({
     if (activeId === overId) return
 
     const activeListId = findListIdForTask(activeId)
-    const overListId = findListIdForTask(overId) ?? overId // dropping in empty column space
+    const overListId = findListIdForTask(overId) ?? resolveOverListId(over)
     if (!activeListId || activeListId === overListId) return
 
     const overList = lists.find((l) => l.id === overListId)
@@ -129,7 +152,7 @@ export function KanbanBoard({
 
       const activeId = String(active.id)
       const overId = String(over.id)
-      const destListId = findListIdForTask(overId) ?? overId
+      const destListId = findListIdForTask(overId) ?? resolveOverListId(over)
       const destList = useBoardStore.getState().lists.find((l) => l.id === destListId)
       if (!destList) return
 
@@ -145,9 +168,11 @@ export function KanbanBoard({
       return
     }
 
-    if (!over || active.id === over.id) return
+    if (!over) return
+    const overListId = resolveOverListId(over)
+    if (active.id === overListId) return
     const oldIndex = lists.findIndex((l) => l.id === active.id)
-    const newIndex = lists.findIndex((l) => l.id === over.id)
+    const newIndex = lists.findIndex((l) => l.id === overListId)
     if (oldIndex === -1 || newIndex === -1) return
 
     const reordered = arrayMove(lists, oldIndex, newIndex)
@@ -177,15 +202,25 @@ export function KanbanBoard({
         () => setTaskModal(null)
       )
     } else if (taskModal) {
+      const listId = taskModal.listId
       createTask(
         {
           title: values.title,
           description: values.description,
-          listId: values.listId ?? taskModal.listId,
+          listId: values.listId ?? listId,
           priority: values.priority,
           dueDate: values.dueDate,
         },
-        () => setTaskModal(null)
+        () => {
+          if (createAnother) {
+            // Reopen a blank create modal for the same column. The key
+            // bump forces a remount so title/description/etc. reset.
+            setTaskModalKey((k) => k + 1)
+            setTaskModal({ listId })
+          } else {
+            setTaskModal(null)
+          }
+        }
       )
     }
   }
@@ -199,16 +234,18 @@ export function KanbanBoard({
 
   return (
     <div className="space-y-3">
-      {error && <p className="text-sm text-red-500">{error}</p>}
-      {taskError && <p className="text-sm text-red-500">{taskError}</p>}
+      {error && <p className="text-sm text-red-500 px-3 sm:px-0">{error}</p>}
+      {taskError && <p className="text-sm text-red-500 px-3 sm:px-0">{taskError}</p>}
 
-      <TaskSearchBar
-        query={searchQuery}
-        onQueryChange={setSearchQuery}
-        memberNames={memberNames}
-        matchCount={matchedTaskCount}
-        totalCount={totalTaskCount}
-      />
+      <div className="px-3 sm:px-0">
+        <TaskSearchBar
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
+          memberNames={memberNames}
+          matchCount={matchedTaskCount}
+          totalCount={totalTaskCount}
+        />
+      </div>
 
       <DndContext
         sensors={sensors}
@@ -218,7 +255,10 @@ export function KanbanBoard({
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={lists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
-          <div className="flex items-start gap-4 overflow-x-auto pb-4">
+          <div
+            className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto pb-4
+            snap-x snap-mandatory scroll-px-3 px-3 -mx-3 sm:mx-0 sm:px-0 sm:snap-none"
+          >
             {displayLists.map((list) => (
               <BoardColumn
                 key={list.id}
@@ -227,12 +267,15 @@ export function KanbanBoard({
                 isSearching={isSearching}
                 onRename={(name) => renameList(list.id, name)}
                 onDelete={() => deleteList(list.id)}
-                onAddTask={() => setTaskModal({ listId: list.id })}
+                onAddTask={() => {
+                  setTaskModalKey((k) => k + 1)
+                  setTaskModal({ listId: list.id })
+                }}
                 onTaskClick={(task) => setTaskModal({ listId: list.id, task })}
               />
             ))}
 
-            <div className="w-72 shrink-0">
+            <div className="w-[85vw] max-w-[288px] sm:w-72 shrink-0 snap-start">
               {addingColumn ? (
                 <form
                   onSubmit={handleAddColumn}
@@ -289,11 +332,14 @@ export function KanbanBoard({
 
       {taskModal && (
         <CreateTaskModal
+          key={taskModalKey}
           lists={lists}
           task={taskModal.task}
           defaultListId={taskModal.listId}
           isPending={taskPending}
           error={taskError}
+          createAnother={createAnother}
+          onCreateAnotherChange={setCreateAnother}
           onClose={() => setTaskModal(null)}
           onSubmit={handleTaskSubmit}
           onDelete={taskModal.task ? handleTaskDelete : undefined}
@@ -326,8 +372,8 @@ function BoardColumn({
   })
 
   const { setNodeRef: setDroppableRef } = useDroppable({
-    id: list.id,
-    data: { type: "list" },
+    id: `${list.id}-dropzone`,
+    data: { type: "column-dropzone", listId: list.id },
   })
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -362,15 +408,17 @@ function BoardColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className="w-72 shrink-0 bg-lavender-50 dark:bg-paynes_gray-400/20 rounded-2xl border
-       border-lavender-100/80 dark:border-transparent"
+      className="w-[85vw] max-w-[288px] sm:w-72 shrink-0 snap-start flex flex-col
+                h-[67dvh]
+              bg-lavender-50 dark:bg-paynes_gray-400/20 rounded-2xl border
+              border-lavender-100/80 dark:border-transparent"
     >
-      <div className="flex items-center justify-between px-3 py-2">
+      <div className="flex items-center justify-between px-3 py-2 shrink-0">
         <div className="flex items-center gap-1 flex-1 min-w-0">
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab text-paynes_gray-500 dark:text-french_gray-400 touch-none"
+            className="cursor-grab text-paynes_gray-500 dark:text-french_gray-400 touch-none shrink-0 p-1 -m-1"
             aria-label="Drag to reorder column"
           >
             <GripVertical size={16} />
@@ -403,7 +451,7 @@ function BoardColumn({
             </button>
           )}
 
-          <span className="text-xs text-paynes_gray-500 dark:text-french_gray-400 shrink-0 pb-1">
+          <span className="text-xs text-paynes_gray-500 dark:text-french_gray-400 shrink-0 pb-1 pr-2">
             {list.tasks.length}
           </span>
           {isSearching && (
@@ -413,41 +461,56 @@ function BoardColumn({
           )}
         </div>
 
-        <div className="relative shrink-0">
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            className="p-1 rounded-lg hover:bg-white dark:hover:bg-outer_space-500"
-          >
-            <MoreVertical size={14} className="text-paynes_gray-500 dark:text-french_gray-400" />
-          </button>
-          {menuOpen && (
-            <div className="absolute right-0 mt-1 w-32 bg-white dark:bg-outer_space-500 border
-             border-lavender-100 dark:border-paynes_gray-400 rounded-xl shadow-lg z-10 overflow-hidden">
-              <button
-                onClick={() => {
-                  setMenuOpen(false)
-                  setEditing(true)
-                }}
-                className="w-full flex items-center px-3 py-2 text-sm text-outer_space-500
+        <div className="flex items-center gap-0.5 shrink-0">
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className="p-2 -m-1 rounded-lg hover:bg-white dark:hover:bg-outer_space-500"
+            >
+              <MoreVertical size={14} className="text-paynes_gray-500 dark:text-french_gray-400" />
+            </button>
+            {menuOpen && (
+              <div
+                className="absolute right-0 mt-1 w-36 sm:w-32 bg-white dark:bg-outer_space-500 border
+             border-lavender-100 dark:border-paynes_gray-400 rounded-xl shadow-lg z-10 overflow-hidden"
+              >
+                <button
+                  onClick={() => {
+                    setMenuOpen(false)
+                    setEditing(true)
+                  }}
+                  className="w-full flex items-center px-3 py-2.5 sm:py-2 text-sm text-outer_space-500
                  dark:text-platinum-500 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
-              >
-                <Pencil size={14} className="mr-2" /> Rename
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isPending}
-                className="w-full flex items-center px-3 py-2 text-sm text-rose-500
+                >
+                  <Pencil size={14} className="mr-2" /> Rename
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isPending}
+                  className="w-full flex items-center px-3 py-2.5 sm:py-2 text-sm text-rose-500
                  hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
-              >
-                <Trash2 size={14} className="mr-2" /> Delete
-              </button>
-            </div>
-          )}
+                >
+                  <Trash2 size={14} className="mr-2" /> Delete
+                </button>
+              </div>
+            )}
+              <button
+              onClick={onAddTask}
+              className="p-2 -m-1 rounded-lg hover:bg-white dark:hover:bg-outer_space-500 text-paynes_gray-500 dark:text-french_gray-400 hover:text-lavender-600"
+              aria-label="Add task"
+              title="Add task"
+            >
+              <Plus size={15} />
+            </button>
+          </div>
         </div>
       </div>
 
       <SortableContext items={list.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-        <div ref={setDroppableRef} className="px-3 pb-3 space-y-2 min-h-[40px]">
+        <div
+          ref={setDroppableRef}
+          className="flex-1 min-h-[40px] overflow-y-auto overflow-x-hidden scrollbar-thin px-3 pb-3 space-y-2"
+        >
           {list.tasks.length === 0 ? (
             <p className="text-xs text-paynes_gray-500 dark:text-french_gray-400 px-1 py-2">
               {isSearching ? "No matching tasks" : "No tasks yet"}
@@ -465,7 +528,7 @@ function BoardColumn({
 
           <button
             onClick={onAddTask}
-            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs
+            className="w-full flex items-center justify-center gap-1.5 px-2 py-2.5 sm:py-1.5 text-xs
              text-paynes_gray-500 dark:text-french_gray-400 hover:text-lavender-600
               rounded-lg hover:bg-white dark:hover:bg-outer_space-500 transition-colors"
           >

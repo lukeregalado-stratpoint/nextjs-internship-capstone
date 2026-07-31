@@ -32,12 +32,7 @@ export async function getCurrentUser(): Promise<DbUser | null> {
   return dbUser ?? null
 }
 
-/**
- * guard for server components / route handlers
- * redirects to sign-in if there's no session
- * if the session exists: throw
- *
- */
+// redirect guard
 export async function requireUser(): Promise<DbUser> {
   const { userId: clerkId } = await auth()
 
@@ -85,7 +80,17 @@ export async function getOrCreateCurrentUser(): Promise<DbUser> {
   const [newUser] = await db
     .insert(users)
     .values({ clerkId, email, name })
+    .onConflictDoNothing()
     .returning()
+
+  // race condition
+  if (!newUser) {
+    const winner = await getCurrentUser()
+    if (winner) return winner
+    throw new Error(
+      `Failed to create or find local user record for Clerk user ${clerkId} after insert conflict`
+    )
+  }
 
   return newUser
 }

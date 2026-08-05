@@ -143,6 +143,38 @@ export const tasks = pgTable(
   ]
 )
  
+export const labels = pgTable(
+  "labels",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    // hex color, e.g. "#8B5CF6" — validated at the zod layer, not here
+    color: text("color").notNull(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("labels_project_id_idx").on(table.projectId)]
+)
+
+export const taskLabels = pgTable(
+  "task_labels",
+  {
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    labelId: uuid("label_id")
+      .notNull()
+      .references(() => labels.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("task_labels_task_id_idx").on(table.taskId),
+    index("task_labels_label_id_idx").on(table.labelId),
+  ]
+)
+
 export const comments = pgTable(
   "comments",
   {
@@ -181,6 +213,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   }),
   lists: many(lists),
   members: many(projectMembers),
+  labels: many(labels),
 }))
 
 export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
@@ -212,6 +245,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [users.id],
   }),
   comments: many(comments),
+  taskLabels: many(taskLabels),
 }))
  
 export const commentsRelations = relations(comments, ({ one }) => ({
@@ -222,6 +256,25 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   author: one(users, {
     fields: [comments.authorId],
     references: [users.id],
+  }),
+}))
+
+export const labelsRelations = relations(labels, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [labels.projectId],
+    references: [projects.id],
+  }),
+  taskLabels: many(taskLabels),
+}))
+
+export const taskLabelsRelations = relations(taskLabels, ({ one }) => ({
+  task: one(tasks, {
+    fields: [taskLabels.taskId],
+    references: [tasks.id],
+  }),
+  label: one(labels, {
+    fields: [taskLabels.labelId],
+    references: [labels.id],
   }),
 }))
 
@@ -243,3 +296,9 @@ export type NewTask = typeof tasks.$inferInsert
  
 export type Comment = typeof comments.$inferSelect
 export type NewComment = typeof comments.$inferInsert
+
+export type Label = typeof labels.$inferSelect
+export type NewLabel = typeof labels.$inferInsert
+
+export type TaskLabel = typeof taskLabels.$inferSelect
+export type NewTaskLabel = typeof taskLabels.$inferInsert

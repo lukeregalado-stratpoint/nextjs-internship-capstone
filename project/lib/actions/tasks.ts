@@ -6,21 +6,26 @@ import {
   createTask as createTaskRow,
   deleteTask as deleteTaskRow,
   getAssignableUserIds,
+  getLabelsForTask,
   getNextTaskPosition,
+  getProjectLabelIds,
   moveTask as moveTaskRow,
   ownsList,
   ownsTask,
+  setTaskLabels,
   updateTask as updateTaskRow,
 } from "@/lib/db/queries"
 import { taskMoveSchema, taskSchema, taskUpdateSchema } from "@/lib/validations"
-import type { Task } from "@/lib/db/schema"
+import type { Label, Task } from "@/lib/db/schema"
+
+type TaskWithLabels = Task & { labels: Label[] }
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
 
 export async function createTaskAction(
   projectId: string,
   input: unknown
-): Promise<ActionResult<Task>> {
+): Promise<ActionResult<TaskWithLabels>> {
   const user = await requireUser()
 
   const parsed = taskSchema.safeParse(input)
@@ -40,19 +45,30 @@ export async function createTaskAction(
     }
   }
 
+  const { labelIds, ...taskFields } = parsed.data
+
+  if (labelIds.length > 0) {
+    const projectLabelIds = await getProjectLabelIds(projectId)
+    if (!labelIds.every((id) => projectLabelIds.includes(id))) {
+      return { success: false, error: "Labels must belong to this project" }
+    }
+  }
+
   const position = await getNextTaskPosition(parsed.data.listId)
-  const task = await createTaskRow({ ...parsed.data, position })
+  const task = await createTaskRow({ ...taskFields, position })
+  await setTaskLabels(task.id, labelIds)
+  const labels = await getLabelsForTask(task.id)
 
   revalidatePath(`/projects/${projectId}`)
 
-  return { success: true, data: task }
+  return { success: true, data: { ...task, labels } }
 }
 
 export async function updateTaskAction(
   taskId: string,
   projectId: string,
   input: unknown
-): Promise<ActionResult<Task>> {
+): Promise<ActionResult<TaskWithLabels>> {
   const user = await requireUser()
 
   const owns = await ownsTask(taskId, user.id)
@@ -72,7 +88,14 @@ export async function updateTaskAction(
     }
   }
 
-  const { listId, ...fields } = parsed.data
+  if (parsed.data.labelIds && parsed.data.labelIds.length > 0) {
+    const projectLabelIds = await getProjectLabelIds(projectId)
+    if (!parsed.data.labelIds.every((id) => projectLabelIds.includes(id))) {
+      return { success: false, error: "Labels must belong to this project" }
+    }
+  }
+
+  const { listId, labelIds, ...fields } = parsed.data
   let updateData: Partial<Task> = fields
 
   // moving to a different column -> verify ownership of the destination and
@@ -92,9 +115,17 @@ export async function updateTaskAction(
     return { success: false, error: "Task not found" }
   }
 
+  // undefined means "not included in this edit" -> leave labels as-is;
+  // an explicit [] means "cleared" -> setTaskLabels handles both correctly
+  // since it always replaces the full set.
+  if (labelIds !== undefined) {
+    await setTaskLabels(taskId, labelIds)
+  }
+  const labels = await getLabelsForTask(taskId)
+
   revalidatePath(`/projects/${projectId}`)
 
-  return { success: true, data: task }
+  return { success: true, data: { ...task, labels } }
 }
 
 export async function deleteTaskAction(

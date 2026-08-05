@@ -58,11 +58,14 @@ function initials(name: string) {
 export function TaskCard({
   task,
   assigneeName,
+  labels,
   onClick,
 }: {
   task: Task
   /** Resolved from task.assigneeId by the parent, which has the member list. */
   assigneeName?: string
+  /** Resolved from task.taskLabels by the parent, which has the project's label set. */
+  labels?: { id: string; name: string; color: string }[]
   onClick?: () => void
 }) {
   const isOverdue = task.dueDate ? new Date(task.dueDate) < new Date() : false
@@ -81,6 +84,20 @@ export function TaskCard({
         <p className="text-xs text-paynes_gray-500 dark:text-french_gray-400 line-clamp-2">
           {task.description}
         </p>
+      )}
+
+      {labels && labels.length > 0 && (
+        <div className="flex items-center gap-1 flex-wrap">
+          {labels.map((label) => (
+            <span
+              key={label.id}
+              className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white"
+              style={{ backgroundColor: label.color }}
+            >
+              {label.name}
+            </span>
+          ))}
+        </div>
       )}
 
       <div className="flex items-center justify-between gap-2">

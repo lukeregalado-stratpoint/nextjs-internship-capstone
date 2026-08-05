@@ -38,6 +38,26 @@ export const listReorderSchema = z.object({
 })
 export type ListReorderInput = z.infer<typeof listReorderSchema>
 
+// LABELS
+
+const hexColor = z
+  .string()
+  .trim()
+  .regex(/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/, "Must be a hex color like #8B5CF6")
+
+export const labelSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(40),
+  color: hexColor,
+  projectId: z.string().uuid(),
+})
+export type LabelInput = z.infer<typeof labelSchema>
+
+export const labelUpdateSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(40).optional(),
+  color: hexColor.optional(),
+})
+export type LabelUpdateInput = z.infer<typeof labelUpdateSchema>
+
 // TASKS
 
 const taskPriority = z.enum(["low", "medium", "high"])
@@ -55,12 +75,15 @@ export const taskSchema = z.object({
   assigneeId: z.string().uuid().optional().nullable(),
   priority: taskPriority.default("medium"),
   dueDate: z.coerce.date().optional().nullable(),
+  labelIds: z.array(z.string().uuid()).max(20).optional().default([]),
 })
 export type TaskInput = z.infer<typeof taskSchema>
 
 // `listId` is optional here (unlike on create) — updating a task doesn't
 // always mean moving it to a different column. When present, the action
 // treats it as a move and recomputes the task's position in the new list.
+// `labelIds`, when present, replaces the task's full label set (see
+// setTaskLabels) rather than being merged with the existing one.
 export const taskUpdateSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200).optional(),
   description: z
@@ -74,6 +97,7 @@ export const taskUpdateSchema = z.object({
   assigneeId: z.string().uuid().optional().nullable(),
   priority: taskPriority.optional(),
   dueDate: z.coerce.date().optional().nullable(),
+  labelIds: z.array(z.string().uuid()).max(20).optional(),
 })
 export type TaskUpdateInput = z.infer<typeof taskUpdateSchema>
 

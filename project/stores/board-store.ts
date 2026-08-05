@@ -1,7 +1,8 @@
 import { create } from "zustand"
-import type { List, Task } from "@/lib/db/schema"
+import type { Label, List, Task } from "@/lib/db/schema"
 
-export type ListWithTasks = List & { tasks: Task[] }
+export type TaskWithLabels = Task & { labels: Label[] }
+export type ListWithTasks = List & { tasks: TaskWithLabels[] }
 
 interface BoardState {
   lists: ListWithTasks[]
@@ -10,8 +11,8 @@ interface BoardState {
   addList: (list: List) => void
   renameList: (id: string, name: string) => void
   removeList: (id: string) => void
-  addTask: (listId: string, task: Task) => void
-  updateTask: (taskId: string, updates: Partial<Task>) => void
+  addTask: (listId: string, task: TaskWithLabels) => void
+  updateTask: (taskId: string, updates: Partial<TaskWithLabels>) => void
   removeTask: (taskId: string) => void
   moveTask: (taskId: string, destListId: string, destIndex?: number) => void
   reorderTasksInList: (listId: string, orderedTaskIds: string[]) => void
@@ -71,7 +72,7 @@ export const useBoardStore = create<BoardState>((set) => ({
 
   moveTask: (taskId, destListId, destIndex) =>
     set((state) => {
-      let movedTask: Task | undefined
+      let movedTask: TaskWithLabels | undefined
       const stripped = state.lists.map((l) => {
         const found = l.tasks.find((t) => t.id === taskId)
         if (found) movedTask = found
@@ -99,7 +100,7 @@ export const useBoardStore = create<BoardState>((set) => ({
         const byId = new Map(l.tasks.map((t) => [t.id, t]))
         const reordered = orderedTaskIds
           .map((id) => byId.get(id))
-          .filter((t): t is Task => Boolean(t))
+          .filter((t): t is TaskWithLabels => Boolean(t))
         return { ...l, tasks: reordered }
       }),
     })),

@@ -1,10 +1,8 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { useBoardStore } from "@/stores/board-store"
+import { useBoardStore, type ListWithTasks, type TaskWithLabels } from "@/stores/board-store"
 import { createTaskAction, deleteTaskAction, moveTaskAction, updateTaskAction } from "@/lib/actions/tasks"
-import type { Task } from "@/lib/db/schema"
-import type { ListWithTasks } from "@/stores/board-store"
 import type { TaskInput, TaskUpdateInput } from "@/lib/validations"
 
 export function useTasks(projectId: string) {
@@ -16,7 +14,7 @@ export function useTasks(projectId: string) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  function createTask(input: TaskInput, onSuccess?: (task: Task) => void) {
+  function createTask(input: TaskInput, onSuccess?: (task: TaskWithLabels) => void) {
     setError(null)
     startTransition(async () => {
       const result = await createTaskAction(projectId, input)
@@ -32,14 +30,17 @@ export function useTasks(projectId: string) {
   function updateTask(
     taskId: string,
     input: TaskUpdateInput,
-    onSuccess?: (task: Task) => void
+    onSuccess?: (task: TaskWithLabels) => void
   ) {
     setError(null)
 
     // apply immediately (optimistic update)
     const snapshot = useBoardStore.getState().lists
     if (input.listId) moveTaskInStore(taskId, input.listId)
-    const { listId, ...fields } = input
+    // `labelIds` isn't a store field (the store holds resolved `labels`
+    // objects for rendering) — skip it optimistically and let the
+    // confirmed response below fill in the resolved label set.
+    const { listId, labelIds, ...fields } = input
     updateTaskInStore(taskId, fields)
 
     startTransition(async () => {

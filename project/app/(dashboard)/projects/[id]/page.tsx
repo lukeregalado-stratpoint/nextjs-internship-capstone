@@ -26,7 +26,13 @@ export default async function ProjectDetailPage({
   return (
     <div className="space-y-6">
       <ProjectHeader project={project} />
-      <KanbanBoard projectId={project.id} initialLists={project.lists} members={members} />
+      <KanbanBoard
+        projectId={project.id}
+        initialLists={project.lists}
+        members={members}
+        initialLabels={project.labels}
+        isOwner={project.ownerId === user.id}
+      />
     </div>
   )
 }

@@ -1,6 +1,16 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { lists, projects, tasks, type NewList, type NewProject, type NewTask } from "@/lib/db/schema"
+import {
+  labels,
+  lists,
+  projects,
+  taskLabels,
+  tasks,
+  type NewLabel,
+  type NewList,
+  type NewProject,
+  type NewTask,
+} from "@/lib/db/schema"
 
 // PROJECTS
 export async function getProjectsForUser(userId: string) {
@@ -37,19 +47,43 @@ export async function getProjectsForUser(userId: string) {
 
 /** Detail view: project + owner + members + lists + tasks, ordered for the board. */
 export async function getProjectById(projectId: string) {
-  return db.query.projects.findFirst({
+  const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
     with: {
       owner: true,
       members: { with: { user: true } },
+      labels: { orderBy: [asc(labels.createdAt)] },
       lists: {
         orderBy: [asc(lists.position)],
         with: {
-          tasks: { orderBy: [asc(tasks.position)], with: { assignee: true } },
+          tasks: {
+            orderBy: [asc(tasks.position)],
+            with: {
+              assignee: true,
+              taskLabels: { with: { label: true } },
+            },
+          },
         },
       },
     },
   })
+
+  if (!project) return project
+
+  // Flatten the task_labels join rows into a plain `labels` array so every
+  // consumer (the board store, TaskCard, CreateTaskModal) works with the
+  // same TaskWithLabels shape, whether the task just came from this query
+  // or from createTaskAction/updateTaskAction.
+  return {
+    ...project,
+    lists: project.lists.map((list) => ({
+      ...list,
+      tasks: list.tasks.map(({ taskLabels: taskLabelRows, ...task }) => ({
+        ...task,
+        labels: taskLabelRows.map((tl) => tl.label),
+      })),
+    })),
+  }
 }
 
 /**
@@ -67,6 +101,18 @@ export async function getAssignableUserIds(projectId: string) {
   })
   if (!project) return []
   return [project.ownerId, ...project.members.map((m) => m.userId)]
+}
+
+/**
+ * Label ids that belong to this project. Used to validate `labelIds` on
+ * task create/update so a task can't be tagged with another project's label.
+ */
+export async function getProjectLabelIds(projectId: string) {
+  const rows = await db.query.labels.findMany({
+    where: eq(labels.projectId, projectId),
+    columns: { id: true },
+  })
+  return rows.map((l) => l.id)
 }
 
 export async function createProject(data: NewProject) {
@@ -273,4 +319,58 @@ export async function ownsTask(taskId: string, userId: string) {
     with: { list: { with: { project: { columns: { ownerId: true } } } } },
   })
   return task?.list.project.ownerId === userId
+}
+
+// LABELS
+
+export async function getLabelsForProject(projectId: string) {
+  return db.query.labels.findMany({
+    where: eq(labels.projectId, projectId),
+    orderBy: [asc(labels.createdAt)],
+  })
+}
+
+export async function createLabel(data: NewLabel) {
+  const [label] = await db.insert(labels).values(data).returning()
+  return label
+}
+
+export async function updateLabel(
+  labelId: string,
+  data: Partial<Pick<NewLabel, "name" | "color">>
+) {
+  const [label] = await db.update(labels).set(data).where(eq(labels.id, labelId)).returning()
+  return label ?? null
+}
+
+export async function deleteLabel(labelId: string) {
+  await db.delete(labels).where(eq(labels.id, labelId))
+}
+
+// labels are owner-managed only, so this checks projects.ownerId same as ownsProject
+export async function ownsLabel(labelId: string, userId: string) {
+  const label = await db.query.labels.findFirst({
+    where: eq(labels.id, labelId),
+    with: { project: { columns: { ownerId: true } } },
+  })
+  return label?.project.ownerId === userId
+}
+
+/**
+ * Replaces a task's full label set with `labelIds`. Called from the task
+ * create/update actions rather than exposed as its own server action —
+ * labels are always edited as a set from the task modal, not incrementally.
+ */
+export async function setTaskLabels(taskId: string, labelIds: string[]) {
+  await db.delete(taskLabels).where(eq(taskLabels.taskId, taskId))
+  if (labelIds.length === 0) return
+  await db.insert(taskLabels).values(labelIds.map((labelId) => ({ taskId, labelId })))
+}
+
+export async function getLabelsForTask(taskId: string) {
+  const rows = await db.query.taskLabels.findMany({
+    where: eq(taskLabels.taskId, taskId),
+    with: { label: true },
+  })
+  return rows.map((r) => r.label)
 }

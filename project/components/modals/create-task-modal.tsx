@@ -36,7 +36,7 @@ Integration:
 "use client"
 
 import { useState, type FormEvent } from "react"
-import { Check, X } from "lucide-react"
+import { Check, Plus, X } from "lucide-react"
 import type { Task } from "@/lib/db/schema"
 import type { ListWithTasks } from "@/stores/board-store"
 
@@ -49,6 +49,13 @@ export interface TaskFormSubmitValues {
   priority: Priority
   dueDate: Date | null
   assigneeId: string | null
+  labelIds: string[]
+}
+
+interface ProjectLabel {
+  id: string
+  name: string
+  color: string
 }
 
 interface CreateTaskModalProps {
@@ -56,6 +63,14 @@ interface CreateTaskModalProps {
   lists: ListWithTasks[]
   /** Project owner + members, for the assignee picker. */
   members?: { id: string; name: string }[]
+  /** The project's available labels, for the label picker. */
+  labels?: ProjectLabel[]
+  /** Resolved from task.taskLabels by the parent (Task itself has no labels field). */
+  taskLabelIds?: string[]
+  /** Only project owners can create new labels inline from this modal. */
+  isOwner?: boolean
+  /** Creates a new project label; the parent is expected to add it to `labels` on success. */
+  onCreateLabel?: (values: { name: string; color: string }) => void
   /** Presence of `task` puts the modal in edit mode. */
   task?: Task
   /** Column to preselect in create mode. */
@@ -77,6 +92,10 @@ interface CreateTaskModalProps {
 export function CreateTaskModal({
   lists,
   members = [],
+  labels = [],
+  taskLabelIds = [],
+  isOwner = false,
+  onCreateLabel,
   task,
   defaultListId,
   onClose,
@@ -97,6 +116,25 @@ export function CreateTaskModal({
     task?.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : ""
   )
   const [assigneeId, setAssigneeId] = useState<string>(task?.assigneeId ?? "")
+  const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>(taskLabelIds)
+  const [showNewLabelForm, setShowNewLabelForm] = useState(false)
+  const [newLabelName, setNewLabelName] = useState("")
+  const [newLabelColor, setNewLabelColor] = useState("#8B5CF6")
+
+  function toggleLabel(labelId: string) {
+    setSelectedLabelIds((prev) =>
+      prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId]
+    )
+  }
+
+  function handleCreateLabel() {
+    const name = newLabelName.trim()
+    if (!name || !onCreateLabel) return
+    onCreateLabel({ name, color: newLabelColor })
+    setNewLabelName("")
+    setNewLabelColor("#8B5CF6")
+    setShowNewLabelForm(false)
+  }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -112,6 +150,7 @@ export function CreateTaskModal({
       priority,
       dueDate: dueDate ? new Date(dueDate) : null,
       assigneeId: assigneeId || null,
+      labelIds: selectedLabelIds,
     })
   }
 
@@ -244,6 +283,80 @@ export function CreateTaskModal({
                 ))}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+              Labels
+            </label>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {labels.map((label) => {
+                const isSelected = selectedLabelIds.includes(label.id)
+                return (
+                  <button
+                    key={label.id}
+                    type="button"
+                    onClick={() => toggleLabel(label.id)}
+                    style={
+                      isSelected
+                        ? { backgroundColor: label.color }
+                        : { borderColor: label.color, color: label.color }
+                    }
+                    className={`text-[11px] font-medium px-2.5 py-1 rounded-full transition-all ${
+                      isSelected ? "text-white" : "border bg-transparent"
+                    }`}
+                  >
+                    {label.name}
+                  </button>
+                )
+              })}
+
+              {isOwner && onCreateLabel && !showNewLabelForm && (
+                <button
+                  type="button"
+                  onClick={() => setShowNewLabelForm(true)}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full border border-dashed border-french_gray-300 dark:border-paynes_gray-400 text-paynes_gray-500 dark:text-french_gray-400"
+                >
+                  <Plus size={11} />
+                  New label
+                </button>
+              )}
+            </div>
+
+            {isOwner && showNewLabelForm && (
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="color"
+                  value={newLabelColor}
+                  onChange={(e) => setNewLabelColor(e.target.value)}
+                  className="h-8 w-8 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 bg-transparent p-0.5"
+                  aria-label="Label color"
+                />
+                <input
+                  value={newLabelName}
+                  onChange={(e) => setNewLabelName(e.target.value)}
+                  maxLength={40}
+                  placeholder="Label name"
+                  className="flex-1 px-3 py-1.5 text-sm border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateLabel}
+                  disabled={!newLabelName.trim()}
+                  className="px-3 py-1.5 text-sm rounded-xl bg-lavender-500 text-white hover:bg-lavender-600 disabled:opacity-50"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNewLabelForm(false)}
+                  className="p-1.5 rounded-full hover:bg-lavender-50 dark:hover:bg-paynes_gray-500/20 text-paynes_gray-500 dark:text-french_gray-400"
+                  aria-label="Cancel new label"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
           </div>
 
           {!isEditing && (

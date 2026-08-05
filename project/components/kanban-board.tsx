@@ -27,18 +27,23 @@ import { useTasks } from "@/hooks/use-tasks"
 import { CreateTaskModal, type TaskFormSubmitValues } from "@/components/modals/create-task-modal"
 import { TaskCard } from "@/components/task-card"
 import { TaskSearchBar } from "@/components/task-search-bar"
-import { useBoardStore, type ListWithTasks } from "@/stores/board-store"
+import { useBoardStore, type ListWithTasks, type TaskWithLabels } from "@/stores/board-store"
 import { filterTasks } from "@/lib/task-search"
-import type { Task } from "@/lib/db/schema"
+import { createLabelAction } from "@/lib/actions/labels"
+import type { Label } from "@/lib/db/schema"
 
 export function KanbanBoard({
   projectId,
   initialLists,
   members = [],
+  initialLabels = [],
+  isOwner = false,
 }: {
   projectId: string
   initialLists: ListWithTasks[]
   members?: { id: string; name: string }[]
+  initialLabels?: Label[]
+  isOwner?: boolean
 }) {
   const { lists, setLists, createList, renameList, deleteList, reorderLists, isPending, error } =
     useLists(projectId)
@@ -52,8 +57,11 @@ export function KanbanBoard({
   } = useTasks(projectId)
   const [addingColumn, setAddingColumn] = useState(false)
   const [newColumnName, setNewColumnName] = useState("")
+  const [labels, setLabels] = useState<Label[]>(initialLabels)
   // `task` present = editing that task; absent = creating a new one in `listId`.
-  const [taskModal, setTaskModal] = useState<{ listId: string; task?: Task } | null>(null)
+  const [taskModal, setTaskModal] = useState<{ listId: string; task?: TaskWithLabels } | null>(
+    null
+  )
   // Bumped every time we (re)open a fresh create modal so React remounts
   // CreateTaskModal instead of reusing one with stale field values —
   // needed for the "create another" flow below.
@@ -61,7 +69,7 @@ export function KanbanBoard({
   // Lives here (not inside CreateTaskModal) so the checkbox's value
   // survives that remount instead of resetting to false each time.
   const [createAnother, setCreateAnother] = useState(false)
-  const [activeTask, setActiveTask] = useState<Task | null>(null)
+  const [activeTask, setActiveTask] = useState<TaskWithLabels | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
   const isSearching = searchQuery.trim().length > 0
@@ -199,6 +207,7 @@ export function KanbanBoard({
           priority: values.priority,
           dueDate: values.dueDate,
           assigneeId: values.assigneeId,
+          labelIds: values.labelIds,
         },
         () => setTaskModal(null)
       )
@@ -212,6 +221,7 @@ export function KanbanBoard({
           priority: values.priority,
           dueDate: values.dueDate,
           assigneeId: values.assigneeId,
+          labelIds: values.labelIds,
         },
         () => {
           if (createAnother) {
@@ -231,6 +241,13 @@ export function KanbanBoard({
     if (!taskModal?.task) return
     if (confirm(`Delete "${taskModal.task.title}"? This can't be undone.`)) {
       deleteTask(taskModal.task.id, () => setTaskModal(null))
+    }
+  }
+
+  async function handleCreateLabel(values: { name: string; color: string }) {
+    const result = await createLabelAction(projectId, values)
+    if (result.success) {
+      setLabels((prev) => [...prev, result.data])
     }
   }
 
@@ -335,6 +352,7 @@ export function KanbanBoard({
             <TaskCard
               task={activeTask}
               assigneeName={activeTask.assigneeId ? memberNameById.get(activeTask.assigneeId) : undefined}
+              labels={activeTask.labels}
             />
           ) : null}
         </DragOverlay>
@@ -345,6 +363,10 @@ export function KanbanBoard({
           key={taskModalKey}
           lists={lists}
           members={members}
+          labels={labels}
+          taskLabelIds={taskModal.task?.labels.map((l) => l.id)}
+          isOwner={isOwner}
+          onCreateLabel={isOwner ? handleCreateLabel : undefined}
           task={taskModal.task}
           defaultListId={taskModal.listId}
           isPending={taskPending}
@@ -377,7 +399,7 @@ function BoardColumn({
   onRename: (name: string) => void
   onDelete: () => void
   onAddTask: () => void
-  onTaskClick: (task: Task) => void
+  onTaskClick: (task: TaskWithLabels) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: list.id,
@@ -535,6 +557,7 @@ function BoardColumn({
                 key={task.id}
                 task={task}
                 assigneeName={task.assigneeId ? memberNameById.get(task.assigneeId) : undefined}
+                labels={task.labels}
                 onClick={() => onTaskClick(task)}
               />
             ))
@@ -568,7 +591,7 @@ function SortableTaskCard({
   assigneeName,
   onClick,
 }: {
-  task: Task
+  task: TaskWithLabels
   assigneeName?: string
   onClick: () => void
 }) {
@@ -585,7 +608,7 @@ function SortableTaskCard({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none">
-      <TaskCard task={task} assigneeName={assigneeName} onClick={onClick} />
+      <TaskCard task={task} assigneeName={assigneeName} labels={task.labels} onClick={onClick} />
     </div>
   )
 }

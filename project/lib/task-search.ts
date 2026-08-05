@@ -1,4 +1,4 @@
-import type { Task } from "@/lib/db/schema"
+import type { TaskWithLabels } from "@/stores/board-store"
 
 export const TAG_NAMES = ["title", "description", "priority", "assignee"] as const
 export type TagName = (typeof TAG_NAMES)[number]
@@ -53,7 +53,7 @@ export function isQueryEmpty(query: ParsedSearchQuery): boolean {
 }
 
 export function taskMatchesQuery(
-  task: Task,
+  task: TaskWithLabels,
   query: ParsedSearchQuery,
   memberNameById: Map<string, string>
 ): boolean {
@@ -82,7 +82,11 @@ export function taskMatchesQuery(
   )
 }
 
-export function filterTasks(tasks: Task[], rawQuery: string, memberNameById: Map<string, string>): Task[] {
+export function filterTasks(
+  tasks: TaskWithLabels[],
+  rawQuery: string,
+  memberNameById: Map<string, string>
+): TaskWithLabels[] {
   const parsed = parseSearchQuery(rawQuery)
   if (isQueryEmpty(parsed)) return tasks
   return tasks.filter((task) => taskMatchesQuery(task, parsed, memberNameById))

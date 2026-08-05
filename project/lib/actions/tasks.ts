@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth"
 import {
   createTask as createTaskRow,
   deleteTask as deleteTaskRow,
+  getAssignableUserIds,
   getNextTaskPosition,
   moveTask as moveTaskRow,
   ownsList,
@@ -32,6 +33,13 @@ export async function createTaskAction(
     return { success: false, error: "You don't have permission to add tasks to this column" }
   }
 
+  if (parsed.data.assigneeId) {
+    const assignableIds = await getAssignableUserIds(projectId)
+    if (!assignableIds.includes(parsed.data.assigneeId)) {
+      return { success: false, error: "Assignee must be a member of this project" }
+    }
+  }
+
   const position = await getNextTaskPosition(parsed.data.listId)
   const task = await createTaskRow({ ...parsed.data, position })
 
@@ -55,6 +63,13 @@ export async function updateTaskAction(
   const parsed = taskUpdateSchema.safeParse(input)
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
+  }
+
+  if (parsed.data.assigneeId) {
+    const assignableIds = await getAssignableUserIds(projectId)
+    if (!assignableIds.includes(parsed.data.assigneeId)) {
+      return { success: false, error: "Assignee must be a member of this project" }
+    }
   }
 
   const { listId, ...fields } = parsed.data

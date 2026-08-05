@@ -198,6 +198,7 @@ export function KanbanBoard({
           listId: values.listId,
           priority: values.priority,
           dueDate: values.dueDate,
+          assigneeId: values.assigneeId,
         },
         () => setTaskModal(null)
       )
@@ -210,6 +211,7 @@ export function KanbanBoard({
           listId: values.listId ?? listId,
           priority: values.priority,
           dueDate: values.dueDate,
+          assigneeId: values.assigneeId,
         },
         () => {
           if (createAnother) {
@@ -265,6 +267,7 @@ export function KanbanBoard({
                 list={list}
                 isPending={isPending}
                 isSearching={isSearching}
+                memberNameById={memberNameById}
                 onRename={(name) => renameList(list.id, name)}
                 onDelete={() => deleteList(list.id)}
                 onAddTask={() => {
@@ -327,13 +330,21 @@ export function KanbanBoard({
           </div>
         </SortableContext>
 
-        <DragOverlay>{activeTask ? <TaskCard task={activeTask} /> : null}</DragOverlay>
+        <DragOverlay>
+          {activeTask ? (
+            <TaskCard
+              task={activeTask}
+              assigneeName={activeTask.assigneeId ? memberNameById.get(activeTask.assigneeId) : undefined}
+            />
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       {taskModal && (
         <CreateTaskModal
           key={taskModalKey}
           lists={lists}
+          members={members}
           task={taskModal.task}
           defaultListId={taskModal.listId}
           isPending={taskPending}
@@ -353,6 +364,7 @@ function BoardColumn({
   list,
   isPending,
   isSearching,
+  memberNameById,
   onRename,
   onDelete,
   onAddTask,
@@ -361,6 +373,7 @@ function BoardColumn({
   list: ListWithTasks
   isPending: boolean
   isSearching: boolean
+  memberNameById: Map<string, string>
   onRename: (name: string) => void
   onDelete: () => void
   onAddTask: () => void
@@ -518,11 +531,21 @@ function BoardColumn({
           ) : isSearching ? (
             // if filter is active, tasks can't be dragged to avoid order scrambling
             list.tasks.map((task) => (
-              <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                assigneeName={task.assigneeId ? memberNameById.get(task.assigneeId) : undefined}
+                onClick={() => onTaskClick(task)}
+              />
             ))
           ) : (
             list.tasks.map((task) => (
-              <SortableTaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+              <SortableTaskCard
+                key={task.id}
+                task={task}
+                assigneeName={task.assigneeId ? memberNameById.get(task.assigneeId) : undefined}
+                onClick={() => onTaskClick(task)}
+              />
             ))
           )}
 
@@ -540,7 +563,15 @@ function BoardColumn({
   )
 }
 
-function SortableTaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
+function SortableTaskCard({
+  task,
+  assigneeName,
+  onClick,
+}: {
+  task: Task
+  assigneeName?: string
+  onClick: () => void
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: "task" },
@@ -554,7 +585,7 @@ function SortableTaskCard({ task, onClick }: { task: Task; onClick: () => void }
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none">
-      <TaskCard task={task} onClick={onClick} />
+      <TaskCard task={task} assigneeName={assigneeName} onClick={onClick} />
     </div>
   )
 }

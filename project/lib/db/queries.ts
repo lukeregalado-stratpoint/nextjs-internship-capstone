@@ -45,11 +45,28 @@ export async function getProjectById(projectId: string) {
       lists: {
         orderBy: [asc(lists.position)],
         with: {
-          tasks: { orderBy: [asc(tasks.position)] },
+          tasks: { orderBy: [asc(tasks.position)], with: { assignee: true } },
         },
       },
     },
   })
+}
+
+/**
+ * User ids allowed to be assigned tasks in this project: the owner plus
+ * everyone in project_members. Used to validate `assigneeId` on task
+ * create/update so a task can't be assigned to someone outside the project.
+ */
+export async function getAssignableUserIds(projectId: string) {
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { ownerId: true },
+    with: {
+      members: { columns: { userId: true } },
+    },
+  })
+  if (!project) return []
+  return [project.ownerId, ...project.members.map((m) => m.userId)]
 }
 
 export async function createProject(data: NewProject) {

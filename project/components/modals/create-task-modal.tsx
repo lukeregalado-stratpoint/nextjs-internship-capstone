@@ -48,11 +48,14 @@ export interface TaskFormSubmitValues {
   listId?: string
   priority: Priority
   dueDate: Date | null
+  assigneeId: string | null
 }
 
 interface CreateTaskModalProps {
   /** Columns available to file the task under. */
   lists: ListWithTasks[]
+  /** Project owner + members, for the assignee picker. */
+  members?: { id: string; name: string }[]
   /** Presence of `task` puts the modal in edit mode. */
   task?: Task
   /** Column to preselect in create mode. */
@@ -73,6 +76,7 @@ interface CreateTaskModalProps {
 
 export function CreateTaskModal({
   lists,
+  members = [],
   task,
   defaultListId,
   onClose,
@@ -92,6 +96,7 @@ export function CreateTaskModal({
   const [dueDate, setDueDate] = useState(
     task?.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : ""
   )
+  const [assigneeId, setAssigneeId] = useState<string>(task?.assigneeId ?? "")
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -106,6 +111,7 @@ export function CreateTaskModal({
       listId: isEditing ? (listId !== task?.listId ? listId : undefined) : listId,
       priority,
       dueDate: dueDate ? new Date(dueDate) : null,
+      assigneeId: assigneeId || null,
     })
   }
 
@@ -179,7 +185,7 @@ export function CreateTaskModal({
                 id="task-list"
                 value={listId}
                 onChange={(e) => setListId(e.target.value)}
-                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400 font-sans"
               >
                 {lists.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -197,7 +203,7 @@ export function CreateTaskModal({
                 id="task-priority"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as Priority)}
-                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400 font-sans"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -206,17 +212,38 @@ export function CreateTaskModal({
             </div>
           </div>
 
-          <div>
-            <label htmlFor="task-due-date" className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
-              Due date
-            </label>
-            <input
-              id="task-due-date"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="task-due-date" className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+                Due date
+              </label>
+              <input
+                id="task-due-date"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="task-assignee" className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+                Assignee
+              </label>
+              <select
+                id="task-assignee"
+                value={assigneeId}
+                onChange={(e) => setAssigneeId(e.target.value)}
+                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400 font-sans"
+              >
+                <option value="">Unassigned</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {!isEditing && (

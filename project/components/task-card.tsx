@@ -48,7 +48,23 @@ const priorityStyles: Record<Task["priority"], string> = {
   high: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
 }
 
-export function TaskCard({ task, onClick }: { task: Task; onClick?: () => void }) {
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/)
+  const first = parts[0]?.[0] ?? ""
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : ""
+  return (first + last).toUpperCase()
+}
+
+export function TaskCard({
+  task,
+  assigneeName,
+  onClick,
+}: {
+  task: Task
+  /** Resolved from task.assigneeId by the parent, which has the member list. */
+  assigneeName?: string
+  onClick?: () => void
+}) {
   const isOverdue = task.dueDate ? new Date(task.dueDate) < new Date() : false
 
   return (
@@ -67,24 +83,37 @@ export function TaskCard({ task, onClick }: { task: Task; onClick?: () => void }
         </p>
       )}
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <span
-          className={`text-[11px] font-medium px-2 py-0.5 rounded-full capitalize ${priorityStyles[task.priority]}`}
-        >
-          {task.priority}
-        </span>
-
-        {task.dueDate && (
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span
-            className={`inline-flex items-center gap-1 text-[11px] ${
-              isOverdue ? "text-rose-500" : "text-paynes_gray-500 dark:text-french_gray-400"
-            }`}
+            className={`text-[11px] font-medium px-2 py-0.5 rounded-full capitalize ${priorityStyles[task.priority]}`}
           >
-            <Calendar size={11} />
-            {new Date(task.dueDate).toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-            })}
+            {task.priority}
+          </span>
+
+          {task.dueDate && (
+            <span
+              className={`inline-flex items-center gap-1 text-[11px] ${
+                isOverdue ? "text-rose-500" : "text-paynes_gray-500 dark:text-french_gray-400"
+              }`}
+            >
+              <Calendar size={11} />
+              {new Date(task.dueDate).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          )}
+        </div>
+
+        {assigneeName && (
+          <span
+            title={assigneeName}
+            className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full
+             bg-lavender-200 dark:bg-lavender-700/50 text-[10px] font-semibold
+              text-lavender-700 dark:text-lavender-200"
+          >
+            {initials(assigneeName)}
           </span>
         )}
       </div>

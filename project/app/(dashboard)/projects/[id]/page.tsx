@@ -13,7 +13,16 @@ export default async function ProjectDetailPage({
   const user = await requireUser()
   const project = await getProjectById(id)
 
-  if (!project || project.ownerId !== user.id) {
+  if (!project) {
+    notFound()
+  }
+
+  const isOwner = project.ownerId === user.id
+  const isMember = project.members.some((m) => m.user.id === user.id)
+
+  // Members (any role) can view and work in a project they've been added
+  // to, not just the owner — see Task 6.4 permissions.
+  if (!isOwner && !isMember) {
     notFound()
   }
 
@@ -25,13 +34,18 @@ export default async function ProjectDetailPage({
 
   return (
     <div className="space-y-6">
-      <ProjectHeader project={project} />
+      <ProjectHeader
+        project={project}
+        isOwner={isOwner}
+        owner={{ name: project.owner.name, email: project.owner.email }}
+        members={project.members}
+      />
       <KanbanBoard
         projectId={project.id}
         initialLists={project.lists}
         members={members}
         initialLabels={project.labels}
-        isOwner={project.ownerId === user.id}
+        isOwner={isOwner}
       />
     </div>
   )

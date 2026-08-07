@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { projectRoleEnum } from "@/lib/db/schema"
 
 // PROJECTS
 
@@ -109,3 +110,21 @@ export const taskMoveSchema = z.object({
   orderedTaskIds: z.array(z.string().uuid()).min(1),
 })
 export type TaskMoveInput = z.infer<typeof taskMoveSchema>
+
+// PROJECT MEMBERS
+
+// Adding a member is done by email rather than userId — the owner types in
+// a teammate's email and we look up the local `users` row for them. This
+// matches how someone would actually invite a person they can't see a
+// picker for yet (no "search users" UI exists).
+export const addMemberSchema = z.object({
+  projectId: z.string().uuid(),
+  email: z.string().trim().toLowerCase().email("Enter a valid email"),
+  role: z.enum(projectRoleEnum.enumValues).default("developer"),
+})
+export type AddMemberInput = z.infer<typeof addMemberSchema>
+
+export const updateMemberRoleSchema = z.object({
+  role: z.enum(projectRoleEnum.enumValues),
+})
+export type UpdateMemberRoleInput = z.infer<typeof updateMemberRoleSchema>

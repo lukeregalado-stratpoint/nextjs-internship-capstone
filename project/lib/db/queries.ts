@@ -1,23 +1,44 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   labels,
   lists,
+  projectMembers,
   projects,
   taskLabels,
   tasks,
+  users,
   type NewLabel,
   type NewList,
   type NewProject,
+  type NewProjectMember,
   type NewTask,
+  type ProjectMember,
 } from "@/lib/db/schema"
 
 // PROJECTS
+
+/**
+ * Projects a user can see on the projects list: ones they own, plus ones
+ * they've been added to as a member. Previously this only checked
+ * `ownerId`, so members never saw projects they'd been added to — fixed by
+ * also matching against their project_members rows.
+ */
 export async function getProjectsForUser(userId: string) {
+  const memberships = await db.query.projectMembers.findMany({
+    where: eq(projectMembers.userId, userId),
+    columns: { projectId: true },
+  })
+  const memberProjectIds = memberships.map((m) => m.projectId)
+
   const rows = await db.query.projects.findMany({
-    where: eq(projects.ownerId, userId),
+    where:
+      memberProjectIds.length > 0
+        ? or(eq(projects.ownerId, userId), inArray(projects.id, memberProjectIds))
+        : eq(projects.ownerId, userId),
     orderBy: [asc(projects.createdAt)],
     with: {
+      owner: { columns: { id: true, name: true } },
       members: true,
       lists: {
         orderBy: [asc(lists.position)],
@@ -41,8 +62,30 @@ export async function getProjectsForUser(userId: string) {
       taskCount: allTasks.length,
       listCount: project.lists.length,
       progress: allTasks.length === 0 ? 0 : Math.round((doneCount / allTasks.length) * 100),
+      // New fields, additive — existing consumers that don't read these are
+      // unaffected. Lets the list UI distinguish "yours" from "shared with
+      // you" if you want to show that.
+      isOwner: project.ownerId === userId,
+      ownerName: project.owner.name,
     }
   })
+}
+
+/**
+ * Projects a user can access: ones they own, plus ones they've been added
+ * to as a member. Used for the project detail page's access check now that
+ * members (not just the owner) are allowed to view a project.
+ */
+export async function getAccessibleProjectIds(userId: string) {
+  const owned = await db.query.projects.findMany({
+    where: eq(projects.ownerId, userId),
+    columns: { id: true },
+  })
+  const memberOf = await db.query.projectMembers.findMany({
+    where: eq(projectMembers.userId, userId),
+    columns: { projectId: true },
+  })
+  return new Set([...owned.map((p) => p.id), ...memberOf.map((m) => m.projectId)])
 }
 
 /** Detail view: project + owner + members + lists + tasks, ordered for the board. */
@@ -373,4 +416,130 @@ export async function getLabelsForTask(taskId: string) {
     with: { label: true },
   })
   return rows.map((r) => r.label)
+}
+
+// PROJECT MEMBERS
+
+export async function findUserByEmail(email: string) {
+  const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1)
+  return user ?? null
+}
+
+export async function getProjectMember(projectId: string, userId: string) {
+  return db.query.projectMembers.findFirst({
+    where: and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)),
+  })
+}
+
+export async function getProjectMemberById(memberId: string) {
+  return db.query.projectMembers.findFirst({
+    where: eq(projectMembers.id, memberId),
+  })
+}
+
+export async function addProjectMember(data: NewProjectMember) {
+  const [member] = await db.insert(projectMembers).values(data).returning()
+  return member
+}
+
+export async function updateProjectMemberRole(memberId: string, role: ProjectMember["role"]) {
+  const [member] = await db
+    .update(projectMembers)
+    .set({ role })
+    .where(eq(projectMembers.id, memberId))
+    .returning()
+  return member ?? null
+}
+
+export async function removeProjectMember(memberId: string) {
+  await db.delete(projectMembers).where(eq(projectMembers.id, memberId))
+}
+
+/** Owner or member — used to gate project-detail page access. */
+export async function canAccessProject(projectId: string, userId: string) {
+  const owns = await ownsProject(projectId, userId)
+  if (owns) return true
+  const member = await getProjectMember(projectId, userId)
+  return !!member
+}
+
+/**
+ * Everyone the given user shares a project with — as the owner of a
+ * project they're a member on, or as a fellow member of a project they
+ * own/belong to. Powers the Team page. A person can show up once per
+ * project they're connected through, each with that project's role, since
+ * the same two people can have different roles on different projects.
+ */
+export async function getTeammatesForUser(userId: string) {
+  const owned = await db.query.projects.findMany({
+    where: eq(projects.ownerId, userId),
+    columns: { id: true, name: true },
+    with: {
+      members: { with: { user: true } },
+    },
+  })
+
+  const memberships = await db.query.projectMembers.findMany({
+    where: eq(projectMembers.userId, userId),
+    columns: { projectId: true },
+  })
+  const memberOfIds = memberships.map((m) => m.projectId)
+
+  const memberOf = memberOfIds.length
+    ? await db.query.projects.findMany({
+        where: inArray(projects.id, memberOfIds),
+        columns: { id: true, name: true },
+        with: {
+          owner: true,
+          members: { with: { user: true } },
+        },
+      })
+    : []
+
+  type Teammate = {
+    id: string
+    name: string
+    email: string
+    projects: { projectId: string; projectName: string; role: string }[]
+  }
+  const teammates = new Map<string, Teammate>()
+
+  function addTeammate(
+    person: { id: string; name: string; email: string },
+    projectId: string,
+    projectName: string,
+    role: string
+  ) {
+    if (person.id === userId) return
+    const entry = { projectId, projectName, role }
+    const existing = teammates.get(person.id)
+    if (existing) {
+      existing.projects.push(entry)
+    } else {
+      teammates.set(person.id, {
+        id: person.id,
+        name: person.name,
+        email: person.email,
+        projects: [entry],
+      })
+    }
+  }
+
+  // Projects the user owns: every member on them is a teammate.
+  for (const project of owned) {
+    for (const m of project.members) {
+      addTeammate(m.user, project.id, project.name, m.role)
+    }
+  }
+
+  // Projects the user is a member on: the owner and every other member
+  // are teammates too.
+  for (const project of memberOf) {
+    addTeammate(project.owner, project.id, project.name, "owner")
+    for (const m of project.members) {
+      addTeammate(m.user, project.id, project.name, m.role)
+    }
+  }
+
+  return Array.from(teammates.values()).sort((a, b) => a.name.localeCompare(b.name))
 }

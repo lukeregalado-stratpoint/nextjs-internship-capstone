@@ -15,6 +15,7 @@ export interface ProjectCardData {
   taskCount: number
   listCount: number
   progress: number
+  isOwner: boolean
 }
 
 function daysLeft(dueDate: Date | null) {
@@ -47,34 +48,36 @@ export function ProjectCard({ project }: { project: ProjectCardData }) {
               {days < 0 ? "Overdue" : `${days} days left`}
             </span>
           )}
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              className="p-1 rounded-lg hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
-            >
-              <MoreVertical size={16} className="text-paynes_gray-500 dark:text-french_gray-400" />
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-outer_space-500 border border-lavender-100 dark:border-paynes_gray-400 rounded-xl shadow-lg z-10 overflow-hidden">
-                <button
-                  onClick={() => {
-                    setMenuOpen(false)
-                    setEditOpen(true)
-                  }}
-                  className="w-full flex items-center px-3 py-2 text-sm text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
-                >
-                  <Pencil size={14} className="mr-2" /> Edit
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={isPending}
-                  className="w-full flex items-center px-3 py-2 text-sm text-rose-500 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
-                >
-                  <Trash2 size={14} className="mr-2" /> Delete
-                </button>
-              </div>
-            )}
-          </div>
+          {project.isOwner && (
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="p-1 rounded-lg hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
+              >
+                <MoreVertical size={16} className="text-paynes_gray-500 dark:text-french_gray-400" />
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-outer_space-500 border border-lavender-100 dark:border-paynes_gray-400 rounded-xl shadow-lg z-10 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false)
+                      setEditOpen(true)
+                    }}
+                    className="w-full flex items-center px-3 py-2 text-sm text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
+                  >
+                    <Pencil size={14} className="mr-2" /> Edit
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isPending}
+                    className="w-full flex items-center px-3 py-2 text-sm text-rose-500 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
+                  >
+                    <Trash2 size={14} className="mr-2" /> Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

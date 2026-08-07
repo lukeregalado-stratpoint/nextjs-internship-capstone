@@ -7,8 +7,11 @@ import {
   deleteTask as deleteTaskRow,
   getAssignableUserIds,
   getLabelsForTask,
+  getListById,
   getNextTaskPosition,
   getProjectLabelIds,
+  getTaskById,
+  logActivity,
   moveTask as moveTaskRow,
   ownsList,
   ownsTask,
@@ -59,6 +62,8 @@ export async function createTaskAction(
   await setTaskLabels(task.id, labelIds)
   const labels = await getLabelsForTask(task.id)
 
+  await logActivity(task.id, user.id, "task_created", { title: task.title })
+
   revalidatePath(`/projects/${projectId}`)
 
   return { success: true, data: { ...task, labels } }
@@ -95,6 +100,15 @@ export async function updateTaskAction(
     }
   }
 
+  // Fetched before the write so we have a "before" snapshot to diff the
+  // incoming values against — the form always submits the full set of
+  // fields (not just the ones the user touched), so `fields !== undefined`
+  // doesn't mean "changed".
+  const previous = await getTaskById(taskId)
+  if (!previous) {
+    return { success: false, error: "Task not found" }
+  }
+
   const { listId, labelIds, ...fields } = parsed.data
   let updateData: Partial<Task> = fields
 
@@ -123,9 +137,82 @@ export async function updateTaskAction(
   }
   const labels = await getLabelsForTask(taskId)
 
+  await logTaskUpdateActivities(previous, fields, listId, user.id)
+
   revalidatePath(`/projects/${projectId}`)
 
   return { success: true, data: { ...task, labels } }
+}
+
+/**
+ * Compares the task's pre-update snapshot against the fields being written
+ * and logs one activity row per field that genuinely changed. Kept out of
+ * updateTaskAction's main flow so that flow stays readable; failures here
+ * are non-fatal to the update itself (see the try/catch below) — a broken
+ * activity write shouldn't roll back or block a task edit that otherwise
+ * succeeded.
+ */
+async function logTaskUpdateActivities(
+  previous: NonNullable<Awaited<ReturnType<typeof getTaskById>>>,
+  fields: Partial<Task>,
+  newListId: string | undefined,
+  userId: string
+) {
+  try {
+    const taskId = previous.id
+
+    if (fields.title !== undefined && fields.title !== previous.title) {
+      await logActivity(taskId, userId, "title_changed", {
+        from: previous.title,
+        to: fields.title,
+      })
+    }
+
+    if (
+      "description" in fields &&
+      (fields.description ?? null) !== (previous.description ?? null)
+    ) {
+      await logActivity(taskId, userId, "description_changed", {})
+    }
+
+    if (fields.priority !== undefined && fields.priority !== previous.priority) {
+      await logActivity(taskId, userId, "priority_changed", {
+        from: previous.priority,
+        to: fields.priority,
+      })
+    }
+
+    if ("dueDate" in fields) {
+      const prevTime = previous.dueDate ? new Date(previous.dueDate).getTime() : null
+      const nextTime = fields.dueDate ? new Date(fields.dueDate).getTime() : null
+      if (prevTime !== nextTime) {
+        await logActivity(taskId, userId, "due_date_changed", {
+          from: previous.dueDate,
+          to: fields.dueDate ?? null,
+        })
+      }
+    }
+
+    if ("assigneeId" in fields && (fields.assigneeId ?? null) !== (previous.assigneeId ?? null)) {
+      await logActivity(taskId, userId, "assignee_changed", {
+        fromId: previous.assigneeId,
+        fromName: previous.assignee?.name ?? null,
+        toId: fields.assigneeId ?? null,
+      })
+    }
+
+    if (newListId && newListId !== previous.listId) {
+      const newList = await getListById(newListId)
+      await logActivity(taskId, userId, "status_changed", {
+        fromId: previous.listId,
+        fromName: previous.list?.name ?? null,
+        toId: newListId,
+        toName: newList?.name ?? null,
+      })
+    }
+  } catch (err) {
+    console.error("Failed to log task update activity", err)
+  }
 }
 
 export async function deleteTaskAction(
@@ -165,7 +252,23 @@ export async function moveTaskAction(
     return { success: false, error: "You don't have permission to move this task" }
   }
 
+  const previous = await getTaskById(parsed.data.taskId)
+
   await moveTaskRow(parsed.data.taskId, parsed.data.destListId, parsed.data.orderedTaskIds)
+
+  if (previous && previous.listId !== parsed.data.destListId) {
+    try {
+      const destList = await getListById(parsed.data.destListId)
+      await logActivity(parsed.data.taskId, user.id, "status_changed", {
+        fromId: previous.listId,
+        fromName: previous.list?.name ?? null,
+        toId: parsed.data.destListId,
+        toName: destList?.name ?? null,
+      })
+    } catch (err) {
+      console.error("Failed to log task move activity", err)
+    }
+  }
 
   revalidatePath(`/projects/${projectId}`)
 

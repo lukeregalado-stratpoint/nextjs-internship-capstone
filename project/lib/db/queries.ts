@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
+  activities,
+  comments,
   labels,
   lists,
   projectMembers,
@@ -8,6 +10,9 @@ import {
   taskLabels,
   tasks,
   users,
+  type ActivityType,
+  type NewActivity,
+  type NewComment,
   type NewLabel,
   type NewList,
   type NewProject,
@@ -300,6 +305,13 @@ export async function reorderLists(projectId: string, orderedListIds: string[]) 
   `)
 }
 
+export async function getListById(listId: string) {
+  return db.query.lists.findFirst({
+    where: eq(lists.id, listId),
+    columns: { id: true, name: true },
+  })
+}
+
 export async function ownsList(listId: string, userId: string) {
   const list = await db.query.lists.findFirst({
     where: eq(lists.id, listId),
@@ -317,6 +329,16 @@ export async function getNextTaskPosition(listId: string) {
   })
   if (existing.length === 0) return 0
   return Math.max(...existing.map((t) => t.position)) + 1
+}
+
+export async function getTaskById(taskId: string) {
+  return db.query.tasks.findFirst({
+    where: eq(tasks.id, taskId),
+    with: {
+      list: { columns: { id: true, name: true } },
+      assignee: { columns: { id: true, name: true } },
+    },
+  })
 }
 
 export async function createTask(data: NewTask) {
@@ -362,6 +384,31 @@ export async function ownsTask(taskId: string, userId: string) {
     with: { list: { with: { project: { columns: { ownerId: true } } } } },
   })
   return task?.list.project.ownerId === userId
+}
+
+/**
+ * Owner OR project member. Editing/moving a task is still owner-only
+ * (see `ownsTask`), but commenting is a collaborative action — every
+ * member assigned to the project should be able to leave a comment on a
+ * task, not just the owner.
+ */
+export async function canAccessTask(taskId: string, userId: string) {
+  const task = await db.query.tasks.findFirst({
+    where: eq(tasks.id, taskId),
+    with: {
+      list: {
+        with: {
+          project: {
+            columns: { ownerId: true },
+            with: { members: { columns: { userId: true } } },
+          },
+        },
+      },
+    },
+  })
+  if (!task) return false
+  const project = task.list.project
+  return project.ownerId === userId || project.members.some((m) => m.userId === userId)
 }
 
 // LABELS
@@ -542,4 +589,83 @@ export async function getTeammatesForUser(userId: string) {
   }
 
   return Array.from(teammates.values()).sort((a, b) => a.name.localeCompare(b.name))
+}
+
+// COMMENTS
+
+/** Oldest first, like a normal comment thread. */
+export async function getCommentsForTask(taskId: string) {
+  return db.query.comments.findMany({
+    where: eq(comments.taskId, taskId),
+    orderBy: [asc(comments.createdAt)],
+    with: { author: { columns: { id: true, name: true } } },
+  })
+}
+
+export async function createComment(data: NewComment) {
+  const [comment] = await db.insert(comments).values(data).returning()
+  return comment
+}
+
+export async function updateComment(commentId: string, content: string) {
+  const [comment] = await db
+    .update(comments)
+    .set({ content, updatedAt: new Date() })
+    .where(eq(comments.id, commentId))
+    .returning()
+  return comment ?? null
+}
+
+export async function deleteComment(commentId: string) {
+  await db.delete(comments).where(eq(comments.id, commentId))
+}
+
+export async function getCommentById(commentId: string) {
+  return db.query.comments.findFirst({ where: eq(comments.id, commentId) })
+}
+
+/** Only the person who wrote it can edit/delete their own comment. */
+export async function ownsComment(commentId: string, userId: string) {
+  const comment = await db.query.comments.findFirst({
+    where: eq(comments.id, commentId),
+    columns: { authorId: true },
+  })
+  return comment?.authorId === userId
+}
+
+// ACTIVITY
+
+/**
+ * Full activity feed for a task, newest first — mirrors the order you'd
+ * scroll a changelog in. Comments are stored separately (see above) but
+ * a "comment_added"/"comment_deleted" activity row is still logged
+ * alongside them so the feed reads as one continuous timeline.
+ */
+export async function getActivityForTask(taskId: string) {
+  return db.query.activities.findMany({
+    where: eq(activities.taskId, taskId),
+    orderBy: [desc(activities.createdAt)],
+    with: { user: { columns: { id: true, name: true } } },
+  })
+}
+
+export async function createActivity(data: NewActivity) {
+  const [activity] = await db.insert(activities).values(data).returning()
+  return activity
+}
+
+/**
+ * Convenience wrapper around `createActivity` for the common case — most
+ * call sites just have (taskId, userId, type, metadata) and don't need the
+ * raw insert shape. Failures here are swallowed by the caller (see
+ * `logActivitySafe` usage in the task actions) since a broken activity log
+ * write should never fail the task mutation that triggered it.
+ */
+export async function logActivity(
+  taskId: string,
+  userId: string,
+  type: ActivityType,
+  metadata?: Record<string, unknown>
+) {
+  return createActivity({ taskId, userId, type, metadata })
 }

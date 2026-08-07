@@ -22,6 +22,35 @@
       "when": 1785909241861,
       "tag": "0002_blushing_silhouette",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786089583845,
+      "tag": "0003_vengeful_falcon",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786176000000,
+      "tag": "0004_fix_activity_type_enum_values",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786176000001,
+      "tag": "0005_migrate_activity_type_rows",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786348800000,
+      "tag": "0006_recreate_activities_table",
+      "breakpoints": true
     }
   ]
 }
+

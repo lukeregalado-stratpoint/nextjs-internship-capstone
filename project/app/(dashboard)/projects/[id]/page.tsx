@@ -42,6 +42,7 @@ export default async function ProjectDetailPage({
       />
       <KanbanBoard
         projectId={project.id}
+        currentUserId={user.id}
         initialLists={project.lists}
         members={members}
         initialLabels={project.labels}

@@ -128,3 +128,16 @@ export const updateMemberRoleSchema = z.object({
   role: z.enum(projectRoleEnum.enumValues),
 })
 export type UpdateMemberRoleInput = z.infer<typeof updateMemberRoleSchema>
+
+// COMMENTS
+
+export const commentSchema = z.object({
+  content: z.string().trim().min(1, "Comment can't be empty").max(2000),
+  taskId: z.string().uuid(),
+})
+export type CommentInput = z.infer<typeof commentSchema>
+
+export const commentUpdateSchema = z.object({
+  content: z.string().trim().min(1, "Comment can't be empty").max(2000),
+})
+export type CommentUpdateInput = z.infer<typeof commentUpdateSchema>

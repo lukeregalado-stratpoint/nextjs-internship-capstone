@@ -44,12 +44,26 @@ import {
   uuid,
   pgEnum,
   index,
+  jsonb,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
 
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"])
 export const projectRoleEnum = pgEnum("project_role", ["product_owner", "scrum_master", "developer", "stakeholder"])
+export const activityTypeEnum = pgEnum("activity_type", [
+  "task_created",
+  "title_changed",
+  "description_changed",
+  "status_changed",
+  "priority_changed",
+  "assignee_changed",
+  "due_date_changed",
+  "label_added",
+  "label_removed",
+  "comment_added",
+  "comment_deleted",
+])
 
 // TABLES
 
@@ -195,7 +209,32 @@ export const comments = pgTable(
   ]
 )
 
-
+// Append-only audit log for a task. One row per notable change (created,
+// field edits, label add/remove, comment add/delete). `metadata` holds
+// type-specific, human-renderable details — e.g. { from: "medium", to:
+// "high" } for a priority_changed row, or { commentId } for comment_added —
+// so the activity feed doesn't need to re-derive "what changed" after the
+// fact. Rows are never updated or deleted once written; deleting the task
+// cascades them away.
+export const activities = pgTable(
+  "activities",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: activityTypeEnum("type").notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("activities_task_id_idx").on(table.taskId),
+    index("activities_user_id_idx").on(table.userId),
+  ]
+)
 
 // RELATIONS
 
@@ -203,6 +242,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   ownedProjects: many(projects),
   assignedTasks: many(tasks),
   comments: many(comments),
+  activities: many(activities),
   projectMemberships: many(projectMembers),
 }))
  
@@ -245,6 +285,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [users.id],
   }),
   comments: many(comments),
+  activities: many(activities),
   taskLabels: many(taskLabels),
 }))
  
@@ -255,6 +296,17 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   }),
   author: one(users, {
     fields: [comments.authorId],
+    references: [users.id],
+  }),
+}))
+
+export const activitiesRelations = relations(activities, ({ one }) => ({
+  task: one(tasks, {
+    fields: [activities.taskId],
+    references: [tasks.id],
+  }),
+  user: one(users, {
+    fields: [activities.userId],
     references: [users.id],
   }),
 }))
@@ -302,3 +354,7 @@ export type NewLabel = typeof labels.$inferInsert
 
 export type TaskLabel = typeof taskLabels.$inferSelect
 export type NewTaskLabel = typeof taskLabels.$inferInsert
+
+export type Activity = typeof activities.$inferSelect
+export type NewActivity = typeof activities.$inferInsert
+export type ActivityType = (typeof activityTypeEnum.enumValues)[number]

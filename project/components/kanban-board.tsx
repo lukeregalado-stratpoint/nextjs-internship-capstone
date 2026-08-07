@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react"
 import {
   DndContext,
   DragOverlay,
@@ -30,16 +30,27 @@ import { TaskSearchBar } from "@/components/task-search-bar"
 import { useBoardStore, type ListWithTasks, type TaskWithLabels } from "@/stores/board-store"
 import { filterTasks } from "@/lib/task-search"
 import { createLabelAction } from "@/lib/actions/labels"
+import {
+  createCommentAction,
+  deleteCommentAction,
+  getTaskThreadAction,
+  updateCommentAction,
+  type ActivityWithUser,
+  type CommentWithAuthor,
+} from "@/lib/actions/comments"
 import type { Label } from "@/lib/db/schema"
 
 export function KanbanBoard({
   projectId,
+  currentUserId,
   initialLists,
   members = [],
   initialLabels = [],
   isOwner = false,
 }: {
   projectId: string
+  /** Needed for the Comments tab — whose comments can be edited/deleted inline, and who a new comment is posted as. */
+  currentUserId: string
   initialLists: ListWithTasks[]
   members?: { id: string; name: string }[]
   initialLabels?: Label[]
@@ -72,6 +83,17 @@ export function KanbanBoard({
   const [activeTask, setActiveTask] = useState<TaskWithLabels | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
+  // Comments + activity for whichever task is currently open in edit mode.
+  // Fetched on open rather than kept on every task in `lists` — the board
+  // already carries enough per-task data as it is, and most opens never
+  // touch these tabs.
+  const [taskThread, setTaskThread] = useState<{
+    comments: CommentWithAuthor[]
+    activities: ActivityWithUser[]
+  } | null>(null)
+  const [threadError, setThreadError] = useState<string | null>(null)
+  const [commentPending, startCommentTransition] = useTransition()
+
   const isSearching = searchQuery.trim().length > 0
   const memberNameById = useMemo(() => new Map(members.map((m) => [m.id, m.name])), [members])
   const memberNames = useMemo(() => members.map((m) => m.name), [members])
@@ -97,6 +119,30 @@ export function KanbanBoard({
     setLists(initialLists)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
+
+  const editingTaskId = taskModal?.task?.id
+
+  useEffect(() => {
+    if (!editingTaskId) {
+      setTaskThread(null)
+      setThreadError(null)
+      return
+    }
+    let cancelled = false
+    setThreadError(null)
+    setTaskThread({ comments: [], activities: [] })
+    getTaskThreadAction(editingTaskId).then((result) => {
+      if (cancelled) return
+      if (result.success) {
+        setTaskThread(result.data)
+      } else {
+        setThreadError(result.error)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [editingTaskId])
 
   // On touch devices, require a slightly longer press-hold before a drag
   // starts so a normal horizontal swipe/scroll isn't hijacked as a drag.
@@ -251,6 +297,70 @@ export function KanbanBoard({
     }
   }
 
+  function handleAddComment(content: string) {
+    if (!taskModal?.task) return
+    const taskId = taskModal.task.id
+    setThreadError(null)
+    startCommentTransition(async () => {
+      const result = await createCommentAction(taskId, projectId, { content })
+      if (!result.success) {
+        setThreadError(result.error)
+        return
+      }
+      setTaskThread((prev) =>
+        prev ? { ...prev, comments: [...prev.comments, result.data] } : prev
+      )
+      // A comment_added activity was logged server-side; refetch just the
+      // activity feed so the two tabs stay in sync without a full reload.
+      const refreshed = await getTaskThreadAction(taskId)
+      if (refreshed.success) setTaskThread(refreshed.data)
+    })
+  }
+
+  function handleEditComment(commentId: string, content: string) {
+    if (!taskModal?.task) return
+    const taskId = taskModal.task.id
+    setThreadError(null)
+    startCommentTransition(async () => {
+      const result = await updateCommentAction(commentId, taskId, projectId, { content })
+      if (!result.success) {
+        setThreadError(result.error)
+        return
+      }
+      setTaskThread((prev) =>
+        prev
+          ? {
+              ...prev,
+              comments: prev.comments.map((c) =>
+                c.id === commentId ? { ...c, ...result.data } : c
+              ),
+            }
+          : prev
+      )
+    })
+  }
+
+  function handleDeleteComment(commentId: string) {
+    if (!taskModal?.task) return
+    const taskId = taskModal.task.id
+    setThreadError(null)
+    startCommentTransition(async () => {
+      const result = await deleteCommentAction(commentId, taskId, projectId)
+      if (!result.success) {
+        setThreadError(result.error)
+        return
+      }
+      const refreshed = await getTaskThreadAction(taskId)
+      if (refreshed.success) {
+        setTaskThread(refreshed.data)
+      } else {
+        setTaskThread((prev) =>
+          prev ? { ...prev, comments: prev.comments.filter((c) => c.id !== commentId) } : prev
+        )
+      }
+    })
+  }
+
   return (
     <div className="space-y-3">
       {error && <p className="text-sm text-red-500 px-3 sm:px-0">{error}</p>}
@@ -376,6 +486,14 @@ export function KanbanBoard({
           onClose={() => setTaskModal(null)}
           onSubmit={handleTaskSubmit}
           onDelete={taskModal.task ? handleTaskDelete : undefined}
+          currentUserId={taskModal.task ? currentUserId : undefined}
+          comments={taskModal.task ? taskThread?.comments : undefined}
+          activities={taskModal.task ? taskThread?.activities : undefined}
+          onAddComment={handleAddComment}
+          onEditComment={handleEditComment}
+          onDeleteComment={handleDeleteComment}
+          commentPending={commentPending}
+          commentError={threadError}
         />
       )}
     </div>

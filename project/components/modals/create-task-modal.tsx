@@ -39,6 +39,8 @@ import { useState, type FormEvent } from "react"
 import { Check, Plus, X } from "lucide-react"
 import type { Task } from "@/lib/db/schema"
 import type { ListWithTasks } from "@/stores/board-store"
+import { TaskComments, type CommentWithAuthor } from "@/components/task-comments"
+import { TaskActivity, type ActivityWithUser } from "@/components/task-activity"
 
 type Priority = "low" | "medium" | "high"
 
@@ -87,6 +89,21 @@ interface CreateTaskModalProps {
    */
   createAnother: boolean
   onCreateAnotherChange: (value: boolean) => void
+
+  /**
+   * Comments + activity are only shown in edit mode, and only when the
+   * parent passes them (a create-mode task has no id to attach them to
+   * yet). Omitting these props entirely just hides the Comments/Activity
+   * tabs rather than rendering an empty state.
+   */
+  comments?: CommentWithAuthor[]
+  activities?: ActivityWithUser[]
+  currentUserId?: string
+  onAddComment?: (content: string) => void
+  onEditComment?: (commentId: string, content: string) => void
+  onDeleteComment?: (commentId: string) => void
+  commentPending?: boolean
+  commentError?: string | null
 }
 
 export function CreateTaskModal({
@@ -105,8 +122,19 @@ export function CreateTaskModal({
   error,
   createAnother,
   onCreateAnotherChange,
+  comments,
+  activities,
+  currentUserId,
+  onAddComment,
+  onEditComment,
+  onDeleteComment,
+  commentPending,
+  commentError,
 }: CreateTaskModalProps) {
   const isEditing = Boolean(task)
+  const showCommentsTab = isEditing && comments !== undefined && currentUserId !== undefined
+  const showActivityTab = isEditing && activities !== undefined
+  const [activeTab, setActiveTab] = useState<"details" | "comments" | "activity">("details")
 
   const [title, setTitle] = useState(task?.title ?? "")
   const [description, setDescription] = useState(task?.description ?? "")
@@ -183,6 +211,49 @@ export function CreateTaskModal({
           </p>
         )}
 
+        {(showCommentsTab || showActivityTab) && (
+          <div className="flex items-center gap-1 mb-4 border-b border-lavender-100 dark:border-paynes_gray-400">
+            {(
+              [
+                ["details", "Details"],
+                ...(showCommentsTab ? [["comments", `Comments${comments && comments.length > 0 ? ` (${comments.length})` : ""}`]] : []),
+                ...(showActivityTab ? [["activity", "Activity"]] : []),
+              ] as [typeof activeTab, string][]
+            ).map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  activeTab === tab
+                    ? "border-lavender-500 text-outer_space-500 dark:text-platinum-500"
+                    : "border-transparent text-paynes_gray-500 dark:text-french_gray-400 hover:text-outer_space-500 dark:hover:text-platinum-500"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "comments" && showCommentsTab && (
+          <TaskComments
+            comments={comments ?? []}
+            currentUserId={currentUserId as string}
+            canModerate={Boolean(task && onDeleteComment)}
+            onAddComment={(content) => onAddComment?.(content)}
+            onEditComment={(id, content) => onEditComment?.(id, content)}
+            onDeleteComment={(id) => onDeleteComment?.(id)}
+            isPending={commentPending}
+            error={commentError}
+          />
+        )}
+
+        {activeTab === "activity" && showActivityTab && (
+          <TaskActivity activities={activities ?? []} />
+        )}
+
+        {activeTab === "details" && (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="task-title" className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
@@ -424,6 +495,7 @@ export function CreateTaskModal({
             </div>
           </div>
         </form>
+        )}
       </div>
     </div>
   )

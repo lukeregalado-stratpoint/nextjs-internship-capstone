@@ -19,7 +19,14 @@ import { clerkMiddleware } from "@clerk/nextjs/server"
 // ])
 
 
-export default clerkMiddleware()
+// Clock skew tolerance widened from Clerk's 5s default: a dev machine (or,
+// in principle, any host) running a few seconds fast/slow otherwise causes
+// every refreshed session token to look "issued in the future" and trips
+// an infinite refresh loop. 20s covers realistic drift without meaningfully
+// weakening the iat replay check the tolerance exists for.
+export default clerkMiddleware({
+  clockSkewInMs: 20_000,
+})
 
 
  

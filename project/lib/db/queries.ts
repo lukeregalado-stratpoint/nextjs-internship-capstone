@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm"
+import { and, asc, desc, eq, ilike, inArray, notInArray, or, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   activities,
@@ -470,6 +470,46 @@ export async function getLabelsForTask(taskId: string) {
 export async function findUserByEmail(email: string) {
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1)
   return user ?? null
+}
+
+export async function getUserById(userId: string) {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+  return user ?? null
+}
+
+/**
+ * Registered users matching `query` against name or email, for the "add
+ * member" autocomplete. Scoped to a project: the owner and everyone already
+ * on the project are excluded so results only show people who could
+ * actually be added. Deliberately NOT exposed for a global/unscoped user
+ * search — see the advisory note on task 4, this keeps the picker from
+ * leaking the full user directory outside the context of a specific project.
+ */
+export async function searchUsersForProject(projectId: string, query: string, limit = 8) {
+  const trimmed = query.trim()
+  if (!trimmed) return []
+
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { ownerId: true },
+    with: { members: { columns: { userId: true } } },
+  })
+  if (!project) return []
+
+  const excludeIds = [project.ownerId, ...project.members.map((m) => m.userId)]
+  const pattern = `%${trimmed}%`
+
+  return db
+    .select({ id: users.id, name: users.name, email: users.email })
+    .from(users)
+    .where(
+      and(
+        or(ilike(users.name, pattern), ilike(users.email, pattern)),
+        notInArray(users.id, excludeIds)
+      )
+    )
+    .orderBy(asc(users.name))
+    .limit(limit)
 }
 
 export async function getProjectMember(projectId: string, userId: string) {

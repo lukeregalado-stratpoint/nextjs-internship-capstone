@@ -129,6 +129,25 @@ export const updateMemberRoleSchema = z.object({
 })
 export type UpdateMemberRoleInput = z.infer<typeof updateMemberRoleSchema>
 
+// Autocomplete search, scoped to a single project (see searchUsersForProject) —
+// intentionally not a global user search.
+export const searchMembersSchema = z.object({
+  projectId: z.string().uuid(),
+  query: z.string().trim().min(1).max(100),
+})
+export type SearchMembersInput = z.infer<typeof searchMembersSchema>
+
+// Adding a member from an autocomplete result: the picker already resolved
+// a specific registered user, so this takes their id directly instead of
+// re-parsing an email. addMemberSchema (above) stays around as the
+// email-based fallback for typing someone's exact address.
+export const addMemberByUserIdSchema = z.object({
+  projectId: z.string().uuid(),
+  userId: z.string().uuid(),
+  role: z.enum(projectRoleEnum.enumValues).default("developer"),
+})
+export type AddMemberByUserIdInput = z.infer<typeof addMemberByUserIdSchema>
+
 // COMMENTS
 
 export const commentSchema = z.object({

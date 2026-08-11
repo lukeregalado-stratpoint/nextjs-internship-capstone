@@ -16,10 +16,22 @@ interface BoardState {
   removeTask: (taskId: string) => void
   moveTask: (taskId: string, destListId: string, destIndex?: number) => void
   reorderTasksInList: (listId: string, orderedTaskIds: string[]) => void
+
+  // SELECTION (task 5 — bulk operations)
+  selectedTaskIds: Set<string>
+  toggleTaskSelection: (taskId: string) => void
+  selectTasks: (taskIds: string[]) => void
+  clearSelection: () => void
+
+  // BULK MUTATIONS — optimistic counterparts to the single-task actions
+  // above, applied from useTasks().bulkUpdateTasks / bulkDeleteTasks.
+  bulkUpdateTasks: (taskIds: string[], updates: Partial<TaskWithLabels>) => void
+  bulkRemoveTasks: (taskIds: string[]) => void
 }
 
 export const useBoardStore = create<BoardState>((set) => ({
   lists: [],
+  selectedTaskIds: new Set(),
 
   setLists: (lists) => set({ lists }),
 
@@ -63,12 +75,19 @@ export const useBoardStore = create<BoardState>((set) => ({
     })),
 
   removeTask: (taskId) =>
-    set((state) => ({
-      lists: state.lists.map((l) => ({
-        ...l,
-        tasks: l.tasks.filter((t) => t.id !== taskId),
-      })),
-    })),
+    set((state) => {
+      // also drop it from the current selection so a deleted task can't
+      // linger as "selected" for a subsequent bulk action
+      const selectedTaskIds = new Set(state.selectedTaskIds)
+      selectedTaskIds.delete(taskId)
+      return {
+        selectedTaskIds,
+        lists: state.lists.map((l) => ({
+          ...l,
+          tasks: l.tasks.filter((t) => t.id !== taskId),
+        })),
+      }
+    }),
 
   moveTask: (taskId, destListId, destIndex) =>
     set((state) => {
@@ -104,4 +123,75 @@ export const useBoardStore = create<BoardState>((set) => ({
         return { ...l, tasks: reordered }
       }),
     })),
+
+  // SELECTION
+
+  toggleTaskSelection: (taskId) =>
+    set((state) => {
+      const selectedTaskIds = new Set(state.selectedTaskIds)
+      if (selectedTaskIds.has(taskId)) {
+        selectedTaskIds.delete(taskId)
+      } else {
+        selectedTaskIds.add(taskId)
+      }
+      return { selectedTaskIds }
+    }),
+
+  selectTasks: (taskIds) => set({ selectedTaskIds: new Set(taskIds) }),
+
+  clearSelection: () => set({ selectedTaskIds: new Set() }),
+
+  // BULK MUTATIONS
+
+  bulkUpdateTasks: (taskIds, updates) =>
+    set((state) => {
+      const idSet = new Set(taskIds)
+      const { listId: destListId, ...fields } = updates
+
+      // no column change -> plain field merge, same shape as `updateTask`
+      if (!destListId) {
+        return {
+          lists: state.lists.map((l) => ({
+            ...l,
+            tasks: l.tasks.map((t) => (idSet.has(t.id) ? { ...t, ...fields } : t)),
+          })),
+        }
+      }
+
+      // column change -> pull the selected tasks out of wherever they
+      // currently live and append them (in selection order) to the
+      // destination list, mirroring what `moveTask` does for a single task
+      const moved: TaskWithLabels[] = []
+      const stripped = state.lists.map((l) => {
+        const keep: TaskWithLabels[] = []
+        for (const t of l.tasks) {
+          if (idSet.has(t.id)) {
+            moved.push({ ...t, ...fields, listId: destListId })
+          } else {
+            keep.push(t)
+          }
+        }
+        return { ...l, tasks: keep }
+      })
+
+      return {
+        lists: stripped.map((l) =>
+          l.id === destListId ? { ...l, tasks: [...l.tasks, ...moved] } : l
+        ),
+      }
+    }),
+
+  bulkRemoveTasks: (taskIds) =>
+    set((state) => {
+      const idSet = new Set(taskIds)
+      const selectedTaskIds = new Set(state.selectedTaskIds)
+      for (const id of taskIds) selectedTaskIds.delete(id)
+      return {
+        selectedTaskIds,
+        lists: state.lists.map((l) => ({
+          ...l,
+          tasks: l.tasks.filter((t) => !idSet.has(t.id)),
+        })),
+      }
+    }),
 }))

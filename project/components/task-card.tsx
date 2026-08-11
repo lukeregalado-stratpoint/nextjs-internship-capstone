@@ -39,7 +39,8 @@ Features to implement:
 
 "use client"
 
-import { Calendar } from "lucide-react"
+import { Calendar, Check } from "lucide-react"
+import type { KeyboardEvent, MouseEvent } from "react"
 import type { Task } from "@/lib/db/schema"
 
 const priorityStyles: Record<Task["priority"], string> = {
@@ -60,6 +61,8 @@ export function TaskCard({
   assigneeName,
   labels,
   onClick,
+  selected = false,
+  onToggleSelect,
 }: {
   task: Task
   /** Resolved from task.assigneeId by the parent, which has the member list. */
@@ -67,16 +70,76 @@ export function TaskCard({
   /** Resolved from task.taskLabels by the parent, which has the project's label set. */
   labels?: { id: string; name: string; color: string }[]
   onClick?: () => void
+  /** Whether this task is part of the board's current multi-select. */
+  selected?: boolean
+  /**
+   * Present -> this card is selectable: shows a checkbox and lets
+   * Cmd/Ctrl+click toggle selection instead of opening the task. Omit to
+   * render a plain (non-selectable) card, e.g. in the drag overlay.
+   */
+  onToggleSelect?: () => void
 }) {
   const isOverdue = task.dueDate ? new Date(task.dueDate) < new Date() : false
 
+  function handleClick(e: MouseEvent) {
+    if (onToggleSelect && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      onToggleSelect()
+      return
+    }
+    onClick?.()
+  }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      onClick?.()
+    }
+  }
+
+  function handleCheckboxPointerDown(e: MouseEvent) {
+    // Cards inside SortableTaskCard have dnd-kit's drag listeners on an
+    // ancestor element (bound to pointerdown) — stop it here too, not just
+    // on click, or tapping the checkbox can be swallowed as a drag start.
+    e.stopPropagation()
+  }
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full text-left bg-white dark:bg-outer_space-500 rounded-xl border border-lavender-100 dark:border-paynes_gray-400 px-3 py-2.5 hover:border-lavender-300 hover:shadow-sm transition-all space-y-2"
+    // A plain <button> can't contain the nested checkbox <button> below
+    // (invalid HTML), so this is a div acting as a button: same click/
+    // keyboard/focus behavior via role, tabIndex, and onKeyDown.
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className={`group relative w-full text-left bg-white dark:bg-outer_space-500 rounded-xl border px-3 py-2.5 transition-all space-y-2 cursor-pointer ${
+        selected
+          ? "border-lavender-400 ring-2 ring-lavender-400/60"
+          : "border-lavender-100 dark:border-paynes_gray-400 hover:border-lavender-300 hover:shadow-sm"
+      }`}
     >
-      <p className="text-sm font-medium text-outer_space-500 dark:text-platinum-500 leading-snug">
+      {onToggleSelect && (
+        <button
+          type="button"
+          onPointerDown={handleCheckboxPointerDown}
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleSelect()
+          }}
+          aria-label={selected ? "Deselect task" : "Select task"}
+          aria-pressed={selected}
+          className={`absolute top-2 right-2 h-4.5 w-4.5 flex items-center justify-center rounded-md border transition-colors ${
+            selected
+              ? "bg-lavender-500 border-lavender-500 text-white opacity-100"
+              : "border-lavender-200 dark:border-paynes_gray-400 bg-white dark:bg-outer_space-500 opacity-0 group-hover:opacity-100 focus:opacity-100"
+          }`}
+        >
+          {selected && <Check size={11} strokeWidth={3} />}
+        </button>
+      )}
+
+      <p className="text-sm font-medium text-outer_space-500 dark:text-platinum-500 leading-snug pr-6">
         {task.title}
       </p>
 
@@ -134,6 +197,6 @@ export function TaskCard({
           </span>
         )}
       </div>
-    </button>
+    </div>
   )
 }

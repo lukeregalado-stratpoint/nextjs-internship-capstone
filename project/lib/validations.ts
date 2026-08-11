@@ -111,6 +111,28 @@ export const taskMoveSchema = z.object({
 })
 export type TaskMoveInput = z.infer<typeof taskMoveSchema>
 
+// Bulk selection actions (task 5). Capped at 100 per operation — well
+// above anything a person would realistically multi-select by hand, but
+// keeps a single bad request from trying to touch an unbounded number of
+// rows.
+const taskIdsField = z.array(z.string().uuid()).min(1).max(100)
+
+// Same field set as a single-task move/edit, minus title/description/
+// dueDate/labelIds — those are inherently per-task and don't make sense
+// applied identically across a whole selection.
+export const taskBulkUpdateSchema = z.object({
+  taskIds: taskIdsField,
+  listId: z.string().uuid().optional(),
+  priority: taskPriority.optional(),
+  assigneeId: z.string().uuid().optional().nullable(),
+})
+export type TaskBulkUpdateInput = z.infer<typeof taskBulkUpdateSchema>
+
+export const taskBulkDeleteSchema = z.object({
+  taskIds: taskIdsField,
+})
+export type TaskBulkDeleteInput = z.infer<typeof taskBulkDeleteSchema>
+
 // PROJECT MEMBERS
 
 // Adding a member is done by email rather than userId — the owner types in

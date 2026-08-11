@@ -21,7 +21,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react"
+import { GripVertical, MoreVertical, Pencil, Plus, Trash2, X } from "lucide-react"
 import { useLists } from "@/hooks/use-lists"
 import { useTasks } from "@/hooks/use-tasks"
 import { CreateTaskModal, type TaskFormSubmitValues } from "@/components/modals/create-task-modal"
@@ -38,7 +38,7 @@ import {
   type ActivityWithUser,
   type CommentWithAuthor,
 } from "@/lib/actions/comments"
-import type { Label } from "@/lib/db/schema"
+import type { Label, Task } from "@/lib/db/schema"
 
 export function KanbanBoard({
   projectId,
@@ -63,6 +63,8 @@ export function KanbanBoard({
     updateTask,
     deleteTask,
     moveTask,
+    bulkDeleteTasks,
+    bulkUpdateTasks,
     isPending: taskPending,
     error: taskError,
   } = useTasks(projectId)
@@ -82,6 +84,15 @@ export function KanbanBoard({
   const [createAnother, setCreateAnother] = useState(false)
   const [activeTask, setActiveTask] = useState<TaskWithLabels | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+
+  // Multi-select for bulk operations (task 5). Selection lives in the
+  // board store (not local state) so it's addressable from the store's own
+  // optimistic bulk mutations without threading callbacks everywhere.
+  const selectedTaskIds = useBoardStore((s) => s.selectedTaskIds)
+  const toggleTaskSelection = useBoardStore((s) => s.toggleTaskSelection)
+  const selectTasks = useBoardStore((s) => s.selectTasks)
+  const clearSelection = useBoardStore((s) => s.clearSelection)
+  const selectedCount = selectedTaskIds.size
 
   // Comments + activity for whichever task is currently open in edit mode.
   // Fetched on open rather than kept on every task in `lists` — the board
@@ -143,6 +154,59 @@ export function KanbanBoard({
       cancelled = true
     }
   }, [editingTaskId])
+
+  // Keyboard shortcuts: Cmd/Ctrl+A selects every currently-visible task,
+  // Escape clears the selection, Delete/Backspace bulk-deletes it. Ignored
+  // while the task modal is open or while focus is in a text field, so
+  // these never hijack normal typing (including inside the search bar).
+  useEffect(() => {
+    function isTypingTarget(target: EventTarget | null) {
+      if (!(target instanceof HTMLElement)) return false
+      const tag = target.tagName
+      return tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (taskModal) return
+      if (isTypingTarget(e.target)) return
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "a") {
+        if (totalTaskCount === 0) return
+        e.preventDefault()
+        const visibleIds = displayLists.flatMap((l) => l.tasks.map((t) => t.id))
+        selectTasks(visibleIds)
+        return
+      }
+
+      if (e.key === "Escape" && selectedTaskIds.size > 0) {
+        clearSelection()
+        return
+      }
+
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedTaskIds.size > 0) {
+        e.preventDefault()
+        const ids = Array.from(selectedTaskIds)
+        const message =
+          ids.length === 1
+            ? "Delete this task? This can't be undone."
+            : `Delete ${ids.length} tasks? This can't be undone.`
+        if (confirm(message)) {
+          bulkDeleteTasks(ids, () => clearSelection())
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [
+    taskModal,
+    selectedTaskIds,
+    displayLists,
+    totalTaskCount,
+    selectTasks,
+    clearSelection,
+    bulkDeleteTasks,
+  ])
 
   // On touch devices, require a slightly longer press-hold before a drag
   // starts so a normal horizontal swipe/scroll isn't hijacked as a drag.
@@ -361,6 +425,30 @@ export function KanbanBoard({
     })
   }
 
+  function handleBulkDelete() {
+    const ids = Array.from(selectedTaskIds)
+    if (ids.length === 0) return
+    const message =
+      ids.length === 1
+        ? "Delete this task? This can't be undone."
+        : `Delete ${ids.length} tasks? This can't be undone.`
+    if (confirm(message)) {
+      bulkDeleteTasks(ids, () => clearSelection())
+    }
+  }
+
+  function handleBulkMove(destListId: string) {
+    const ids = Array.from(selectedTaskIds)
+    if (ids.length === 0 || !destListId) return
+    bulkUpdateTasks(ids, { listId: destListId })
+  }
+
+  function handleBulkPriority(priority: Task["priority"]) {
+    const ids = Array.from(selectedTaskIds)
+    if (ids.length === 0) return
+    bulkUpdateTasks(ids, { priority })
+  }
+
   return (
     <div className="space-y-3">
       {error && <p className="text-sm text-red-500 px-3 sm:px-0">{error}</p>}
@@ -395,6 +483,8 @@ export function KanbanBoard({
                 isPending={isPending}
                 isSearching={isSearching}
                 memberNameById={memberNameById}
+                selectedTaskIds={selectedTaskIds}
+                onToggleTaskSelection={toggleTaskSelection}
                 onRename={(name) => renameList(list.id, name)}
                 onDelete={() => deleteList(list.id)}
                 onAddTask={() => {
@@ -468,6 +558,73 @@ export function KanbanBoard({
         </DragOverlay>
       </DndContext>
 
+      {selectedCount > 0 && (
+        <div
+          className="sticky bottom-3 z-20 mx-3 sm:mx-0 flex flex-wrap items-center gap-2 rounded-2xl
+           border border-lavender-200 dark:border-paynes_gray-400 bg-white dark:bg-outer_space-500
+            px-4 py-2.5 shadow-lg"
+        >
+          <span className="text-sm font-medium text-outer_space-500 dark:text-platinum-500 shrink-0">
+            {selectedCount} selected
+          </span>
+
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              handleBulkMove(e.target.value)
+              e.target.value = ""
+            }}
+            disabled={taskPending}
+            className="text-sm px-2 py-1.5 rounded-lg border border-lavender-200 dark:border-paynes_gray-400
+             bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 disabled:opacity-50"
+          >
+            <option value="" disabled>
+              Move to…
+            </option>
+            {lists.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              handleBulkPriority(e.target.value as Task["priority"])
+              e.target.value = ""
+            }}
+            disabled={taskPending}
+            className="text-sm px-2 py-1.5 rounded-lg border border-lavender-200 dark:border-paynes_gray-400
+             bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 disabled:opacity-50"
+          >
+            <option value="" disabled>
+              Set priority…
+            </option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+
+          <button
+            onClick={handleBulkDelete}
+            disabled={taskPending}
+            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-rose-500
+             hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-50"
+          >
+            <Trash2 size={14} /> Delete
+          </button>
+
+          <button
+            onClick={clearSelection}
+            className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg ml-auto
+             text-paynes_gray-500 dark:text-french_gray-400 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400/40"
+          >
+            <X size={14} /> Clear
+          </button>
+        </div>
+      )}
+
       {taskModal && (
         <CreateTaskModal
           key={taskModalKey}
@@ -505,6 +662,8 @@ function BoardColumn({
   isPending,
   isSearching,
   memberNameById,
+  selectedTaskIds,
+  onToggleTaskSelection,
   onRename,
   onDelete,
   onAddTask,
@@ -514,6 +673,8 @@ function BoardColumn({
   isPending: boolean
   isSearching: boolean
   memberNameById: Map<string, string>
+  selectedTaskIds: Set<string>
+  onToggleTaskSelection: (taskId: string) => void
   onRename: (name: string) => void
   onDelete: () => void
   onAddTask: () => void
@@ -676,6 +837,8 @@ function BoardColumn({
                 task={task}
                 assigneeName={task.assigneeId ? memberNameById.get(task.assigneeId) : undefined}
                 labels={task.labels}
+                selected={selectedTaskIds.has(task.id)}
+                onToggleSelect={() => onToggleTaskSelection(task.id)}
                 onClick={() => onTaskClick(task)}
               />
             ))
@@ -685,6 +848,8 @@ function BoardColumn({
                 key={task.id}
                 task={task}
                 assigneeName={task.assigneeId ? memberNameById.get(task.assigneeId) : undefined}
+                selected={selectedTaskIds.has(task.id)}
+                onToggleSelect={() => onToggleTaskSelection(task.id)}
                 onClick={() => onTaskClick(task)}
               />
             ))
@@ -707,10 +872,14 @@ function BoardColumn({
 function SortableTaskCard({
   task,
   assigneeName,
+  selected,
+  onToggleSelect,
   onClick,
 }: {
   task: TaskWithLabels
   assigneeName?: string
+  selected?: boolean
+  onToggleSelect?: () => void
   onClick: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -726,7 +895,14 @@ function SortableTaskCard({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none">
-      <TaskCard task={task} assigneeName={assigneeName} labels={task.labels} onClick={onClick} />
+      <TaskCard
+        task={task}
+        assigneeName={assigneeName}
+        labels={task.labels}
+        selected={selected}
+        onToggleSelect={onToggleSelect}
+        onClick={onClick}
+      />
     </div>
   )
 }

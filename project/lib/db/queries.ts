@@ -411,6 +411,69 @@ export async function canAccessTask(taskId: string, userId: string) {
   return project.ownerId === userId || project.members.some((m) => m.userId === userId)
 }
 
+// BULK TASK OPERATIONS (task 5 — multi-select actions on the board)
+
+/**
+ * All of `taskIds` must exist AND belong to a list owned by `userId`, same
+ * ownership rule as `ownsTask`. A mismatched count (some id doesn't exist,
+ * or points at another user's task) fails the whole batch — bulk actions
+ * are all-or-nothing rather than silently skipping tasks the caller
+ * shouldn't have been able to select in the first place.
+ */
+export async function ownsTasks(taskIds: string[], userId: string) {
+  if (taskIds.length === 0) return false
+  const rows = await db.query.tasks.findMany({
+    where: inArray(tasks.id, taskIds),
+    with: { list: { with: { project: { columns: { ownerId: true } } } } },
+  })
+  if (rows.length !== taskIds.length) return false
+  return rows.every((t) => t.list.project.ownerId === userId)
+}
+
+export async function bulkDeleteTasks(taskIds: string[]) {
+  if (taskIds.length === 0) return
+  await db.delete(tasks).where(inArray(tasks.id, taskIds))
+}
+
+/**
+ * Applies the same field updates to a set of tasks at once — priority,
+ * assignee, and/or moving them all to a different list. Unlike `moveTask`
+ * (drag-and-drop of a single task, which takes an explicit full ordering
+ * for the destination list), a bulk move just appends the selected tasks
+ * to the end of the destination list in the order they were passed.
+ */
+export async function bulkUpdateTasks(
+  taskIds: string[],
+  data: Partial<Pick<NewTask, "priority" | "assigneeId" | "listId">>
+) {
+  if (taskIds.length === 0) return []
+
+  if (data.listId) {
+    const startPosition = await getNextTaskPosition(data.listId)
+    const results = await Promise.all(
+      taskIds.map((id, index) =>
+        db
+          .update(tasks)
+          .set({ ...data, position: startPosition + index, updatedAt: new Date() })
+          .where(eq(tasks.id, id))
+          .returning()
+      )
+    )
+    return results.flat()
+  }
+
+  const results = await Promise.all(
+    taskIds.map((id) =>
+      db
+        .update(tasks)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(tasks.id, id))
+        .returning()
+    )
+  )
+  return results.flat()
+}
+
 // LABELS
 
 export async function getLabelsForProject(projectId: string) {

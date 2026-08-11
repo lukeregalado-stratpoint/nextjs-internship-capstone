@@ -2,14 +2,24 @@
 
 import { useState, useTransition } from "react"
 import { useBoardStore, type ListWithTasks, type TaskWithLabels } from "@/stores/board-store"
-import { createTaskAction, deleteTaskAction, moveTaskAction, updateTaskAction } from "@/lib/actions/tasks"
+import {
+  bulkDeleteTasksAction,
+  bulkUpdateTasksAction,
+  createTaskAction,
+  deleteTaskAction,
+  moveTaskAction,
+  updateTaskAction,
+} from "@/lib/actions/tasks"
 import type { TaskInput, TaskUpdateInput } from "@/lib/validations"
+import type { Task } from "@/lib/db/schema"
 
 export function useTasks(projectId: string) {
   const addTaskInStore = useBoardStore((s) => s.addTask)
   const updateTaskInStore = useBoardStore((s) => s.updateTask)
   const removeTaskInStore = useBoardStore((s) => s.removeTask)
   const moveTaskInStore = useBoardStore((s) => s.moveTask)
+  const bulkUpdateTasksInStore = useBoardStore((s) => s.bulkUpdateTasks)
+  const bulkRemoveTasksInStore = useBoardStore((s) => s.bulkRemoveTasks)
 
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -91,6 +101,51 @@ export function useTasks(projectId: string) {
     })
   }
 
+  /**
+   * Bulk delete for the board's multi-select toolbar / Delete-key shortcut.
+   */
+  function bulkDeleteTasks(taskIds: string[], onSuccess?: () => void) {
+    setError(null)
+
+    const snapshot = useBoardStore.getState().lists
+    bulkRemoveTasksInStore(taskIds)
+
+    startTransition(async () => {
+      const result = await bulkDeleteTasksAction(taskIds, projectId)
+      if (!result.success) {
+        setError(result.error)
+        useBoardStore.getState().setLists(snapshot)
+        return
+      }
+      onSuccess?.()
+    })
+  }
+
+  /**
+   * Bulk edit (move to a column, and/or set priority/assignee) for the
+   * currently-selected tasks.
+   */
+  function bulkUpdateTasks(
+    taskIds: string[],
+    input: { listId?: string; priority?: Task["priority"]; assigneeId?: string | null },
+    onSuccess?: () => void
+  ) {
+    setError(null)
+
+    const snapshot = useBoardStore.getState().lists
+    bulkUpdateTasksInStore(taskIds, input)
+
+    startTransition(async () => {
+      const result = await bulkUpdateTasksAction(projectId, { taskIds, ...input })
+      if (!result.success) {
+        setError(result.error)
+        useBoardStore.getState().setLists(snapshot)
+        return
+      }
+      onSuccess?.()
+    })
+  }
+
   return {
     isPending,
     error,
@@ -98,5 +153,7 @@ export function useTasks(projectId: string) {
     updateTask,
     deleteTask,
     moveTask,
+    bulkDeleteTasks,
+    bulkUpdateTasks,
   }
 }

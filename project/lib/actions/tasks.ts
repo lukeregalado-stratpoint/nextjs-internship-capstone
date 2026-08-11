@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { requireUser } from "@/lib/auth"
 import {
+  bulkDeleteTasks as bulkDeleteTasksRow,
+  bulkUpdateTasks as bulkUpdateTasksRow,
   createTask as createTaskRow,
   deleteTask as deleteTaskRow,
   getAssignableUserIds,
@@ -15,10 +17,17 @@ import {
   moveTask as moveTaskRow,
   ownsList,
   ownsTask,
+  ownsTasks,
   setTaskLabels,
   updateTask as updateTaskRow,
 } from "@/lib/db/queries"
-import { taskMoveSchema, taskSchema, taskUpdateSchema } from "@/lib/validations"
+import {
+  taskBulkDeleteSchema,
+  taskBulkUpdateSchema,
+  taskMoveSchema,
+  taskSchema,
+  taskUpdateSchema,
+} from "@/lib/validations"
 import type { Label, Task } from "@/lib/db/schema"
 
 type TaskWithLabels = Task & { labels: Label[] }
@@ -273,4 +282,107 @@ export async function moveTaskAction(
   revalidatePath(`/projects/${projectId}`)
 
   return { success: true, data: { taskId: parsed.data.taskId } }
+}
+
+/**
+ * Bulk delete for the board's multi-select toolbar / Delete-key shortcut.
+ * All-or-nothing: if the caller doesn't own every task in the selection,
+ * nothing is deleted.
+ */
+export async function bulkDeleteTasksAction(
+  taskIds: string[],
+  projectId: string
+): Promise<ActionResult<{ ids: string[] }>> {
+  const user = await requireUser()
+
+  const parsed = taskBulkDeleteSchema.safeParse({ taskIds })
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
+  }
+
+  const owns = await ownsTasks(parsed.data.taskIds, user.id)
+  if (!owns) {
+    return { success: false, error: "You don't have permission to delete one or more of these tasks" }
+  }
+
+  await bulkDeleteTasksRow(parsed.data.taskIds)
+
+  revalidatePath(`/projects/${projectId}`)
+
+  return { success: true, data: { ids: parsed.data.taskIds } }
+}
+
+/**
+ * Bulk edit for the board's multi-select toolbar: move the whole selection
+ * to a different column, and/or set priority/assignee across all of them.
+ * Unlike updateTaskAction, per-field diffing against each task's prior
+ * value isn't done here (that would mean an extra query per task) — bulk
+ * activity rows just record the value being applied.
+ */
+export async function bulkUpdateTasksAction(
+  projectId: string,
+  input: unknown
+): Promise<ActionResult<{ ids: string[] }>> {
+  const user = await requireUser()
+
+  const parsed = taskBulkUpdateSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
+  }
+
+  const { taskIds, ...updates } = parsed.data
+
+  if (updates.listId === undefined && updates.priority === undefined && updates.assigneeId === undefined) {
+    return { success: false, error: "Nothing to update" }
+  }
+
+  const owns = await ownsTasks(taskIds, user.id)
+  if (!owns) {
+    return { success: false, error: "You don't have permission to edit one or more of these tasks" }
+  }
+
+  if (updates.listId) {
+    const ownsDestList = await ownsList(updates.listId, user.id)
+    if (!ownsDestList) {
+      return { success: false, error: "You don't have permission to move tasks there" }
+    }
+  }
+
+  if (updates.assigneeId) {
+    const assignableIds = await getAssignableUserIds(projectId)
+    if (!assignableIds.includes(updates.assigneeId)) {
+      return { success: false, error: "Assignee must be a member of this project" }
+    }
+  }
+
+  await bulkUpdateTasksRow(taskIds, updates)
+
+  // Best-effort activity logging — same non-fatal try/catch pattern as
+  // logTaskUpdateActivities, since a broken activity write shouldn't roll
+  // back a bulk edit that otherwise succeeded.
+  try {
+    await Promise.all(
+      taskIds.flatMap((taskId) => {
+        const entries: Promise<unknown>[] = []
+        if (updates.priority) {
+          entries.push(logActivity(taskId, user.id, "priority_changed", { to: updates.priority }))
+        }
+        if (updates.assigneeId !== undefined) {
+          entries.push(
+            logActivity(taskId, user.id, "assignee_changed", { toId: updates.assigneeId })
+          )
+        }
+        if (updates.listId) {
+          entries.push(logActivity(taskId, user.id, "status_changed", { toId: updates.listId }))
+        }
+        return entries
+      })
+    )
+  } catch (err) {
+    console.error("Failed to log bulk update activity", err)
+  }
+
+  revalidatePath(`/projects/${projectId}`)
+
+  return { success: true, data: { ids: taskIds } }
 }

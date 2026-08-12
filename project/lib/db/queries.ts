@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, inArray, notInArray, or, sql } from "drizzle-orm"
+import { and, asc, desc, eq, ilike, inArray, isNotNull, notInArray, or, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   activities,
@@ -771,4 +771,52 @@ export async function logActivity(
   metadata?: Record<string, unknown>
 ) {
   return createActivity({ taskId, userId, type, metadata })
+}
+
+// CALENDAR
+
+/**
+ * Tasks assigned to `userId` that have a due date, for the calendar page.
+ * Deliberately not scoped to projects the user owns — assignment, not
+ * ownership, is what should surface a task on someone's personal calendar,
+ * so this also picks up tasks assigned to a member on a project they don't
+ * own.
+ */
+export async function getTasksForAssigneeCalendar(userId: string) {
+  return db.query.tasks.findMany({
+    where: and(eq(tasks.assigneeId, userId), isNotNull(tasks.dueDate)),
+    orderBy: [asc(tasks.dueDate)],
+    with: {
+      list: {
+        columns: { id: true, name: true },
+        with: {
+          project: { columns: { id: true, name: true } },
+        },
+      },
+    },
+  })
+}
+
+/**
+ * Due-dated projects `userId` can see on the calendar: ones they own, plus
+ * ones they're a member on. Mirrors the owner-or-member access rule used by
+ * `getProjectsForUser` / `canAccessProject`.
+ */
+export async function getProjectsForCalendar(userId: string) {
+  const memberships = await db.query.projectMembers.findMany({
+    where: eq(projectMembers.userId, userId),
+    columns: { projectId: true },
+  })
+  const memberProjectIds = memberships.map((m) => m.projectId)
+
+  return db.query.projects.findMany({
+    where: and(
+      isNotNull(projects.dueDate),
+      memberProjectIds.length > 0
+        ? or(eq(projects.ownerId, userId), inArray(projects.id, memberProjectIds))
+        : eq(projects.ownerId, userId)
+    ),
+    orderBy: [asc(projects.dueDate)],
+    columns: { id: true, name: true, dueDate: true },
+  })
 }

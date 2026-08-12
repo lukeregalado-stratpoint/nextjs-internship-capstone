@@ -1,0 +1,148 @@
+/* Calendar overrides — brings react-big-calendar's default styling in line
+   with the app's glass/pastel design system. Scoped to .custom-calendar so
+   it never leaks into other pages. The default rbc toolbar is replaced
+   entirely (see CalendarToolbar in calendar-view.tsx), so no toolbar rules
+   are needed here. */
+
+.custom-calendar {
+  font-family: var(--font-sans);
+  color: var(--color-outer_space-500);
+}
+
+.dark .custom-calendar {
+  color: var(--color-platinum-500);
+}
+
+.custom-calendar .rbc-month-view,
+.custom-calendar .rbc-time-view,
+.custom-calendar .rbc-agenda-view {
+  border-radius: 1rem;
+  overflow: hidden;
+  border-color: rgba(197, 195, 198, 0.4);
+}
+
+.dark .custom-calendar .rbc-month-view,
+.dark .custom-calendar .rbc-time-view,
+.dark .custom-calendar .rbc-agenda-view {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.custom-calendar .rbc-off-range-bg {
+  background-color: rgba(197, 195, 198, 0.15);
+}
+
+.dark .custom-calendar .rbc-off-range-bg {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.custom-calendar .rbc-today {
+  background-color: rgba(139, 124, 246, 0.12);
+}
+
+.dark .custom-calendar .rbc-today {
+  background-color: rgba(139, 124, 246, 0.18);
+}
+
+.custom-calendar .rbc-header {
+  padding: 0.5rem 0.25rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-paynes_gray-500);
+  border-color: rgba(197, 195, 198, 0.4);
+}
+
+.dark .custom-calendar .rbc-header {
+  color: var(--color-french_gray-500);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.custom-calendar .rbc-day-bg + .rbc-day-bg,
+.custom-calendar .rbc-month-row + .rbc-month-row,
+.custom-calendar .rbc-header + .rbc-header,
+.custom-calendar .rbc-time-content,
+.custom-calendar .rbc-time-header-content,
+.custom-calendar .rbc-timeslot-group {
+  border-color: rgba(197, 195, 198, 0.35);
+}
+
+.dark .custom-calendar .rbc-day-bg + .rbc-day-bg,
+.dark .custom-calendar .rbc-month-row + .rbc-month-row,
+.dark .custom-calendar .rbc-header + .rbc-header,
+.dark .custom-calendar .rbc-time-content,
+.dark .custom-calendar .rbc-time-header-content,
+.dark .custom-calendar .rbc-timeslot-group {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.custom-calendar .rbc-event {
+  border-radius: 0.5rem;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.custom-calendar .rbc-event:focus {
+  outline: 2px solid var(--color-lavender-500);
+  outline-offset: 1px;
+}
+
+.custom-calendar .rbc-event.rbc-selected {
+  box-shadow: 0 0 0 2px var(--color-lavender-500);
+}
+
+.custom-calendar .rbc-show-more {
+  color: var(--color-lavender-600);
+  font-weight: 600;
+  background: transparent;
+}
+
+.custom-calendar .rbc-agenda-table thead > tr > th {
+  border-color: rgba(197, 195, 198, 0.4);
+  color: var(--color-paynes_gray-500);
+  padding: 0.5rem;
+}
+
+.dark .custom-calendar .rbc-agenda-table thead > tr > th {
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-french_gray-500);
+}
+
+.custom-calendar .rbc-agenda-table tbody > tr > td {
+  border-color: rgba(197, 195, 198, 0.3);
+  padding: 0.5rem;
+}
+
+.dark .custom-calendar .rbc-agenda-table tbody > tr > td {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.custom-calendar .rbc-agenda-empty {
+  color: var(--color-paynes_gray-500);
+  padding: 2rem 0;
+}
+
+/* Event color coding: task priority + project due dates */
+.custom-calendar .rbc-event.event-task-low {
+  background-color: var(--color-mint-500);
+  color: #ffffff;
+}
+
+.custom-calendar .rbc-event.event-task-medium {
+  background-color: var(--color-lavender-500);
+  color: #ffffff;
+}
+
+.custom-calendar .rbc-event.event-task-high {
+  background-color: var(--color-destructive);
+  color: #ffffff;
+}
+
+.custom-calendar .rbc-event.event-project {
+  background-color: var(--color-blue_munsell-500);
+  color: #ffffff;
+}

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } f
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCorners,
   useDroppable,
   useSensor,
@@ -211,10 +212,13 @@ export function KanbanBoard({
   // On touch devices, require a slightly longer press-hold before a drag
   // starts so a normal horizontal swipe/scroll isn't hijacked as a drag.
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 6, delay: 150, tolerance: 8 },
-    })
-  )
+  useSensor(MouseSensor, {
+    activationConstraint: { distance: 6 },
+  }),
+  useSensor(TouchSensor, {
+    activationConstraint: { delay: 150, tolerance: 8 },
+  })
+)
 
   function findListIdForTask(taskId: string) {
     return lists.find((l) => l.tasks.some((t) => t.id === taskId))?.id

@@ -20,6 +20,7 @@ export function useTasks(projectId: string) {
   const moveTaskInStore = useBoardStore((s) => s.moveTask)
   const bulkUpdateTasksInStore = useBoardStore((s) => s.bulkUpdateTasks)
   const bulkRemoveTasksInStore = useBoardStore((s) => s.bulkRemoveTasks)
+  const setTaskPending = useBoardStore((s) => s.setTaskPending)
 
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -52,16 +53,21 @@ export function useTasks(projectId: string) {
     // confirmed response below fill in the resolved label set.
     const { listId, labelIds, ...fields } = input
     updateTaskInStore(taskId, fields)
+    setTaskPending(taskId, true)
 
     startTransition(async () => {
-      const result = await updateTaskAction(taskId, projectId, input)
-      if (!result.success) {
-        setError(result.error)
-        useBoardStore.getState().setLists(snapshot)
-        return
+      try {
+        const result = await updateTaskAction(taskId, projectId, input)
+        if (!result.success) {
+          setError(result.error)
+          useBoardStore.getState().setLists(snapshot)
+          return
+        }
+        updateTaskInStore(taskId, result.data)
+        onSuccess?.(result.data)
+      } finally {
+        setTaskPending(taskId, false)
       }
-      updateTaskInStore(taskId, result.data)
-      onSuccess?.(result.data)
     })
   }
 
@@ -69,21 +75,29 @@ export function useTasks(projectId: string) {
     setError(null)
 
     const snapshot = useBoardStore.getState().lists
+    setTaskPending(taskId, true)
     removeTaskInStore(taskId)
 
     startTransition(async () => {
-      const result = await deleteTaskAction(taskId, projectId)
-      if (!result.success) {
-        setError(result.error)
-        useBoardStore.getState().setLists(snapshot)
-        return
+      try {
+        const result = await deleteTaskAction(taskId, projectId)
+        if (!result.success) {
+          setError(result.error)
+          useBoardStore.getState().setLists(snapshot)
+          return
+        }
+        onSuccess?.()
+      } finally {
+        setTaskPending(taskId, false)
       }
-      onSuccess?.()
     })
   }
 
   /**
-   * retains drag + drop result
+   * retains drag + drop result. The task is already sitting in its new
+   * column optimistically by the time this is called (board.tsx applies
+   * moveTask/reorderTasksInList to the store on drop) — this just confirms
+   * with the server, so the card gets a pending indicator until it lands.
    */
   function moveTask(
     taskId: string,
@@ -92,11 +106,16 @@ export function useTasks(projectId: string) {
     rollbackTo: ListWithTasks[]
   ) {
     setError(null)
+    setTaskPending(taskId, true)
     startTransition(async () => {
-      const result = await moveTaskAction(projectId, { taskId, destListId, orderedTaskIds })
-      if (!result.success) {
-        setError(result.error)
-        useBoardStore.getState().setLists(rollbackTo)
+      try {
+        const result = await moveTaskAction(projectId, { taskId, destListId, orderedTaskIds })
+        if (!result.success) {
+          setError(result.error)
+          useBoardStore.getState().setLists(rollbackTo)
+        }
+      } finally {
+        setTaskPending(taskId, false)
       }
     })
   }
@@ -108,16 +127,21 @@ export function useTasks(projectId: string) {
     setError(null)
 
     const snapshot = useBoardStore.getState().lists
+    for (const id of taskIds) setTaskPending(id, true)
     bulkRemoveTasksInStore(taskIds)
 
     startTransition(async () => {
-      const result = await bulkDeleteTasksAction(taskIds, projectId)
-      if (!result.success) {
-        setError(result.error)
-        useBoardStore.getState().setLists(snapshot)
-        return
+      try {
+        const result = await bulkDeleteTasksAction(taskIds, projectId)
+        if (!result.success) {
+          setError(result.error)
+          useBoardStore.getState().setLists(snapshot)
+          return
+        }
+        onSuccess?.()
+      } finally {
+        for (const id of taskIds) setTaskPending(id, false)
       }
-      onSuccess?.()
     })
   }
 
@@ -133,16 +157,21 @@ export function useTasks(projectId: string) {
     setError(null)
 
     const snapshot = useBoardStore.getState().lists
+    for (const id of taskIds) setTaskPending(id, true)
     bulkUpdateTasksInStore(taskIds, input)
 
     startTransition(async () => {
-      const result = await bulkUpdateTasksAction(projectId, { taskIds, ...input })
-      if (!result.success) {
-        setError(result.error)
-        useBoardStore.getState().setLists(snapshot)
-        return
+      try {
+        const result = await bulkUpdateTasksAction(projectId, { taskIds, ...input })
+        if (!result.success) {
+          setError(result.error)
+          useBoardStore.getState().setLists(snapshot)
+          return
+        }
+        onSuccess?.()
+      } finally {
+        for (const id of taskIds) setTaskPending(id, false)
       }
-      onSuccess?.()
     })
   }
 

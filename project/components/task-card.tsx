@@ -39,7 +39,8 @@ Features to implement:
 
 "use client"
 
-import { Calendar, Check } from "lucide-react"
+import { memo } from "react"
+import { Calendar, Check, Loader2 } from "lucide-react"
 import type { KeyboardEvent, MouseEvent } from "react"
 import type { Task } from "@/lib/db/schema"
 
@@ -56,13 +57,14 @@ function initials(name: string) {
   return (first + last).toUpperCase()
 }
 
-export function TaskCard({
+export const TaskCard = memo(function TaskCard({
   task,
   assigneeName,
   labels,
   onClick,
   selected = false,
   onToggleSelect,
+  pending = false,
 }: {
   task: Task
   /** Resolved from task.assigneeId by the parent, which has the member list. */
@@ -78,6 +80,12 @@ export function TaskCard({
    * render a plain (non-selectable) card, e.g. in the drag overlay.
    */
   onToggleSelect?: () => void
+  /**
+   * True while this task has an unconfirmed optimistic mutation in flight
+   * (drag move, bulk edit, etc). Purely visual — the card stays fully
+   * interactive so a fast second edit isn't blocked by a slow first one.
+   */
+  pending?: boolean
 }) {
   const isOverdue = task.dueDate ? new Date(task.dueDate) < new Date() : false
 
@@ -117,7 +125,7 @@ export function TaskCard({
         selected
           ? "border-lavender-400 ring-2 ring-lavender-400/60"
           : "border-lavender-100 dark:border-paynes_gray-400 hover:border-lavender-300 hover:shadow-sm"
-      }`}
+      } ${pending ? "opacity-70" : ""}`}
     >
       {onToggleSelect && (
         <button
@@ -171,6 +179,16 @@ export function TaskCard({
             {task.priority}
           </span>
 
+          {pending && (
+            <span
+              className="inline-flex items-center text-lavender-500 dark:text-lavender-300"
+              aria-label="Saving"
+              title="Saving…"
+            >
+              <Loader2 size={11} className="animate-spin" />
+            </span>
+          )}
+
           {task.dueDate && (
             <span
               className={`inline-flex items-center gap-1 text-[11px] ${
@@ -199,4 +217,4 @@ export function TaskCard({
       </div>
     </div>
   )
-}
+})

@@ -22,16 +22,11 @@ import {
   CheckSquare,
   FolderOpen,
   Flag,
-  CalendarX,
-} from "lucide-react"
+  CalendarX,} from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import "react-big-calendar/lib/css/react-big-calendar.css"
 import "./calendar-view.css"
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export type TaskForCalendar = {
   id: string
@@ -41,25 +36,21 @@ export type TaskForCalendar = {
   list: {
     id: string
     name: string
-    project: { id: string; name: string }
-  }
-}
+    project: { id: string; name: string }}}
 
 export type ProjectForCalendar = {
   id: string
   name: string
-  dueDate: Date | string
-}
+  dueDate: Date | string}
 
 type CalendarViewProps = {
   tasks: TaskForCalendar[]
-  projects: ProjectForCalendar[]
-}
+  projects: ProjectForCalendar[]}
 
-// Tasks only ever carry a due *date* (see schema/task-card — no time field
-// is collected or shown anywhere), so items are modeled as a single `date`,
-// not a start/end range. `start`/`end`/`allDay` are still produced for the
-// react-big-calendar month grid below, which wants that shape.
+// tasks only have a due date, no due time, so this is one `date` field
+// instead of a start/end range.
+// start/end/allDay only get added back on for react-big-calendar's month
+// grid since that's the shape it needs.
 type CalendarItem = {
   id: string
   title: string
@@ -68,44 +59,34 @@ type CalendarItem = {
   priority?: "low" | "medium" | "high"
   projectId: string
   projectName?: string
-  listName?: string
-}
+  listName?: string}
 
 type HoveredItem = {
   item: CalendarItem
   x: number
-  y: number
-}
+  y: number}
 
 type ViewMode = "month" | "week" | "agenda"
 
 const VIEW_OPTIONS: { key: ViewMode; label: string }[] = [
   { key: "month", label: "Month" },
   { key: "week", label: "Week" },
-  { key: "agenda", label: "Agenda" },
-]
-
-// ---------------------------------------------------------------------------
-// Localizer (date-fns) — only needed for the month grid now
-// ---------------------------------------------------------------------------
+  { key: "agenda", label: "Agenda" },]
 
 const locales = { "en-US": enUS }
 
+// only used by the month grid now, week and agenda are custom built
 const localizer = dateFnsLocalizer({
   format,
   parse,
   startOfWeek: (date: Date) => startOfWeek(date, { weekStartsOn: 0 }),
   getDay,
-  locales,
-})
+  locales,})
 
-// ---------------------------------------------------------------------------
-// Shared toolbar — drives month/week navigation and the view tabs. Agenda
-// has no meaningful "page" to move through (it just lists everything in
-// order), so Prev/Next are hidden there and Today scrolls to today's group
-// instead of changing a date cursor.
-// ---------------------------------------------------------------------------
-
+// agenda doesn't really have a "page" to move through, it's just everything
+// in order.
+// so prev/next are hidden there and Today just scrolls instead of moving a
+// date cursor.
 function CalendarToolbar({
   view,
   onViewChange,
@@ -117,17 +98,17 @@ function CalendarToolbar({
   onViewChange: (v: ViewMode) => void
   cursorDate: Date
   onNavigate: (dir: "PREV" | "NEXT") => void
-  onToday: () => void
-}) {
+  onToday: () => void}) {
   const label = useMemo(() => {
     if (view === "month") return format(cursorDate, "MMMM yyyy")
+
     if (view === "week") {
       const start = startOfWeek(cursorDate, { weekStartsOn: 0 })
       const end = addDays(start, 6)
-      return `${format(start, "MMM d")} – ${format(end, "MMM d, yyyy")}`
-    }
-    return "All upcoming"
-  }, [view, cursorDate])
+
+      return `${format(start, "MMM d")} to ${format(end, "MMM d, yyyy")}`}
+
+    return "All upcoming"}, [view, cursorDate])
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -135,30 +116,30 @@ function CalendarToolbar({
         <button
           type="button"
           onClick={onToday}
-          className="px-3 py-1.5 text-sm font-medium rounded-xl text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-100 dark:hover:bg-paynes_gray-400 transition-colors"
-        >
+          className="px-3 py-1.5 text-sm font-medium rounded-xl text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-100 dark:hover:bg-paynes_gray-400 transition-colors">
           Today
         </button>
+
         {view !== "agenda" && (
           <>
             <button
               type="button"
               onClick={() => onNavigate("PREV")}
               aria-label="Previous"
-              className="p-1.5 rounded-xl text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-100 dark:hover:bg-paynes_gray-400 transition-colors"
-            >
+              className="p-1.5 rounded-xl text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-100 dark:hover:bg-paynes_gray-400 transition-colors">
               <ChevronLeft size={18} />
             </button>
+
             <button
               type="button"
               onClick={() => onNavigate("NEXT")}
               aria-label="Next"
-              className="p-1.5 rounded-xl text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-100 dark:hover:bg-paynes_gray-400 transition-colors"
-            >
+              className="p-1.5 rounded-xl text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-100 dark:hover:bg-paynes_gray-400 transition-colors">
               <ChevronRight size={18} />
             </button>
           </>
         )}
+
         <h2 className="ml-1 text-lg font-semibold text-outer_space-500 dark:text-platinum-500">
           {label}
         </h2>
@@ -174,28 +155,20 @@ function CalendarToolbar({
               "px-3 py-1 text-sm font-medium rounded-lg transition-colors",
               view === option.key
                 ? "bg-white dark:bg-outer_space-500 text-lavender-700 dark:text-lavender-300 shadow-sm"
-                : "text-paynes_gray-500 dark:text-french_gray-500 hover:text-outer_space-500 dark:hover:text-platinum-500"
-            )}
-          >
+                : "text-paynes_gray-500 dark:text-french_gray-500 hover:text-outer_space-500 dark:hover:text-platinum-500")}>
             {option.label}
           </button>
         ))}
       </div>
     </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Legend
-// ---------------------------------------------------------------------------
+  )}
 
 function CalendarLegend() {
   const items: { label: string; className: string }[] = [
     { label: "Low priority", className: "bg-mint-500" },
     { label: "Medium priority", className: "bg-lavender-500" },
     { label: "High priority", className: "bg-destructive" },
-    { label: "Project due date", className: "bg-blue_munsell-500" },
-  ]
+    { label: "Project due date", className: "bg-blue_munsell-500" },]
 
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4 text-xs text-paynes_gray-500 dark:text-french_gray-500">
@@ -205,18 +178,14 @@ function CalendarLegend() {
           {item.label}
         </div>
       ))}
+
       <span className="text-paynes_gray-400 dark:text-french_gray-600">· click an item to open its project</span>
     </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Hover tooltip — read-only preview, positioned near the cursor. Shared
-// across month/week/agenda so hover behavior is consistent everywhere.
-// ---------------------------------------------------------------------------
+  )}
 
 const TOOLTIP_WIDTH = 260
 
+// shared by month, week, and agenda so hover behaves the same everywhere
 function ItemTooltip({ hovered }: { hovered: HoveredItem }) {
   const { item } = hovered
   const isTask = item.type === "task"
@@ -225,8 +194,10 @@ function ItemTooltip({ hovered }: { hovered: HoveredItem }) {
     typeof window !== "undefined"
       ? Math.min(hovered.x, window.innerWidth - TOOLTIP_WIDTH - 12)
       : hovered.x
+
   const flipUp =
     typeof window !== "undefined" ? hovered.y > window.innerHeight - 180 : false
+
   const top = hovered.y
 
   if (typeof document === "undefined") return null
@@ -238,9 +209,7 @@ function ItemTooltip({ hovered }: { hovered: HoveredItem }) {
         left,
         top,
         width: TOOLTIP_WIDTH,
-        transform: flipUp ? "translateY(-100%)" : undefined,
-      }}
-    >
+        transform: flipUp ? "translateY(-100%)" : undefined,}}>
       <div className="flex items-start gap-2.5">
         <div
           className={cn(
@@ -251,30 +220,33 @@ function ItemTooltip({ hovered }: { hovered: HoveredItem }) {
                 : item.priority === "low"
                   ? "bg-mint-500"
                   : "bg-lavender-500"
-              : "bg-blue_munsell-500"
-          )}
-        >
+              : "bg-blue_munsell-500")}>
           {isTask ? <CheckSquare size={15} /> : <FolderOpen size={15} />}
         </div>
+
         <div className="min-w-0">
           <p className="font-semibold text-sm text-outer_space-500 dark:text-platinum-500 truncate">
             {item.title}
           </p>
+
           <p className="text-xs text-paynes_gray-500 dark:text-french_gray-500">
             {isTask ? `Due ${format(item.date, "PP")}` : `Project due ${format(item.date, "PP")}`}
           </p>
+
           {isTask && item.projectName && (
             <p className="text-xs text-paynes_gray-500 dark:text-french_gray-500 mt-1 truncate">
               {item.projectName}
               {item.listName ? ` · ${item.listName}` : ""}
             </p>
           )}
+
           {isTask && item.priority && (
             <div className="flex items-center gap-1 mt-1.5 text-[11px] font-medium text-paynes_gray-500 dark:text-french_gray-500">
               <Flag size={11} />
               <span className="capitalize">{item.priority} priority</span>
             </div>
           )}
+
           <div className="flex items-center gap-1 mt-2 text-[11px] font-medium text-lavender-600 dark:text-lavender-400">
             View project <ArrowRight size={11} />
           </div>
@@ -282,13 +254,9 @@ function ItemTooltip({ hovered }: { hovered: HoveredItem }) {
       </div>
     </div>,
     document.body
-  )
-}
+  )}
 
-// ---------------------------------------------------------------------------
-// Reusable item chip — used by both the Week columns and the Agenda list
-// ---------------------------------------------------------------------------
-
+// used by both the week columns and the agenda list
 function ItemChip({
   item,
   onClick,
@@ -298,9 +266,9 @@ function ItemChip({
   item: CalendarItem
   onClick: () => void
   onHover: (e: ReactMouseEvent) => void
-  onHoverEnd: () => void
-}) {
+  onHoverEnd: () => void}) {
   const isTask = item.type === "task"
+
   const dotClassName = isTask
     ? item.priority === "high"
       ? "bg-destructive"
@@ -318,19 +286,14 @@ function ItemChip({
       onMouseLeave={onHoverEnd}
       className="w-full flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs
        bg-white dark:bg-outer_space-500 border border-lavender-100 dark:border-paynes_gray-400
-        hover:border-lavender-300 dark:hover:border-lavender-500/50 transition-colors"
-    >
+        hover:border-lavender-300 dark:hover:border-lavender-500/50 transition-colors">
       <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", dotClassName)} />
       <span className="truncate text-outer_space-500 dark:text-platinum-500">{item.title}</span>
     </button>
-  )
-}
+  )}
 
-// ---------------------------------------------------------------------------
-// Week view — 7 day columns, each a plain stacked list of that day's items.
-// No hour grid: there's no time-of-day data to place on one.
-// ---------------------------------------------------------------------------
-
+// no hour grid here, there's no time-of-day data to put on one anyway.
+// just a stacked list per day.
 function WeekView({
   cursorDate,
   itemsByDay,
@@ -342,8 +305,7 @@ function WeekView({
   itemsByDay: Map<string, CalendarItem[]>
   onItemClick: (item: CalendarItem) => void
   onHover: (item: CalendarItem, e: ReactMouseEvent) => void
-  onHoverEnd: () => void
-}) {
+  onHoverEnd: () => void}) {
   const weekStart = startOfWeek(cursorDate, { weekStartsOn: 0 })
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
@@ -361,21 +323,18 @@ function WeekView({
               "w-[70vw] max-w-[220px] sm:w-auto shrink-0 snap-start rounded-2xl border p-2.5 flex flex-col",
               today
                 ? "border-lavender-400 bg-lavender-50/60 dark:bg-lavender-500/10"
-                : "border-lavender-100 dark:border-paynes_gray-400 bg-white/50 dark:bg-outer_space-500/40"
-            )}
-          >
+                : "border-lavender-100 dark:border-paynes_gray-400 bg-white/50 dark:bg-outer_space-500/40")}>
             <div className="flex items-baseline justify-between mb-2 px-0.5">
               <span className="text-[11px] font-medium uppercase tracking-wide text-paynes_gray-500 dark:text-french_gray-500">
                 {format(day, "EEE")}
               </span>
+
               <span
                 className={cn(
                   "text-sm font-semibold",
                   today
                     ? "text-lavender-600 dark:text-lavender-300"
-                    : "text-outer_space-500 dark:text-platinum-500"
-                )}
-              >
+                    : "text-outer_space-500 dark:text-platinum-500")}>
                 {format(day, "d")}
               </span>
             </div>
@@ -398,17 +357,12 @@ function WeekView({
               )}
             </div>
           </div>
-        )
-      })}
+        )})}
     </div>
-  )
-}
+  )}
 
-// ---------------------------------------------------------------------------
-// Agenda view — flat chronological list grouped by date. Past-due groups
-// are flagged rather than hidden, since nothing here tracks completion.
-// ---------------------------------------------------------------------------
-
+// flat list grouped by date, overdue groups get flagged instead of hidden
+// since completion isn't tracked here
 function AgendaView({
   groupedItems,
   todayRef,
@@ -417,17 +371,17 @@ function AgendaView({
   onHoverEnd,
 }: {
   groupedItems: { dateKey: string; date: Date; items: CalendarItem[] }[]
-  todayRef: React.RefObject<HTMLDivElement>
+  todayRef: React.RefObject<HTMLDivElement | null>
   onItemClick: (item: CalendarItem) => void
   onHover: (item: CalendarItem, e: ReactMouseEvent) => void
-  onHoverEnd: () => void
-}) {
+  onHoverEnd: () => void}) {
   return (
     <div className="space-y-4 max-h-[640px] overflow-y-auto pr-1 scrollbar-thin">
       {groupedItems.map(({ dateKey, date, items }) => {
         const overdue = isBefore(date, startOfDay(new Date())) && !isToday(date)
         const today = isToday(date)
         const tomorrow = isSameDay(date, addDays(new Date(), 1))
+
         const label = today
           ? "Today"
           : tomorrow
@@ -444,20 +398,21 @@ function AgendaView({
                     ? "text-destructive"
                     : today
                       ? "text-lavender-600 dark:text-lavender-300"
-                      : "text-outer_space-500 dark:text-platinum-500"
-                )}
-              >
+                      : "text-outer_space-500 dark:text-platinum-500")}>
                 {label}
               </h3>
+
               {overdue && (
                 <span className="text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive">
                   Overdue
                 </span>
               )}
             </div>
+
             <div className="space-y-1.5">
               {items.map((item) => {
                 const isTask = item.type === "task"
+
                 return (
                   <button
                     key={item.id}
@@ -468,8 +423,7 @@ function AgendaView({
                     onMouseLeave={onHoverEnd}
                     className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left
                      bg-white dark:bg-outer_space-500 border border-lavender-100 dark:border-paynes_gray-400
-                      hover:border-lavender-300 dark:hover:border-lavender-500/50 transition-colors"
-                  >
+                      hover:border-lavender-300 dark:hover:border-lavender-500/50 transition-colors">
                     <div
                       className={cn(
                         "flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-white",
@@ -479,15 +433,15 @@ function AgendaView({
                             : item.priority === "low"
                               ? "bg-mint-500"
                               : "bg-lavender-500"
-                          : "bg-blue_munsell-500"
-                      )}
-                    >
+                          : "bg-blue_munsell-500")}>
                       {isTask ? <CheckSquare size={12} /> : <FolderOpen size={12} />}
                     </div>
+
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-outer_space-500 dark:text-platinum-500 truncate">
                         {item.title}
                       </p>
+
                       {isTask && item.projectName && (
                         <p className="text-[11px] text-paynes_gray-500 dark:text-french_gray-500 truncate">
                           {item.projectName}
@@ -496,19 +450,12 @@ function AgendaView({
                       )}
                     </div>
                   </button>
-                )
-              })}
+                )})}
             </div>
           </div>
-        )
-      })}
+        )})}
     </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
+  )}
 
 function EmptyState() {
   return (
@@ -516,17 +463,14 @@ function EmptyState() {
       <div className="h-12 w-12 rounded-2xl bg-lavender-100 dark:bg-paynes_gray-500/40 flex items-center justify-center mb-4">
         <CalendarX className="text-lavender-500" size={22} />
       </div>
+
       <p className="font-medium text-outer_space-500 dark:text-platinum-500">Nothing on the calendar yet</p>
+
       <p className="text-sm text-paynes_gray-500 dark:text-french_gray-500 mt-1 max-w-xs">
         Tasks assigned to you and projects with due dates will show up here.
       </p>
     </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+  )}
 
 export function CalendarView({ tasks, projects }: CalendarViewProps) {
   const router = useRouter()
@@ -539,18 +483,15 @@ export function CalendarView({ tasks, projects }: CalendarViewProps) {
     event,
     children,
   }: EventWrapperProps<CalendarItem & { start: Date; end: Date; allDay: boolean }> & {
-    children?: React.ReactNode
-  }) {
+    children?: React.ReactNode}) {
     return (
       <div
         onMouseEnter={(e) => setHovered({ item: event, x: e.clientX, y: e.clientY })}
         onMouseMove={(e) => setHovered({ item: event, x: e.clientX, y: e.clientY })}
-        onMouseLeave={() => setHovered(null)}
-      >
+        onMouseLeave={() => setHovered(null)}>
         {children}
       </div>
-    )
-  })
+    )})
 
   const items = useMemo<CalendarItem[]>(() => {
     const taskItems: CalendarItem[] = tasks
@@ -563,8 +504,7 @@ export function CalendarView({ tasks, projects }: CalendarViewProps) {
         priority: task.priority,
         projectId: task.list.project.id,
         projectName: task.list.project.name,
-        listName: task.list.name,
-      }))
+        listName: task.list.name,}))
 
     const projectItems: CalendarItem[] = projects
       .filter((project) => !!project.dueDate)
@@ -573,68 +513,64 @@ export function CalendarView({ tasks, projects }: CalendarViewProps) {
         title: project.name,
         date: startOfDay(new Date(project.dueDate)),
         type: "project",
-        projectId: project.id,
-      }))
+        projectId: project.id,}))
 
-    return [...taskItems, ...projectItems].sort((a, b) => a.date.getTime() - b.date.getTime())
-  }, [tasks, projects])
+    return [...taskItems, ...projectItems].sort((a, b) => a.date.getTime() - b.date.getTime())}, [tasks, projects])
 
   const itemsByDay = useMemo(() => {
     const map = new Map<string, CalendarItem[]>()
+
     for (const item of items) {
       const key = format(item.date, "yyyy-MM-dd")
       const existing = map.get(key)
+
       if (existing) existing.push(item)
-      else map.set(key, [item])
-    }
-    return map
-  }, [items])
+      else map.set(key, [item])}
+
+    return map}, [items])
 
   const groupedItems = useMemo(
     () =>
       Array.from(itemsByDay.entries()).map(([dateKey, groupItems]) => ({
         dateKey,
         date: groupItems[0].date,
-        items: groupItems,
-      })),
+        items: groupItems,})),
     [itemsByDay]
   )
 
-  // react-big-calendar's month grid still wants start/end/allDay events
+  // only the month grid needs start/end/allDay, so it gets added here
+  // instead of carrying it through the whole CalendarItem type
   const monthEvents = useMemo(
     () => items.map((item) => ({ ...item, start: item.date, end: item.date, allDay: true })),
     [items]
   )
 
   const eventPropGetter = (event: CalendarItem) => ({
-    className: event.type === "project" ? "event-project" : `event-task-${event.priority ?? "medium"}`,
-  })
+    className: event.type === "project" ? "event-project" : `event-task-${event.priority ?? "medium"}`,})
 
   function handleItemClick(item: CalendarItem) {
     setHovered(null)
-    router.push(`/projects/${item.projectId}`)
-  }
+    router.push(`/projects/${item.projectId}`)}
 
   function handleNavigate(dir: "PREV" | "NEXT") {
     const delta = dir === "PREV" ? -1 : 1
-    setCursorDate((prev) => (view === "month" ? addMonths(prev, delta) : addDays(prev, delta * 7)))
-  }
+
+    setCursorDate((prev) => (view === "month" ? addMonths(prev, delta) : addDays(prev, delta * 7)))}
 
   function handleToday() {
     const now = new Date()
+
     setCursorDate(now)
+
     if (view === "agenda") {
-      todayGroupRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-    }
-  }
+      todayGroupRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}}
 
   if (items.length === 0) {
     return (
       <div className="rounded-3xl border-2 border-white/50 dark:border-white/10 bg-white/70 dark:bg-outer_space-500/60 backdrop-blur-xl backdrop-saturate-150 shadow-[4px_4px_0_0_rgba(139,124,246,0.14)] dark:shadow-[4px_4px_0_0_rgba(0,0,0,0.35)] p-4 sm:p-6">
         <EmptyState />
       </div>
-    )
-  }
+    )}
 
   return (
     <div className="rounded-3xl border-2 border-white/50 dark:border-white/10 bg-white/70 dark:bg-outer_space-500/60 backdrop-blur-xl backdrop-saturate-150 shadow-[4px_4px_0_0_rgba(139,124,246,0.14)] dark:shadow-[4px_4px_0_0_rgba(0,0,0,0.35)] p-4 sm:p-6">
@@ -645,6 +581,7 @@ export function CalendarView({ tasks, projects }: CalendarViewProps) {
         onNavigate={handleNavigate}
         onToday={handleToday}
       />
+
       <CalendarLegend />
 
       {view === "month" && (
@@ -690,5 +627,4 @@ export function CalendarView({ tasks, projects }: CalendarViewProps) {
 
       {hovered && <ItemTooltip hovered={hovered} />}
     </div>
-  )
-}
+  )}

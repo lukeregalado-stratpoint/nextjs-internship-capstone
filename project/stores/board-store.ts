@@ -27,11 +27,23 @@ interface BoardState {
   // above, applied from useTasks().bulkUpdateTasks / bulkDeleteTasks.
   bulkUpdateTasks: (taskIds: string[], updates: Partial<TaskWithLabels>) => void
   bulkRemoveTasks: (taskIds: string[]) => void
+
+  // PENDING STATE — granular in-flight tracking so components can show a
+  // loading affordance on just the thing that's saving, without needing a
+  // blanket "something on the board is loading" flag. Kept as plain Sets
+  // (not derived from useTransition) because a single shared useTransition
+  // per hook can't tell you *which* task/list triggered it.
+  pendingTaskIds: Set<string>
+  setTaskPending: (taskId: string, pending: boolean) => void
+  pendingListIds: Set<string>
+  setListPending: (listId: string, pending: boolean) => void
 }
 
 export const useBoardStore = create<BoardState>((set) => ({
   lists: [],
   selectedTaskIds: new Set(),
+  pendingTaskIds: new Set(),
+  pendingListIds: new Set(),
 
   setLists: (lists) => set({ lists }),
 
@@ -66,13 +78,23 @@ export const useBoardStore = create<BoardState>((set) => ({
   // In-place field update only — does NOT move the task between lists.
   // Use `moveTask` for that (kept separate so a listId change can't be
   // applied to the wrong list's task array by accident).
+  //
+  // Only the one list that actually contains `taskId` gets a new object
+  // reference — every other list passes through untouched, so
+  // React.memo(BoardColumn) can skip re-rendering the other three columns.
   updateTask: (taskId, updates) =>
-    set((state) => ({
-      lists: state.lists.map((l) => ({
-        ...l,
-        tasks: l.tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t)),
-      })),
-    })),
+    set((state) => {
+      const listIndex = state.lists.findIndex((l) => l.tasks.some((t) => t.id === taskId))
+      if (listIndex === -1) return state
+
+      const list = state.lists[listIndex]
+      const lists = [...state.lists]
+      lists[listIndex] = {
+        ...list,
+        tasks: list.tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t)),
+      }
+      return { lists }
+    }),
 
   removeTask: (taskId) =>
     set((state) => {
@@ -80,36 +102,51 @@ export const useBoardStore = create<BoardState>((set) => ({
       // linger as "selected" for a subsequent bulk action
       const selectedTaskIds = new Set(state.selectedTaskIds)
       selectedTaskIds.delete(taskId)
-      return {
-        selectedTaskIds,
-        lists: state.lists.map((l) => ({
-          ...l,
-          tasks: l.tasks.filter((t) => t.id !== taskId),
-        })),
-      }
+
+      const listIndex = state.lists.findIndex((l) => l.tasks.some((t) => t.id === taskId))
+      if (listIndex === -1) return { selectedTaskIds }
+
+      const list = state.lists[listIndex]
+      const lists = [...state.lists]
+      lists[listIndex] = { ...list, tasks: list.tasks.filter((t) => t.id !== taskId) }
+      return { selectedTaskIds, lists }
     }),
 
+  // Touches at most two lists (source + destination) — or exactly one if
+  // it's a same-list reorder. Every uninvolved list keeps its reference.
   moveTask: (taskId, destListId, destIndex) =>
     set((state) => {
-      let movedTask: TaskWithLabels | undefined
-      const stripped = state.lists.map((l) => {
-        const found = l.tasks.find((t) => t.id === taskId)
-        if (found) movedTask = found
-        return { ...l, tasks: l.tasks.filter((t) => t.id !== taskId) }
-      })
+      const srcListIndex = state.lists.findIndex((l) => l.tasks.some((t) => t.id === taskId))
+      if (srcListIndex === -1) return state
 
-      if (!movedTask) return { lists: stripped }
-
+      const srcList = state.lists[srcListIndex]
+      const movedTask = srcList.tasks.find((t) => t.id === taskId)
+      if (!movedTask) return state
       const relocated = { ...movedTask, listId: destListId }
-      return {
-        lists: stripped.map((l) => {
-          if (l.id !== destListId) return l
-          const tasks = [...l.tasks]
-          const insertAt = destIndex === undefined ? tasks.length : destIndex
-          tasks.splice(insertAt, 0, relocated)
-          return { ...l, tasks }
-        }),
+
+      // Same-list reorder: only that one list changes.
+      if (srcList.id === destListId) {
+        const tasks = srcList.tasks.filter((t) => t.id !== taskId)
+        const insertAt = destIndex === undefined ? tasks.length : destIndex
+        tasks.splice(insertAt, 0, relocated)
+        const lists = [...state.lists]
+        lists[srcListIndex] = { ...srcList, tasks }
+        return { lists }
       }
+
+      const lists = [...state.lists]
+      lists[srcListIndex] = { ...srcList, tasks: srcList.tasks.filter((t) => t.id !== taskId) }
+
+      const destListIndex = lists.findIndex((l) => l.id === destListId)
+      if (destListIndex !== -1) {
+        const destList = lists[destListIndex]
+        const tasks = [...destList.tasks]
+        const insertAt = destIndex === undefined ? tasks.length : destIndex
+        tasks.splice(insertAt, 0, relocated)
+        lists[destListIndex] = { ...destList, tasks }
+      }
+
+      return { lists }
     }),
 
   reorderTasksInList: (listId, orderedTaskIds) =>
@@ -148,34 +185,41 @@ export const useBoardStore = create<BoardState>((set) => ({
       const idSet = new Set(taskIds)
       const { listId: destListId, ...fields } = updates
 
-      // no column change -> plain field merge, same shape as `updateTask`
+      // no column change -> plain field merge, same shape as `updateTask`.
+      // Skip any list that doesn't contain a selected task entirely.
       if (!destListId) {
-        return {
-          lists: state.lists.map((l) => ({
+        let changed = false
+        const lists = state.lists.map((l) => {
+          if (!l.tasks.some((t) => idSet.has(t.id))) return l
+          changed = true
+          return {
             ...l,
             tasks: l.tasks.map((t) => (idSet.has(t.id) ? { ...t, ...fields } : t)),
-          })),
-        }
+          }
+        })
+        return changed ? { lists } : state
       }
 
-      // column change -> pull the selected tasks out of wherever they
-      // currently live and append them (in selection order) to the
-      // destination list, mirroring what `moveTask` does for a single task
+      // column change -> only lists that actually hold a selected task
+      // (sources losing tasks, plus the destination) get rebuilt.
+      // Everything else passes through by reference, same as `moveTask`.
+      const touchedListIds = new Set(
+        state.lists.filter((l) => l.tasks.some((t) => idSet.has(t.id))).map((l) => l.id)
+      )
+      touchedListIds.add(destListId)
+
       const moved: TaskWithLabels[] = []
-      const stripped = state.lists.map((l) => {
-        const keep: TaskWithLabels[] = []
+      const lists = state.lists.map((l) => {
+        if (!touchedListIds.has(l.id)) return l
+        const keep = l.tasks.filter((t) => !idSet.has(t.id))
         for (const t of l.tasks) {
-          if (idSet.has(t.id)) {
-            moved.push({ ...t, ...fields, listId: destListId })
-          } else {
-            keep.push(t)
-          }
+          if (idSet.has(t.id)) moved.push({ ...t, ...fields, listId: destListId })
         }
         return { ...l, tasks: keep }
       })
 
       return {
-        lists: stripped.map((l) =>
+        lists: lists.map((l) =>
           l.id === destListId ? { ...l, tasks: [...l.tasks, ...moved] } : l
         ),
       }
@@ -186,12 +230,33 @@ export const useBoardStore = create<BoardState>((set) => ({
       const idSet = new Set(taskIds)
       const selectedTaskIds = new Set(state.selectedTaskIds)
       for (const id of taskIds) selectedTaskIds.delete(id)
-      return {
-        selectedTaskIds,
-        lists: state.lists.map((l) => ({
-          ...l,
-          tasks: l.tasks.filter((t) => !idSet.has(t.id)),
-        })),
-      }
+
+      let changed = false
+      const lists = state.lists.map((l) => {
+        if (!l.tasks.some((t) => idSet.has(t.id))) return l
+        changed = true
+        return { ...l, tasks: l.tasks.filter((t) => !idSet.has(t.id)) }
+      })
+      return changed ? { selectedTaskIds, lists } : { selectedTaskIds }
+    }),
+
+  // PENDING STATE
+
+  setTaskPending: (taskId, pending) =>
+    set((state) => {
+      if (pending === state.pendingTaskIds.has(taskId)) return state
+      const pendingTaskIds = new Set(state.pendingTaskIds)
+      if (pending) pendingTaskIds.add(taskId)
+      else pendingTaskIds.delete(taskId)
+      return { pendingTaskIds }
+    }),
+
+  setListPending: (listId, pending) =>
+    set((state) => {
+      if (pending === state.pendingListIds.has(listId)) return state
+      const pendingListIds = new Set(state.pendingListIds)
+      if (pending) pendingListIds.add(listId)
+      else pendingListIds.delete(listId)
+      return { pendingListIds }
     }),
 }))

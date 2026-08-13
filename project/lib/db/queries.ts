@@ -47,7 +47,11 @@ export async function getProjectsForUser(userId: string) {
       members: true,
       lists: {
         orderBy: [asc(lists.position)],
-        with: { tasks: true },
+        // Only `id` is used below (for counts/progress) — pulling full
+        // task rows (title, description, dates, etc.) here was shipping
+        // every field of every task on the projects list page for no
+        // reason.
+        with: { tasks: { columns: { id: true } } },
       },
     },
   })
@@ -206,40 +210,62 @@ export async function getProjectsForOwner(userId: string) {
 }
 
 export async function getDashboardStatsForOwner(userId: string) {
-  const rows = await db.query.projects.findMany({
+  const ownedProjects = await db.query.projects.findMany({
     where: eq(projects.ownerId, userId),
-    with: {
-      lists: {
-        orderBy: [asc(lists.position)],
-        with: { tasks: { columns: { id: true } } },
-      },
-    },
+    columns: { id: true },
   })
+  const projectIds = ownedProjects.map((p) => p.id)
+
+  if (projectIds.length === 0) {
+    return { activeProjects: 0, completedTasks: 0, inProgressTasks: 0, backlogTasks: 0 }
+  }
+
+  // Per-list task counts computed with COUNT/GROUP BY, instead of pulling
+  // every task row across every project just to add them up in JS. Only
+  // scales with (number of lists), not (number of tasks).
+  const listTaskCounts = db
+    .select({
+      projectId: lists.projectId,
+      position: lists.position,
+      taskCount: sql<number>`count(${tasks.id})`.as("task_count"),
+    })
+    .from(lists)
+    .leftJoin(tasks, eq(tasks.listId, lists.id))
+    .where(inArray(lists.projectId, projectIds))
+    .groupBy(lists.id)
+    .as("list_task_counts")
+
+  // Rank each list within its project by position so its count can be
+  // bucketed as backlog (first list) / done (last list) / in-progress
+  // (everything between) — same semantics as the board's columns.
+  const rows = await db
+    .select({
+      rank: sql<number>`row_number() over (partition by ${listTaskCounts.projectId} order by ${listTaskCounts.position} asc)`,
+      listCount: sql<number>`count(*) over (partition by ${listTaskCounts.projectId})`,
+      taskCount: listTaskCounts.taskCount,
+    })
+    .from(listTaskCounts)
 
   let completedTasks = 0
   let inProgressTasks = 0
   let backlogTasks = 0
 
-  for (const project of rows) {
-    const projectLists = project.lists
-    if (projectLists.length === 0) continue
+  for (const row of rows) {
+    const taskCount = Number(row.taskCount)
+    const rank = Number(row.rank)
+    const listCount = Number(row.listCount)
 
-    if (projectLists.length === 1) {
-      backlogTasks += projectLists[0].tasks.length
-      continue
+    if (listCount === 1 || rank === 1) {
+      backlogTasks += taskCount
+    } else if (rank === listCount) {
+      completedTasks += taskCount
+    } else {
+      inProgressTasks += taskCount
     }
-
-    const first = projectLists[0]
-    const last = projectLists[projectLists.length - 1]
-    const middle = projectLists.slice(1, -1)
-
-    backlogTasks += first.tasks.length
-    completedTasks += last.tasks.length
-    inProgressTasks += middle.reduce((sum, l) => sum + l.tasks.length, 0)
   }
 
   return {
-    activeProjects: rows.length,
+    activeProjects: projectIds.length,
     completedTasks,
     inProgressTasks,
     backlogTasks,
@@ -255,12 +281,11 @@ export async function getListsForProject(projectId: string) {
 }
 
 export async function getNextListPosition(projectId: string) {
-  const existing = await db.query.lists.findMany({
-    where: eq(lists.projectId, projectId),
-    columns: { position: true },
-  })
-  if (existing.length === 0) return 0
-  return Math.max(...existing.map((l) => l.position)) + 1
+  const [row] = await db
+    .select({ maxPosition: sql<number | null>`max(${lists.position})` })
+    .from(lists)
+    .where(eq(lists.projectId, projectId))
+  return (row?.maxPosition ?? -1) + 1
 }
 
 export async function createList(data: NewList) {
@@ -323,12 +348,11 @@ export async function ownsList(listId: string, userId: string) {
 // TASKS
 
 export async function getNextTaskPosition(listId: string) {
-  const existing = await db.query.tasks.findMany({
-    where: eq(tasks.listId, listId),
-    columns: { position: true },
-  })
-  if (existing.length === 0) return 0
-  return Math.max(...existing.map((t) => t.position)) + 1
+  const [row] = await db
+    .select({ maxPosition: sql<number | null>`max(${tasks.position})` })
+    .from(tasks)
+    .where(eq(tasks.listId, listId))
+  return (row?.maxPosition ?? -1) + 1
 }
 
 export async function getTaskById(taskId: string) {
@@ -368,14 +392,25 @@ export async function moveTask(taskId: string, destListId: string, orderedTaskId
     .set({ listId: destListId, updatedAt: new Date() })
     .where(eq(tasks.id, taskId))
 
-  await Promise.all(
-    orderedTaskIds.map((id, index) =>
-      db
-        .update(tasks)
-        .set({ position: index, updatedAt: new Date() })
-        .where(and(eq(tasks.id, id), eq(tasks.listId, destListId)))
-    )
+  if (orderedTaskIds.length === 0) return
+
+  // Same batched-update pattern as reorderLists below: one round trip for
+  // the whole destination column instead of one UPDATE per task.
+  const positionCase = sql.join(
+    orderedTaskIds.map((id, index) => sql`WHEN ${id} THEN ${index}`),
+    sql` `
   )
+
+  await db.execute(sql`
+    UPDATE tasks
+    SET position = CASE id
+      ${positionCase}
+      ELSE position
+    END,
+    updated_at = now()
+    WHERE list_id = ${destListId}
+      AND id IN ${orderedTaskIds}
+  `)
 }
 
 export async function ownsTask(taskId: string, userId: string) {
@@ -450,28 +485,27 @@ export async function bulkUpdateTasks(
 
   if (data.listId) {
     const startPosition = await getNextTaskPosition(data.listId)
-    const results = await Promise.all(
-      taskIds.map((id, index) =>
-        db
-          .update(tasks)
-          .set({ ...data, position: startPosition + index, updatedAt: new Date() })
-          .where(eq(tasks.id, id))
-          .returning()
-      )
+    const positionCase = sql.join(
+      taskIds.map((id, index) => sql`WHEN ${id} THEN ${startPosition + index}`),
+      sql` `
     )
-    return results.flat()
+
+    return db
+      .update(tasks)
+      .set({
+        ...data,
+        position: sql`CASE id ${positionCase} ELSE position END`,
+        updatedAt: new Date(),
+      })
+      .where(inArray(tasks.id, taskIds))
+      .returning()
   }
 
-  const results = await Promise.all(
-    taskIds.map((id) =>
-      db
-        .update(tasks)
-        .set({ ...data, updatedAt: new Date() })
-        .where(eq(tasks.id, id))
-        .returning()
-    )
-  )
-  return results.flat()
+  return db
+    .update(tasks)
+    .set({ ...data, updatedAt: new Date() })
+    .where(inArray(tasks.id, taskIds))
+    .returning()
 }
 
 // LABELS

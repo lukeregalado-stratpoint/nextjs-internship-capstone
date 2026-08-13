@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react"
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react"
 import {
   DndContext,
   DragOverlay,
@@ -22,7 +22,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, MoreVertical, Pencil, Plus, Trash2, X } from "lucide-react"
+import { GripVertical, Loader2, MoreVertical, Pencil, Plus, Trash2, X } from "lucide-react"
 import { useLists } from "@/hooks/use-lists"
 import { useTasks } from "@/hooks/use-tasks"
 import { CreateTaskModal, type TaskFormSubmitValues } from "@/components/modals/create-task-modal"
@@ -126,8 +126,11 @@ export function KanbanBoard({
 
   const dragSnapshotRef = useRef<ListWithTasks[] | null>(null)
 
-  // hydrate
-  useEffect(() => {
+  // hydrate — useLayoutEffect (not useEffect) so this flushes before the
+  // browser paints. The store's initial `lists` is always `[]`, so on a
+  // fresh mount there'd otherwise be one visible frame of an empty board
+  // before this fills it in.
+  useLayoutEffect(() => {
     setLists(initialLists)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
@@ -219,6 +222,18 @@ export function KanbanBoard({
     activationConstraint: { delay: 150, tolerance: 8 },
   })
 )
+
+  // Stable across renders (deps are just setState functions, which React
+  // guarantees are stable) so they can be passed straight into memoized
+  // BoardColumn instances without invalidating them every render.
+  const handleAddTask = useCallback((listId: string) => {
+    setTaskModalKey((k) => k + 1)
+    setTaskModal({ listId })
+  }, [])
+
+  const handleTaskClick = useCallback((listId: string, task: TaskWithLabels) => {
+    setTaskModal({ listId, task })
+  }, [])
 
   function findListIdForTask(taskId: string) {
     return lists.find((l) => l.tasks.some((t) => t.id === taskId))?.id
@@ -484,18 +499,14 @@ export function KanbanBoard({
               <BoardColumn
                 key={list.id}
                 list={list}
-                isPending={isPending}
                 isSearching={isSearching}
                 memberNameById={memberNameById}
                 selectedTaskIds={selectedTaskIds}
                 onToggleTaskSelection={toggleTaskSelection}
-                onRename={(name) => renameList(list.id, name)}
-                onDelete={() => deleteList(list.id)}
-                onAddTask={() => {
-                  setTaskModalKey((k) => k + 1)
-                  setTaskModal({ listId: list.id })
-                }}
-                onTaskClick={(task) => setTaskModal({ listId: list.id, task })}
+                onRename={renameList}
+                onDelete={deleteList}
+                onAddTask={handleAddTask}
+                onTaskClick={handleTaskClick}
               />
             ))}
 
@@ -519,9 +530,10 @@ export function KanbanBoard({
                     <button
                       type="submit"
                       disabled={isPending || !newColumnName.trim()}
-                      className="px-3 py-1.5 text-sm rounded-xl bg-lavender-500 text-white hover:bg-lavender-600
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-xl bg-lavender-500 text-white hover:bg-lavender-600
                        disabled:opacity-50"
                     >
+                      {isPending && <Loader2 size={14} className="animate-spin" />}
                       Add column
                     </button>
                     <button
@@ -616,7 +628,8 @@ export function KanbanBoard({
             className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-rose-500
              hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-50"
           >
-            <Trash2 size={14} /> Delete
+            {taskPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+            Delete
           </button>
 
           <button
@@ -661,9 +674,8 @@ export function KanbanBoard({
   )
 }
 
-function BoardColumn({
+const BoardColumn = memo(function BoardColumn({
   list,
-  isPending,
   isSearching,
   memberNameById,
   selectedTaskIds,
@@ -674,20 +686,27 @@ function BoardColumn({
   onTaskClick,
 }: {
   list: ListWithTasks
-  isPending: boolean
   isSearching: boolean
   memberNameById: Map<string, string>
   selectedTaskIds: Set<string>
   onToggleTaskSelection: (taskId: string) => void
-  onRename: (name: string) => void
-  onDelete: () => void
-  onAddTask: () => void
-  onTaskClick: (task: TaskWithLabels) => void
+  onRename: (listId: string, name: string) => void
+  onDelete: (listId: string) => void
+  onAddTask: (listId: string) => void
+  onTaskClick: (listId: string, task: TaskWithLabels) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: list.id,
     data: { type: "list" },
   })
+
+  // Read this column's own pending flag straight from the store instead of
+  // taking it as a prop. A prop here would mean any list's rename/delete
+  // forces a new value down through KanbanBoard -> every BoardColumn,
+  // defeating memo for columns that aren't the one changing. Subscribing
+  // directly means only *this* column re-renders when *its* pending state
+  // flips.
+  const isColumnPending = useBoardStore((s) => s.pendingListIds.has(list.id))
 
   const { setNodeRef: setDroppableRef } = useDroppable({
     id: `${list.id}-dropzone`,
@@ -707,7 +726,7 @@ function BoardColumn({
     setEditing(false)
     const trimmed = name.trim()
     if (trimmed && trimmed !== list.name) {
-      onRename(trimmed)
+      onRename(list.id, trimmed)
     } else {
       setName(list.name)
     }
@@ -719,7 +738,7 @@ function BoardColumn({
       list.tasks.length > 0
         ? `Delete "${list.name}" and its ${list.tasks.length} task(s)? This can't be undone.`
         : `Delete "${list.name}"? This can't be undone.`
-    if (confirm(message)) onDelete()
+    if (confirm(message)) onDelete(list.id)
   }
 
   return (
@@ -755,6 +774,7 @@ function BoardColumn({
                   setEditing(false)
                 }
               }}
+              disabled={isColumnPending}
               maxLength={60}
               className="flex-1 min-w-0 px-2 py-1 text-sm font-semibold bg-white dark:bg-outer_space-500
                border border-lavender-400 rounded-lg"
@@ -777,6 +797,13 @@ function BoardColumn({
               matches
             </span>
           )}
+          {isColumnPending && (
+            <Loader2
+              size={12}
+              className="animate-spin text-lavender-500 shrink-0"
+              aria-label="Saving column"
+            />
+          )}
         </div>
 
         <div className="flex items-center gap-0.5 shrink-0">
@@ -797,23 +824,24 @@ function BoardColumn({
                     setMenuOpen(false)
                     setEditing(true)
                   }}
+                  disabled={isColumnPending}
                   className="w-full flex items-center px-3 py-2.5 sm:py-2 text-sm text-outer_space-500
-                 dark:text-platinum-500 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
+                 dark:text-platinum-500 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400 disabled:opacity-50"
                 >
                   <Pencil size={14} className="mr-2" /> Rename
                 </button>
                 <button
                   onClick={handleDelete}
-                  disabled={isPending}
+                  disabled={isColumnPending}
                   className="w-full flex items-center px-3 py-2.5 sm:py-2 text-sm text-rose-500
-                 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
+                 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400 disabled:opacity-50"
                 >
                   <Trash2 size={14} className="mr-2" /> Delete
                 </button>
               </div>
             )}
               <button
-              onClick={onAddTask}
+              onClick={() => onAddTask(list.id)}
               className="p-2 -m-1 rounded-lg hover:bg-white dark:hover:bg-outer_space-500 text-paynes_gray-500 dark:text-french_gray-400 hover:text-lavender-600"
               aria-label="Add task"
               title="Add task"
@@ -836,14 +864,13 @@ function BoardColumn({
           ) : isSearching ? (
             // if filter is active, tasks can't be dragged to avoid order scrambling
             list.tasks.map((task) => (
-              <TaskCard
+              <SearchResultTaskCard
                 key={task.id}
                 task={task}
                 assigneeName={task.assigneeId ? memberNameById.get(task.assigneeId) : undefined}
-                labels={task.labels}
                 selected={selectedTaskIds.has(task.id)}
                 onToggleSelect={() => onToggleTaskSelection(task.id)}
-                onClick={() => onTaskClick(task)}
+                onClick={() => onTaskClick(list.id, task)}
               />
             ))
           ) : (
@@ -854,13 +881,13 @@ function BoardColumn({
                 assigneeName={task.assigneeId ? memberNameById.get(task.assigneeId) : undefined}
                 selected={selectedTaskIds.has(task.id)}
                 onToggleSelect={() => onToggleTaskSelection(task.id)}
-                onClick={() => onTaskClick(task)}
+                onClick={() => onTaskClick(list.id, task)}
               />
             ))
           )}
 
           <button
-            onClick={onAddTask}
+            onClick={() => onAddTask(list.id)}
             className="w-full flex items-center justify-center gap-1.5 px-2 py-2.5 sm:py-1.5 text-xs
              text-paynes_gray-500 dark:text-french_gray-400 hover:text-lavender-600
               rounded-lg hover:bg-white dark:hover:bg-outer_space-500 transition-colors"
@@ -871,9 +898,9 @@ function BoardColumn({
       </SortableContext>
     </div>
   )
-}
+})
 
-function SortableTaskCard({
+const SortableTaskCard = memo(function SortableTaskCard({
   task,
   assigneeName,
   selected,
@@ -891,6 +918,10 @@ function SortableTaskCard({
     data: { type: "task" },
   })
 
+  // Subscribed directly (not passed as a prop) so a pending change on one
+  // task only re-renders that task's own card, not its whole column.
+  const pending = useBoardStore((s) => s.pendingTaskIds.has(task.id))
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -906,7 +937,40 @@ function SortableTaskCard({
         selected={selected}
         onToggleSelect={onToggleSelect}
         onClick={onClick}
+        pending={pending}
       />
     </div>
   )
-}
+})
+
+// Same idea as SortableTaskCard but without drag wiring, used for the
+// non-draggable search-results list. Kept as its own memoized component
+// (rather than inlining useBoardStore in the .map() above) so each card
+// only re-renders for its own pending-state change.
+const SearchResultTaskCard = memo(function SearchResultTaskCard({
+  task,
+  assigneeName,
+  selected,
+  onToggleSelect,
+  onClick,
+}: {
+  task: TaskWithLabels
+  assigneeName?: string
+  selected?: boolean
+  onToggleSelect?: () => void
+  onClick: () => void
+}) {
+  const pending = useBoardStore((s) => s.pendingTaskIds.has(task.id))
+
+  return (
+    <TaskCard
+      task={task}
+      assigneeName={assigneeName}
+      labels={task.labels}
+      selected={selected}
+      onToggleSelect={onToggleSelect}
+      onClick={onClick}
+      pending={pending}
+    />
+  )
+})

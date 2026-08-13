@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useCallback, useState, useTransition } from "react"
 import {
   createListAction,
   deleteListAction,
@@ -13,62 +13,105 @@ import { useBoardStore, type ListWithTasks } from "@/stores/board-store"
 export function useLists(projectId: string) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const { lists, setLists, reorder, addList, renameList, removeList } = useBoardStore()
+  const {
+    lists,
+    setLists,
+    reorder,
+    addList,
+    renameList: renameListInStore,
+    removeList,
+    setListPending,
+  } = useBoardStore()
 
-  function createList(name: string, onSuccess?: (list: ListWithTasks) => void) {
-    setError(null)
-    startTransition(async () => {
-      const result = await createListAction({ name, projectId })
-      if (!result.success) {
-        setError(result.error)
-        return
-      }
-      addList(result.data)
-      onSuccess?.({ ...result.data, tasks: [] })
-    })
-  }
+  // Every function below is wrapped in useCallback and reads current store
+  // state via `useBoardStore.getState()` rather than the subscribed `lists`
+  // value, so their identity only changes if `projectId` (or a store
+  // action, which Zustand keeps stable) changes — not on every board
+  // mutation. That stability is what lets BoardColumn/TaskCard be wrapped
+  // in React.memo and actually skip re-rendering columns that didn't
+  // change, instead of getting a "new" callback prop every render.
 
-  function updateListLocal(listId: string, input: ListUpdateInput) {
-    const previousName = lists.find((l) => l.id === listId)?.name
-    if (input.name) renameList(listId, input.name)
+  const createList = useCallback(
+    (name: string, onSuccess?: (list: ListWithTasks) => void) => {
+      setError(null)
+      startTransition(async () => {
+        const result = await createListAction({ name, projectId })
+        if (!result.success) {
+          setError(result.error)
+          return
+        }
+        addList(result.data)
+        onSuccess?.({ ...result.data, tasks: [] })
+      })
+    },
+    [projectId, addList]
+  )
 
-    setError(null)
-    startTransition(async () => {
-      const result = await updateListAction(listId, projectId, input)
-      if (!result.success) {
-        setError(result.error)
-        if (previousName) renameList(listId, previousName)
-      }
-    })
-  }
+  const updateListLocal = useCallback(
+    (listId: string, input: ListUpdateInput) => {
+      const previousName = useBoardStore.getState().lists.find((l) => l.id === listId)?.name
+      if (input.name) renameListInStore(listId, input.name)
 
-  function deleteList(listId: string) {
-    const previous = lists
-    removeList(listId)
+      setError(null)
+      setListPending(listId, true)
+      startTransition(async () => {
+        try {
+          const result = await updateListAction(listId, projectId, input)
+          if (!result.success) {
+            setError(result.error)
+            if (previousName) renameListInStore(listId, previousName)
+          }
+        } finally {
+          setListPending(listId, false)
+        }
+      })
+    },
+    [projectId, renameListInStore, setListPending]
+  )
 
-    setError(null)
-    startTransition(async () => {
-      const result = await deleteListAction(listId, projectId)
-      if (!result.success) {
-        setError(result.error)
-        setLists(previous)
-      }
-    })
-  }
+  const renameList = useCallback(
+    (listId: string, name: string) => updateListLocal(listId, { name }),
+    [updateListLocal]
+  )
 
-  function reorderLists(orderedListIds: string[]) {
-    const previous = lists
-    reorder(orderedListIds)
+  const deleteList = useCallback(
+    (listId: string) => {
+      const previous = useBoardStore.getState().lists
+      setListPending(listId, true)
+      removeList(listId)
 
-    setError(null)
-    startTransition(async () => {
-      const result = await reorderListsAction({ projectId, orderedListIds })
-      if (!result.success) {
-        setError(result.error)
-        setLists(previous)
-      }
-    })
-  }
+      setError(null)
+      startTransition(async () => {
+        try {
+          const result = await deleteListAction(listId, projectId)
+          if (!result.success) {
+            setError(result.error)
+            setLists(previous)
+          }
+        } finally {
+          setListPending(listId, false)
+        }
+      })
+    },
+    [projectId, removeList, setLists, setListPending]
+  )
+
+  const reorderLists = useCallback(
+    (orderedListIds: string[]) => {
+      const previous = useBoardStore.getState().lists
+      reorder(orderedListIds)
+
+      setError(null)
+      startTransition(async () => {
+        const result = await reorderListsAction({ projectId, orderedListIds })
+        if (!result.success) {
+          setError(result.error)
+          setLists(previous)
+        }
+      })
+    },
+    [projectId, reorder, setLists]
+  )
 
   return {
     lists,
@@ -76,7 +119,7 @@ export function useLists(projectId: string) {
     error,
     setLists,
     createList,
-    renameList: (listId: string, name: string) => updateListLocal(listId, { name }),
+    renameList,
     deleteList,
     reorderLists,
   }

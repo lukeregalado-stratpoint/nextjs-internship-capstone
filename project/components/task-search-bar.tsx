@@ -57,7 +57,7 @@ export function TaskSearchBar({
       <div className="relative flex-1 min-w-[240px] max-w-md">
         <Search
           size={15}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-paynes_gray-500 dark:text-french_gray-400"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-paper/60"
         />
         <input
           ref={inputRef}
@@ -74,14 +74,14 @@ export function TaskSearchBar({
           placeholder='Search tasks, or try "assignee: jane"'
           aria-label="Search tasks"
           autoComplete="off"
-          className="w-full pl-9 pr-8 py-2 text-sm border border-lavender-200 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+          className="w-full pl-9 pr-8 py-2 text-sm border border-border rounded-xl bg-card text-foreground dark:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
         />
         {isSearching && (
           <button
             type="button"
             onClick={() => onQueryChange("")}
             aria-label="Clear search"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-paynes_gray-500 dark:text-french_gray-400 hover:text-outer_space-500 dark:hover:text-platinum-500"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-paper/60 hover:text-foreground dark:hover:text-paper"
           >
             <X size={14} />
           </button>
@@ -90,7 +90,7 @@ export function TaskSearchBar({
         {showSuggestions && (
           <ul
             role="listbox"
-            className="absolute z-20 mt-1 w-full max-h-56 overflow-auto bg-white dark:bg-outer_space-500 border border-lavender-100 dark:border-paynes_gray-400 rounded-xl shadow-lg py-1"
+            className="absolute z-20 mt-1 w-full max-h-56 overflow-auto bg-card border border-border rounded-xl shadow-lg py-1"
           >
             {suggestions.map((s, i) => (
               <li key={s.id} role="option" aria-selected={i === highlighted}>
@@ -101,15 +101,15 @@ export function TaskSearchBar({
                   onClick={() => pick(s)}
                   className={`w-full flex items-center justify-between gap-3 px-3 py-1.5 text-sm text-left ${
                     i === highlighted
-                      ? "bg-lavender-50 dark:bg-paynes_gray-400/30"
-                      : "hover:bg-lavender-50 dark:hover:bg-paynes_gray-400/20"
+                      ? "bg-primary dark:bg-muted"
+                      : "hover:bg-muted/20"
                   }`}
                 >
-                  <span className="font-medium text-outer_space-500 dark:text-platinum-500 capitalize">
+                  <span className="font-medium text-foreground dark:text-paper capitalize">
                     {s.label}
                   </span>
                   {s.hint && (
-                    <span className="text-xs text-paynes_gray-500 dark:text-french_gray-400">{s.hint}</span>
+                    <span className="text-xs text-muted-foreground dark:text-paper/60">{s.hint}</span>
                   )}
                 </button>
               </li>
@@ -119,7 +119,7 @@ export function TaskSearchBar({
       </div>
 
       {isSearching && (
-        <span className="text-xs text-paynes_gray-500 dark:text-french_gray-400">
+        <span className="text-xs text-muted-foreground dark:text-paper/60">
           {matchCount} of {totalCount} task{totalCount === 1 ? "" : "s"} match
         </span>
       )}

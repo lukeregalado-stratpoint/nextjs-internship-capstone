@@ -188,17 +188,17 @@ export function CreateTaskModal({
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-outer_space-500 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-card rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500">
+          <h3 className="text-lg font-semibold text-foreground">
             {isEditing ? "Edit Task" : "New Task"}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-lavender-50 dark:hover:bg-paynes_gray-500/20 text-paynes_gray-500 dark:text-french_gray-400"
+            className="p-1 rounded-full hover:bg-muted text-muted-foreground"
             aria-label="Close"
           >
             <X size={18} />
@@ -206,13 +206,13 @@ export function CreateTaskModal({
         </div>
 
         {error && (
-          <p className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl">
+          <p className="mb-4 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-xl">
             {error}
           </p>
         )}
 
         {(showCommentsTab || showActivityTab) && (
-          <div className="flex items-center gap-1 mb-4 border-b border-lavender-100 dark:border-paynes_gray-400">
+          <div className="flex items-center gap-1 mb-4 border-b border-border">
             {(
               [
                 ["details", "Details"],
@@ -226,8 +226,8 @@ export function CreateTaskModal({
                 onClick={() => setActiveTab(tab)}
                 className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
                   activeTab === tab
-                    ? "border-lavender-500 text-outer_space-500 dark:text-platinum-500"
-                    : "border-transparent text-paynes_gray-500 dark:text-french_gray-400 hover:text-outer_space-500 dark:hover:text-platinum-500"
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {label}
@@ -256,7 +256,7 @@ export function CreateTaskModal({
         {activeTab === "details" && (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="task-title" className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+            <label htmlFor="task-title" className="block text-sm font-medium text-foreground mb-1">
               Title
             </label>
             <input
@@ -267,12 +267,12 @@ export function CreateTaskModal({
               maxLength={200}
               required
               placeholder="e.g. Design the onboarding flow"
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+              className="w-full px-3 py-2 border border-input rounded-xl bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           <div>
-            <label htmlFor="task-description" className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+            <label htmlFor="task-description" className="block text-sm font-medium text-foreground mb-1">
               Description
             </label>
             <textarea
@@ -282,20 +282,20 @@ export function CreateTaskModal({
               maxLength={5000}
               rows={3}
               placeholder="Add more detail (optional)"
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400 resize-none"
+              className="w-full px-3 py-2 border border-input rounded-xl bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="task-list" className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+              <label htmlFor="task-list" className="block text-sm font-medium text-foreground mb-1">
                 Column
               </label>
               <select
                 id="task-list"
                 value={listId}
                 onChange={(e) => setListId(e.target.value)}
-                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400 font-sans"
+                className="w-full px-3 py-2 border border-input rounded-xl bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-sans"
               >
                 {lists.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -306,14 +306,14 @@ export function CreateTaskModal({
             </div>
 
             <div>
-              <label htmlFor="task-priority" className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+              <label htmlFor="task-priority" className="block text-sm font-medium text-foreground mb-1">
                 Priority
               </label>
               <select
                 id="task-priority"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as Priority)}
-                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400 font-sans"
+                className="w-full px-3 py-2 border border-input rounded-xl bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-sans"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -324,7 +324,7 @@ export function CreateTaskModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="task-due-date" className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+              <label htmlFor="task-due-date" className="block text-sm font-medium text-foreground mb-1">
                 Due date
               </label>
               <input
@@ -332,19 +332,19 @@ export function CreateTaskModal({
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+                className="w-full px-3 py-2 border border-input rounded-xl bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
             <div>
-              <label htmlFor="task-assignee" className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+              <label htmlFor="task-assignee" className="block text-sm font-medium text-foreground mb-1">
                 Assignee
               </label>
               <select
                 id="task-assignee"
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400 font-sans"
+                className="w-full px-3 py-2 border border-input rounded-xl bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-sans"
               >
                 <option value="">Unassigned</option>
                 {members.map((m) => (
@@ -357,7 +357,7 @@ export function CreateTaskModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Labels
             </label>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -386,7 +386,7 @@ export function CreateTaskModal({
                 <button
                   type="button"
                   onClick={() => setShowNewLabelForm(true)}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full border border-dashed border-french_gray-300 dark:border-paynes_gray-400 text-paynes_gray-500 dark:text-french_gray-400"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full border border-dashed border-input text-muted-foreground"
                 >
                   <Plus size={11} />
                   New label
@@ -400,7 +400,7 @@ export function CreateTaskModal({
                   type="color"
                   value={newLabelColor}
                   onChange={(e) => setNewLabelColor(e.target.value)}
-                  className="h-8 w-8 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 bg-transparent p-0.5"
+                  className="h-8 w-8 rounded-lg border border-input bg-transparent p-0.5"
                   aria-label="Label color"
                 />
                 <input
@@ -408,20 +408,20 @@ export function CreateTaskModal({
                   onChange={(e) => setNewLabelName(e.target.value)}
                   maxLength={40}
                   placeholder="Label name"
-                  className="flex-1 px-3 py-1.5 text-sm border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+                  className="flex-1 px-3 py-1.5 text-sm border border-input rounded-xl bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <button
                   type="button"
                   onClick={handleCreateLabel}
                   disabled={!newLabelName.trim()}
-                  className="px-3 py-1.5 text-sm rounded-xl bg-lavender-500 text-white hover:bg-lavender-600 disabled:opacity-50"
+                  className="px-3 py-1.5 text-sm rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                 >
                   Add
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowNewLabelForm(false)}
-                  className="p-1.5 rounded-full hover:bg-lavender-50 dark:hover:bg-paynes_gray-500/20 text-paynes_gray-500 dark:text-french_gray-400"
+                  className="p-1.5 rounded-full hover:bg-muted text-muted-foreground"
                   aria-label="Cancel new label"
                 >
                   <X size={14} />
@@ -431,7 +431,7 @@ export function CreateTaskModal({
           </div>
 
           {!isEditing && (
-            <label className="flex items-center gap-2.5 text-sm text-outer_space-500 dark:text-platinum-500 select-none cursor-pointer w-fit">
+            <label className="flex items-center gap-2.5 text-sm text-foreground select-none cursor-pointer w-fit">
               <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center">
                 <input
                   type="checkbox"
@@ -440,16 +440,15 @@ export function CreateTaskModal({
                   className="peer sr-only"
                 />
                 <span
-                  className="h-5 w-5 rounded-full border-2 border-lavender-200 dark:border-lavender-700/50
-                   bg-lavender-50 dark:bg-paynes_gray-400/20 transition-colors duration-150
-                    peer-checked:bg-lavender-300 peer-checked:border-lavender-300
-                     dark:peer-checked:bg-lavender-500 dark:peer-checked:border-lavender-500
-                      peer-focus-visible:ring-2 peer-focus-visible:ring-lavender-300 peer-focus-visible:ring-offset-1"
+                  className="h-5 w-5 rounded-full border-2 border-border
+                   bg-muted transition-colors duration-150
+                    peer-checked:bg-primary peer-checked:border-primary
+                     peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-1"
                 />
                 <Check
                   size={12}
                   strokeWidth={3}
-                  className="absolute text-white opacity-0 scale-50 peer-checked:opacity-100 peer-checked:scale-100
+                  className="absolute text-primary-foreground opacity-0 scale-50 peer-checked:opacity-100 peer-checked:scale-100
                    transition-all duration-150 pointer-events-none"
                 />
               </span>
@@ -463,7 +462,7 @@ export function CreateTaskModal({
                 type="button"
                 onClick={onDelete}
                 disabled={isPending}
-                className="text-sm text-red-500 hover:text-red-600 disabled:opacity-50"
+                className="text-sm text-destructive hover:text-destructive/80 disabled:opacity-50"
               >
                 Delete task
               </button>
@@ -475,14 +474,14 @@ export function CreateTaskModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm rounded-xl border border-french_gray-300 dark:border-paynes_gray-400 text-outer_space-500 dark:text-platinum-500"
+                className="px-4 py-2 text-sm rounded-xl border border-input text-foreground"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isPending || !title.trim()}
-                className="px-4 py-2 text-sm rounded-xl bg-lavender-500 text-white hover:bg-lavender-600 disabled:opacity-50"
+                className="px-4 py-2 text-sm rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 {isPending
                   ? "Saving..."

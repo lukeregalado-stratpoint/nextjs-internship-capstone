@@ -4,9 +4,23 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useTheme } from "./theme-provider"
 import { UserButton } from "@clerk/nextjs"
-import { Home, FolderOpen, Users, Settings, Moon, Sun, Menu, X, BarChart3, Calendar } from "lucide-react"
+import {
+  Home,
+  FolderOpen,
+  Users,
+  Settings,
+  Moon,
+  Sun,
+  Menu,
+  X,
+  BarChart3,
+  Calendar,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -19,110 +33,125 @@ const navigation = [
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  // Desktop-only icon-rail collapse — mobile always uses the full drawer
+  // width regardless of this, via the `lg:` prefix on every class it drives.
+  const [collapsed, setCollapsed] = useState(false)
   const { theme, setTheme } = useTheme()
+  const pathname = usePathname()
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-lavender-50/60 dark:bg-outer_space-600">
-      {/* Decorative gradient orbs — glass panels need something colorful
-          behind them to actually show the frosted blur effect, otherwise
-          backdrop-blur on a flat background is invisible. */}
-      <div className="pointer-events-none absolute -top-24 -left-24 h-96 w-96 rounded-full bg-gradient-to-br from-lavender-300/40 to-lavender-100/0 blur-3xl" />
-      <div className="pointer-events-none absolute top-1/3 -right-32 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-mint-300/30 to-mint-100/0 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 left-1/4 h-80 w-80 rounded-full bg-gradient-to-br from-lavender-200/30 to-transparent blur-3xl" />
-
+    <div className="min-h-screen bg-background">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 backdrop-blur-sm bg-black/20 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar — flush drawer on mobile, floating "pixel" tile on desktop:
-          chunky rounded corners + a crisp, un-blurred offset shadow instead
-          of a soft blur, so it reads as a little tile sitting above the bg. */}
+      {/* Sidebar — flush against the edge, flat, single hairline border.
+          No floating tile, no blur, no shadow: a plain panel that sits
+          directly on the page like Claude's sidebar. */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 lg:inset-y-4 lg:left-4 lg:h-[calc(100vh-2rem)]
-         transform transition-transform duration-300 ease-in-out lg:translate-x-0
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col w-64 ${collapsed ? "lg:w-[68px]" : "lg:w-60"}
+         bg-surface dark:bg-surface-dark border-r border-line dark:border-line-dark
+          transform transition-all duration-200 ease-in-out lg:translate-x-0
+           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
+        {/* Brand row — when collapsed, the toggle moves to the left of the
+            logo instead of sitting pinned against the right edge. */}
         <div
-          className="h-full flex flex-col overflow-hidden
-           bg-white/70 dark:bg-outer_space-500/60 backdrop-blur-xl backdrop-saturate-150
-            border-r border-white/50 dark:border-white/10
-             lg:border-r-0 lg:border-2 lg:border-white/50 dark:lg:border-white/10
-              lg:rounded-3xl lg:shadow-[4px_4px_0_0_rgba(139,124,246,0.14)]
-               dark:lg:shadow-[4px_4px_0_0_rgba(0,0,0,0.35)]"
+          className={`flex items-center justify-between h-14 shrink-0 px-3 border-b border-line dark:border-line-dark ${
+            collapsed ? "lg:justify-start lg:gap-1.5" : ""
+          }`}
         >
-          <div className="flex items-center justify-between h-16 px-6 border-b border-white/50 dark:border-white/10 shrink-0">
-            <Link
-              href="/"
-              className="flex items-center gap-2 text-xl font-bold text-lavender-700 dark:text-lavender-300"
-            >
-              <span className="h-7 w-7 rounded-xl bg-gradient-to-br from-lavender-400 to-mint-400" />
-              TaskFlow
-            </Link>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-2 rounded-xl hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
-            >
-              <X size={20} />
-            </button>
-          </div>
+          <button
+            onClick={() => setCollapsed((v) => !v)}
+            className={`hidden lg:flex p-1.5 rounded-md hover:bg-paper dark:hover:bg-paper-dark text-slate dark:text-slate-dark shrink-0 ${
+              collapsed ? "lg:order-first" : "lg:order-last"
+            }`}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
 
-          <nav className="mt-6 px-3 overflow-y-auto">
-            <ul className="space-y-1">
-              {navigation.map((item) => (
+          <Link href="/" className="flex items-center gap-2 min-w-0 overflow-hidden">
+            <span className="h-6 w-6 rounded-md bg-primary shrink-0" />
+            <span
+              className={`text-base font-semibold text-ink dark:text-paper truncate ${collapsed ? "lg:hidden" : ""}`}
+            >
+              WIP
+            </span>
+          </Link>
+
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-1.5 rounded-md hover:bg-paper dark:hover:bg-paper-dark text-slate dark:text-slate-dark shrink-0"
+            aria-label="Close sidebar"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Nav — plain rows, active item gets a quiet fill, nothing else does */}
+        <nav className="flex-1 overflow-y-auto px-2.5 py-3">
+          <ul className="space-y-0.5">
+            {navigation.map((item) => {
+              const active = pathname === item.href || pathname?.startsWith(`${item.href}/`)
+              return (
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-xl text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-100 hover:text-lavender-700 dark:hover:bg-paynes_gray-400 transition-colors"
+                    title={collapsed ? item.name : undefined}
+                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors ${
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-slate dark:text-slate-dark hover:bg-paper dark:hover:bg-paper-dark hover:text-ink dark:hover:text-paper"
+                    }`}
                   >
-                    <item.icon className="mr-3" size={20} />
-                    {item.name}
+                    <item.icon size={18} className="shrink-0" />
+                    <span className={`truncate ${collapsed ? "lg:hidden" : ""}`}>{item.name}</span>
                   </Link>
                 </li>
-              ))}
-            </ul>
-          </nav>
+              )
+            })}
+          </ul>
+        </nav>
+
+        {/* Account row — pinned to the bottom, like Claude's sidebar */}
+        <div
+          className={`shrink-0 border-t border-line dark:border-line-dark p-2.5 flex items-center justify-between ${
+            collapsed ? "lg:flex-col lg:justify-center lg:gap-2" : ""
+          }`}
+        >
+          <UserButton />
+          <button
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            className="p-2 rounded-md text-slate dark:text-slate-dark hover:bg-paper dark:hover:bg-paper-dark transition-colors"
+            aria-label="Toggle theme"
+          >
+            {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
+          </button>
         </div>
       </div>
 
-      {/* Main content, offset to clear the floating sidebar + its gap */}
-      <div className="lg:pl-64 lg:ml-4">
-        {/* Top bar — flush sticky bar on mobile, floating pixel pill on desktop */}
-        <div
-          className="sticky top-0 z-30 flex h-16 items-center gap-x-4 px-4 sm:gap-x-6 sm:px-6
-           bg-white/70 dark:bg-outer_space-500/60 backdrop-blur-xl backdrop-saturate-150
-            border-b border-white/50 dark:border-white/10
-             lg:top-4 lg:mx-4 lg:mb-2 lg:h-14 lg:border-2 lg:border-white/50 dark:lg:border-white/10
-              lg:rounded-2xl lg:shadow-[4px_4px_0_0_rgba(139,124,246,0.14)] dark:lg:shadow-[4px_4px_0_0_rgba(0,0,0,0.35)]
-               lg:px-6"
-        >
+      {/* Main content, offset to clear the flush sidebar */}
+      <div className={`transition-all duration-200 ${collapsed ? "lg:pl-[68px]" : "lg:pl-60"}`}>
+        {/* Mobile-only top bar: just the drawer trigger. No persistent
+            desktop chrome — content starts right under the sidebar. */}
+        <div className="flex h-14 items-center px-4 border-b border-line dark:border-line-dark lg:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-xl hover:bg-lavender-50 dark:hover:bg-paynes_gray-400"
+            className="p-2 -ml-2 rounded-md hover:bg-paper dark:hover:bg-paper-dark text-slate dark:text-slate-dark"
+            aria-label="Open sidebar"
           >
             <Menu size={20} />
           </button>
-
-          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-            <div className="flex flex-1"></div>
-            <div className="flex items-center gap-x-4 lg:gap-x-6">
-              <button
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-                className="p-2 rounded-xl bg-lavender-100/70 dark:bg-paynes_gray-500/60 backdrop-blur-sm text-lavender-700 dark:text-platinum-500 hover:bg-lavender-200/80 dark:hover:bg-paynes_gray-400 transition-colors"
-              >
-                {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
-              </button>
-
-              <UserButton />
-            </div>
-          </div>
         </div>
 
         {/* Page content */}
-        <main className="py-6 px-4 sm:px-6 lg:pl-8 lg:pr-0">{children}</main>
+        <main className="py-4 px-4 sm:px-6">{children}</main>
       </div>
     </div>
   )

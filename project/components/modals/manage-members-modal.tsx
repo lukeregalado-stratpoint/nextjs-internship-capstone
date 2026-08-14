@@ -113,14 +113,14 @@ export function ManageMembersModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-lg bg-white dark:bg-outer_space-500 border border-french_gray-300 dark:border-paynes_gray-400 p-6 space-y-5">
+      <div className="w-full max-w-lg rounded-lg bg-card border border-border p-6 space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500">
+          <h2 className="text-lg font-semibold text-foreground">
             Manage members
           </h2>
           <button
             onClick={() => onOpenChange(false)}
-            className="text-paynes_gray-500 hover:text-outer_space-500 dark:hover:text-platinum-500"
+            className="text-muted-foreground hover:text-foreground"
           >
             <X size={18} />
           </button>
@@ -130,7 +130,7 @@ export function ManageMembersModal({
           <div className="relative flex-1">
             <Search
               size={14}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-paynes_gray-500"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             />
             <input
               type="text"
@@ -141,13 +141,13 @@ export function ManageMembersModal({
               onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
               placeholder="Search by name or email…"
               autoComplete="off"
-              className="w-full rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 bg-transparent pl-8 pr-3 py-2 text-sm text-outer_space-500 dark:text-platinum-500 placeholder:text-paynes_gray-500"
+              className="w-full rounded-lg border border-input bg-transparent pl-8 pr-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
             />
 
             {dropdownOpen && !selected && query.trim() && (
-              <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 bg-white dark:bg-outer_space-500 shadow-lg">
+              <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
                 {isSearching ? (
-                  <p className="px-3 py-2 text-xs text-paynes_gray-500 dark:text-french_gray-400">
+                  <p className="px-3 py-2 text-xs text-muted-foreground">
                     Searching…
                   </p>
                 ) : searchResults.length > 0 ? (
@@ -156,18 +156,18 @@ export function ManageMembersModal({
                       key={result.id}
                       type="button"
                       onClick={() => handleSelectResult(result)}
-                      className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-lavender-50 dark:hover:bg-paynes_gray-400/20"
+                      className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-muted"
                     >
-                      <span className="text-sm font-medium text-outer_space-500 dark:text-platinum-500">
+                      <span className="text-sm font-medium text-foreground">
                         {result.name}
                       </span>
-                      <span className="text-xs text-paynes_gray-500 dark:text-french_gray-400">
+                      <span className="text-xs text-muted-foreground">
                         {result.email}
                       </span>
                     </button>
                   ))
                 ) : (
-                  <p className="px-3 py-2 text-xs text-paynes_gray-500 dark:text-french_gray-400">
+                  <p className="px-3 py-2 text-xs text-muted-foreground">
                     No matching registered users
                   </p>
                 )}
@@ -177,7 +177,7 @@ export function ManageMembersModal({
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as ProjectMember["role"])}
-            className="rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 bg-transparent px-2 py-2 text-sm text-outer_space-500 dark:text-platinum-500"
+            className="rounded-lg border border-input bg-transparent px-2 py-2 text-sm text-foreground"
           >
             {ROLES.map((r) => (
               <option key={r} value={r}>
@@ -188,25 +188,25 @@ export function ManageMembersModal({
           <button
             type="submit"
             disabled={isPending}
-            className="inline-flex items-center px-3 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors disabled:opacity-50"
+            className="inline-flex items-center px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
             <UserPlus size={16} className="mr-1" /> Add
           </button>
         </form>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <div className="space-y-1 max-h-72 overflow-y-auto">
-          <div className="flex items-center justify-between py-2 border-b border-french_gray-300 dark:border-paynes_gray-400">
+          <div className="flex items-center justify-between py-2 border-b border-border">
             <div>
-              <p className="text-sm font-medium text-outer_space-500 dark:text-platinum-500">
+              <p className="text-sm font-medium text-foreground">
                 {owner.name}
               </p>
-              <p className="text-xs text-paynes_gray-500 dark:text-french_gray-400">
+              <p className="text-xs text-muted-foreground">
                 {owner.email}
               </p>
             </div>
-            <span className="text-xs font-medium text-paynes_gray-500 dark:text-french_gray-400">
+            <span className="text-xs font-medium text-muted-foreground">
               Owner
             </span>
           </div>
@@ -214,13 +214,13 @@ export function ManageMembersModal({
           {members.map((m) => (
             <div
               key={m.id}
-              className="flex items-center justify-between py-2 border-b border-french_gray-300 dark:border-paynes_gray-400 last:border-0"
+              className="flex items-center justify-between py-2 border-b border-border last:border-0"
             >
               <div>
-                <p className="text-sm font-medium text-outer_space-500 dark:text-platinum-500">
+                <p className="text-sm font-medium text-foreground">
                   {m.user.name}
                 </p>
-                <p className="text-xs text-paynes_gray-500 dark:text-french_gray-400">
+                <p className="text-xs text-muted-foreground">
                   {m.user.email}
                 </p>
               </div>
@@ -231,7 +231,7 @@ export function ManageMembersModal({
                   onChange={(e) =>
                     updateMemberRole(m.id, { role: e.target.value as ProjectMember["role"] })
                   }
-                  className="rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 bg-transparent px-2 py-1 text-xs text-outer_space-500 dark:text-platinum-500"
+                  className="rounded-lg border border-input bg-transparent px-2 py-1 text-xs text-foreground"
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>
@@ -242,7 +242,7 @@ export function ManageMembersModal({
                 <button
                   onClick={() => handleRemove(m.id, m.user.name)}
                   disabled={isPending}
-                  className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-50"
+                  className="p-1 text-destructive hover:bg-destructive/10 rounded disabled:opacity-50"
                   aria-label={`Remove ${m.user.name}`}
                 >
                   <Trash2 size={14} />
@@ -252,7 +252,7 @@ export function ManageMembersModal({
           ))}
 
           {members.length === 0 && (
-            <p className="text-sm text-paynes_gray-500 dark:text-french_gray-400 py-4 text-center">
+            <p className="text-sm text-muted-foreground py-4 text-center">
               No members yet. Search for someone by name or email above.
             </p>
           )}

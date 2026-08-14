@@ -4,8 +4,8 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">Settings</h1>
-        <p className="text-paynes_gray-500 dark:text-french_gray-500 mt-2">
+        <h1 className="text-3xl font-bold text-foreground dark:text-paper">Settings</h1>
+        <p className="text-muted-foreground mt-2">
           Manage your account and application preferences
         </p>
       </div>
@@ -24,8 +24,8 @@ export default function SettingsPage() {
       {/* Settings Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Settings Navigation */}
-        <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-6">
-          <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-4">Settings</h3>
+        <div className="bg-card rounded-lg border border-border p-6">
+          <h3 className="text-lg font-semibold text-foreground dark:text-paper mb-4">Settings</h3>
           <nav className="space-y-2">
             {[
               { name: "Profile", icon: User, active: true },
@@ -37,8 +37,8 @@ export default function SettingsPage() {
                 key={item.name}
                 className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                   item.active
-                    ? "bg-blue_munsell-100 dark:bg-blue_munsell-900 text-blue_munsell-700 dark:text-blue_munsell-300"
-                    : "text-outer_space-500 dark:text-platinum-500 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400"
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground dark:text-paper hover:bg-muted"
                 }`}
               >
                 <item.icon className="mr-3" size={16} />
@@ -49,35 +49,35 @@ export default function SettingsPage() {
         </div>
 
         {/* Settings Content */}
-        <div className="lg:col-span-2 bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-6">
-          <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-6">Profile Settings</h3>
+        <div className="lg:col-span-2 bg-card rounded-lg border border-border p-6">
+          <h3 className="text-lg font-semibold text-foreground dark:text-paper mb-6">Profile Settings</h3>
 
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2">
+              <label className="block text-sm font-medium text-foreground dark:text-paper mb-2">
                 Full Name
               </label>
               <input
                 type="text"
                 defaultValue="John Doe"
-                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground dark:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2">
+              <label className="block text-sm font-medium text-foreground dark:text-paper mb-2">
                 Email Address
               </label>
               <input
                 type="email"
                 defaultValue="john@example.com"
-                className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground dark:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2">Role</label>
-              <select className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500">
+              <label className="block text-sm font-medium text-foreground dark:text-paper mb-2">Role</label>
+              <select className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground dark:text-paper focus:outline-none focus:ring-2 focus:ring-ring">
                 <option>Project Manager</option>
                 <option>Developer</option>
                 <option>Designer</option>
@@ -86,10 +86,10 @@ export default function SettingsPage() {
             </div>
 
             <div className="flex justify-end space-x-3 pt-4">
-              <button className="px-4 py-2 text-paynes_gray-500 dark:text-french_gray-400 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 rounded-lg transition-colors">
+              <button className="px-4 py-2 text-muted-foreground dark:text-paper/60 hover:bg-muted rounded-lg transition-colors">
                 Cancel
               </button>
-              <button className="px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors">
+              <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors">
                 Save Changes
               </button>
             </div>

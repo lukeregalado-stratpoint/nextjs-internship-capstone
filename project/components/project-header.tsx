@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { ArrowLeft, Pencil, Trash2, Users } from "lucide-react"
+import { ArrowLeft, Calendar, LayoutGrid, ListChecks, Pencil, Trash2 } from "lucide-react"
 import { useProjects } from "@/hooks/use-projects"
 import { EditProjectModal } from "@/components/modals/edit-project-modal"
 import { ManageMembersModal } from "@/components/modals/manage-members-modal"
@@ -27,9 +27,27 @@ interface ProjectHeaderProps {
   isOwner: boolean
   owner: { name: string; email: string }
   members: MemberRow[]
+  /** Number of board columns — shown in the stats strip. */
+  listCount: number
+  /** Total tasks across every column — shown in the stats strip. */
+  taskCount: number
 }
 
-export function ProjectHeader({ project, isOwner, owner, members }: ProjectHeaderProps) {
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/)
+  const first = parts[0]?.[0] ?? ""
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : ""
+  return (first + last).toUpperCase()
+}
+
+export function ProjectHeader({
+  project,
+  isOwner,
+  owner,
+  members,
+  listCount,
+  taskCount,
+}: ProjectHeaderProps) {
   const router = useRouter()
   const { deleteProject, isPending } = useProjects()
   const [editOpen, setEditOpen] = useState(false)
@@ -41,51 +59,117 @@ export function ProjectHeader({ project, isOwner, owner, members }: ProjectHeade
     }
   }
 
+  const isOverdue = project.dueDate ? new Date(project.dueDate) < new Date() : false
+  // Owner isn't part of `members` (that's the junction table), so combine
+  // them here for the avatar stack / headcount.
+  const people = [{ name: owner.name }, ...members.map((m) => ({ name: m.user.name }))]
+  const visiblePeople = people.slice(0, 4)
+  const overflowCount = people.length - visiblePeople.length
+
   return (
     <div className="space-y-2">
       <Link
         href="/projects"
-        className="inline-flex items-center text-sm text-paynes_gray-500 dark:text-french_gray-400 hover:text-blue_munsell-500"
+        className="inline-flex items-center text-sm text-muted-foreground dark:text-paper/60 hover:text-primary"
       >
         <ArrowLeft size={14} className="mr-1" /> Back to projects
       </Link>
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">
-            {project.name}
-          </h1>
-          {project.description && (
-            <p className="text-paynes_gray-500 dark:text-french_gray-500 mt-2 max-w-2xl">
-              {project.description}
-            </p>
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        {/* Title row */}
+        <div className="p-6 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-3xl font-bold text-foreground dark:text-paper">
+              {project.name}
+            </h1>
+            {project.description && (
+              <p className="text-muted-foreground mt-2 max-w-2xl">
+                {project.description}
+              </p>
+            )}
+          </div>
+
+          {isOwner && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => setEditOpen(true)}
+                aria-label="Edit project"
+                title="Edit project"
+                className="p-2 border border-border text-foreground dark:text-paper rounded-lg hover:bg-muted transition-colors"
+              >
+                <Pencil size={16} />
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isPending}
+                aria-label="Delete project"
+                title="Delete project"
+                className="p-2 border border-red-300 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
           )}
         </div>
 
-        {isOwner && (
-          <div className="flex items-center gap-2 pr-8 shrink-0">
-            <button
-              onClick={() => setMembersOpen(true)}
-              className="inline-flex items-center px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 text-outer_space-500 dark:text-platinum-500 rounded-lg hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 transition-colors"
+        {/* Stats strip — avatars, list/task counts, due date */}
+        <div className="border-t border-border bg-muted/60 px-6 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <button
+            type="button"
+            onClick={() => isOwner && setMembersOpen(true)}
+            disabled={!isOwner}
+            className={`group flex items-center gap-2 ${isOwner ? "cursor-pointer" : "cursor-default"}`}
+          >
+            <div className="flex -space-x-2">
+              {visiblePeople.map((p, i) => (
+                <span
+                  key={i}
+                  title={p.name}
+                  className="h-7 w-7 rounded-full ring-2 ring-card bg-primary/15 text-[10px] font-semibold text-primary dark:text-primary flex items-center justify-center"
+                >
+                  {initials(p.name)}
+                </span>
+              ))}
+              {overflowCount > 0 && (
+                <span className="h-7 w-7 rounded-full ring-2 ring-card bg-muted text-[10px] font-semibold text-foreground dark:text-paper flex items-center justify-center">
+                  +{overflowCount}
+                </span>
+              )}
+            </div>
+            <span
+              className={`text-sm text-muted-foreground dark:text-paper/60 ${
+                isOwner ? "group-hover:text-primary" : ""
+              }`}
             >
-              <Users size={16} className="mr-2" /> Members
-            </button>
-            <button
-              onClick={() => setEditOpen(true)}
-              className="inline-flex items-center px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 text-outer_space-500 dark:text-platinum-500 rounded-lg hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 transition-colors"
+              {people.length} member{people.length === 1 ? "" : "s"}
+              {isOwner ? " · Manage" : ""}
+            </span>
+          </button>
+
+          <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground dark:text-paper/60">
+            <LayoutGrid size={14} /> {listCount} list{listCount === 1 ? "" : "s"}
+          </span>
+
+          <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground dark:text-paper/60">
+            <ListChecks size={14} /> {taskCount} task{taskCount === 1 ? "" : "s"}
+          </span>
+
+          {project.dueDate && (
+            <span
+              className={`inline-flex items-center gap-1.5 text-sm ${
+                isOverdue ? "text-rose-500" : "text-muted-foreground dark:text-paper/60"
+              }`}
             >
-              <Pencil size={16} className="mr-2" /> Edit
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={isPending}
-              className="inline-flex items-center px-3 py-2 border border-red-300 text-red-500 rounded-lg
-             hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            >
-              <Trash2 size={16} className="mr-2" /> Delete
-            </button>
-          </div>
-        )}
+              <Calendar size={14} />
+              {isOverdue ? "Overdue " : "Due "}
+              {new Date(project.dueDate).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          )}
+        </div>
       </div>
 
       {isOwner && (

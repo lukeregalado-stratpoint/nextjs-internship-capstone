@@ -78,7 +78,7 @@ function describeActivity(activity: ActivityWithUser): string {
 export function TaskActivity({ activities }: { activities: ActivityWithUser[] }) {
   if (activities.length === 0) {
     return (
-      <p className="text-sm text-paynes_gray-500 dark:text-french_gray-400">
+      <p className="text-sm text-muted-foreground dark:text-paper/60">
         No activity yet.
       </p>
     )
@@ -90,15 +90,15 @@ export function TaskActivity({ activities }: { activities: ActivityWithUser[] })
         const Icon = iconByType[activity.type] ?? Pencil
         return (
           <li key={activity.id} className="flex items-start gap-2.5">
-            <span className="shrink-0 mt-0.5 inline-flex items-center justify-center h-6 w-6 rounded-full bg-lavender-50 dark:bg-paynes_gray-500/20 text-lavender-600 dark:text-lavender-300">
+            <span className="shrink-0 mt-0.5 inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary dark:bg-muted text-primary">
               <Icon size={12} />
             </span>
-            <p className="text-sm text-outer_space-500 dark:text-platinum-500">
+            <p className="text-sm text-foreground dark:text-paper">
               <span className="font-medium">{activity.userName}</span>{" "}
-              <span className="text-paynes_gray-600 dark:text-french_gray-300">
+              <span className="text-muted-foreground">
                 {describeActivity(activity)}
               </span>{" "}
-              <span className="text-[11px] text-paynes_gray-500 dark:text-french_gray-400">
+              <span className="text-[11px] text-muted-foreground dark:text-paper/60">
                 {formatTimestamp(activity.createdAt)}
               </span>
             </p>

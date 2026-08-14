@@ -11,7 +11,7 @@ export function CreateProjectButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center px-4 py-2 bg-lavender-500 text-white rounded-xl hover:bg-lavender-600 transition-colors
+        className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors
                   cursor-pointer"
       >
         <Plus size={20} className="mr-2" />

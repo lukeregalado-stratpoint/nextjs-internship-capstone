@@ -78,7 +78,7 @@ export function TaskComments({
       )}
 
       {comments.length === 0 && (
-        <p className="text-sm text-paynes_gray-500 dark:text-french_gray-400">
+        <p className="text-sm text-muted-foreground dark:text-paper/60">
           No comments yet - be the first to say something.
         </p>
       )}
@@ -92,17 +92,17 @@ export function TaskComments({
             <li key={comment.id} className="flex gap-2.5">
               <span
                 title={comment.authorName}
-                className="shrink-0 mt-0.5 inline-flex items-center justify-center h-7 w-7 rounded-full bg-lavender-200 dark:bg-lavender-700/50 text-[11px] font-semibold text-lavender-700 dark:text-lavender-200"
+                className="shrink-0 mt-0.5 inline-flex items-center justify-center h-7 w-7 rounded-full bg-primary/15 text-[11px] font-semibold text-primary dark:text-primary"
               >
                 {initials(comment.authorName)}
               </span>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-outer_space-500 dark:text-platinum-500">
+                  <span className="text-sm font-medium text-foreground dark:text-paper">
                     {comment.authorName}
                   </span>
-                  <span className="text-[11px] text-paynes_gray-500 dark:text-french_gray-400">
+                  <span className="text-[11px] text-muted-foreground dark:text-paper/60">
                     {formatTimestamp(comment.createdAt)}
                     {comment.updatedAt > comment.createdAt ? " (edited)" : ""}
                   </span>
@@ -116,28 +116,28 @@ export function TaskComments({
                       maxLength={2000}
                       rows={2}
                       autoFocus
-                      className="w-full px-2.5 py-1.5 text-sm border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+                      className="w-full px-2.5 py-1.5 text-sm border border-border rounded-xl bg-card text-foreground dark:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => submitEdit(comment.id)}
                         disabled={!editDraft.trim() || isPending}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-lavender-600 dark:text-lavender-300 disabled:opacity-50"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-primary disabled:opacity-50"
                       >
                         <Check size={12} /> Save
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
-                        className="inline-flex items-center gap-1 text-xs text-paynes_gray-500 dark:text-french_gray-400"
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground dark:text-paper/60"
                       >
                         <X size={12} /> Cancel
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-outer_space-500 dark:text-platinum-500 whitespace-pre-wrap break-words">
+                  <p className="text-sm text-foreground dark:text-paper whitespace-pre-wrap break-words">
                     {comment.content}
                   </p>
                 )}
@@ -148,7 +148,7 @@ export function TaskComments({
                       <button
                         type="button"
                         onClick={() => startEdit(comment)}
-                        className="inline-flex items-center gap-1 text-[11px] text-paynes_gray-500 dark:text-french_gray-400 hover:text-outer_space-500 dark:hover:text-platinum-500"
+                        className="inline-flex items-center gap-1 text-[11px] text-muted-foreground dark:text-paper/60 hover:text-foreground dark:hover:text-paper"
                       >
                         <Pencil size={10} /> Edit
                       </button>
@@ -157,7 +157,7 @@ export function TaskComments({
                       type="button"
                       onClick={() => onDeleteComment(comment.id)}
                       disabled={isPending}
-                      className="inline-flex items-center gap-1 text-[11px] text-paynes_gray-500 dark:text-french_gray-400 hover:text-red-500 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground dark:text-paper/60 hover:text-red-500 disabled:opacity-50"
                     >
                       <Trash2 size={10} /> Delete
                     </button>
@@ -176,12 +176,12 @@ export function TaskComments({
           maxLength={2000}
           rows={2}
           placeholder="Write a comment..."
-          className="flex-1 px-3 py-2 text-sm border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+          className="flex-1 px-3 py-2 text-sm border border-border rounded-xl bg-card text-foreground dark:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
         />
         <button
           type="submit"
           disabled={!draft.trim() || isPending}
-          className="px-3 py-2 text-sm rounded-xl bg-lavender-500 text-white hover:bg-lavender-600 disabled:opacity-50"
+          className="px-3 py-2 text-sm rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           Post
         </button>

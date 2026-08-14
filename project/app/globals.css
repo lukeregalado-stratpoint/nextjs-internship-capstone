@@ -1,53 +1,62 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 
-/* Enables `dark:` variants triggered by a .dark class instead of OS preference */
+/* enables dark: variants triggered by a .dark class instead of os preference */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --background: 40 20% 97%;      /* paper */
+    --foreground: 260 15% 12%;     /* ink */
+    --card: 0 0% 100%;             /* surface */
+    --card-foreground: 260 15% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 260 15% 12%;
+    --primary: 158 64% 33%;        /* jade */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 15% 94%;
+    --secondary-foreground: 260 15% 12%;
+    --muted: 30 15% 94%;
+    --muted-foreground: 260 8% 44%; /* slate */
+    --accent: 236 40% 68%;         /* signal */
+    --accent-foreground: 260 15% 12%;
+    --destructive: 0 40% 62%;      /* blocked */
+    --destructive-foreground: 40 20% 97%;
+    --border: 30 15% 88%;          /* line */
+    --input: 30 15% 88%;
+    --ring: 236 40% 68%;           /* signal */
+    --radius: 0.375rem;
+
+    /* Plain vars (not routed through @theme) for contexts that can't use
+       Tailwind's dark: variant, e.g. recharts SVG props set via inline
+       style/fill. These resolve to real color strings usable in JS. */
+    --chart-grid: #e7e2dc;
+    --chart-text: #6e6875;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --chart-grid: #2c2833;
+    --chart-text: #9a94a3;
+
+    --background: 260 12% 8%;      /* paper-dark */
+    --foreground: 40 12% 92%;
+    --card: 260 12% 14%;           /* surface-dark */
+    --card-foreground: 40 12% 92%;
+    --popover: 260 12% 14%;
+    --popover-foreground: 40 12% 92%;
+    --primary: 158 50% 45%;        /* jade — brighter for contrast on dark bg */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 260 12% 17%;
+    --secondary-foreground: 40 12% 92%;
+    --muted: 260 12% 17%;
+    --muted-foreground: 260 8% 60%;
+    --accent: 236 40% 68%;
+    --accent-foreground: 40 12% 92%;
+    --destructive: 0 35% 52%;
+    --destructive-foreground: 40 12% 92%;
+    --border: 260 12% 17%;         /* line-dark */
+    --input: 260 12% 17%;
+    --ring: 236 40% 68%;
   }
 
   * {
@@ -60,7 +69,6 @@
 }
 
 @theme {
-  /* shadcn tokens, mapped from the HSL vars above */
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
@@ -82,92 +90,46 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
-  /* custom palette — underscore naming to match existing component usage */
-  --color-platinum: #dcdcdd;
-  --color-platinum-50: #f8f8f8;
-  --color-platinum-100: #f1f1f1;
-  --color-platinum-200: #e9e9ea;
-  --color-platinum-300: #e2e2e3;
-  --color-platinum-400: #afafb0;
-  --color-platinum-500: #dcdcdd;
-  --color-platinum-600: #828285;
-  --color-platinum-700: #575759;
-  --color-platinum-800: #2b2b2c;
-  --color-platinum-900: #f8f8f8;
+  /* wip design tokens */
+  --color-ink: #1f1b24;
+  --color-paper: #f7f5f2;
+  --color-paper-dark: #18161c;
+  --color-surface: #ffffff;
+  --color-surface-dark: #211e27;
+  --color-line: #e7e2dc;
+  --color-line-dark: #2c2833;
+  --color-slate: #6e6875;
+  --color-slate-dark: #9a94a3;
 
-  --color-french_gray: #c5c3c6;
-  --color-french_gray-50: #f3f3f4;
-  --color-french_gray-100: #e8e7e8;
-  --color-french_gray-200: #dcdbdd;
-  --color-french_gray-300: #d1cfd1;
-  --color-french_gray-400: #9e9aa0;
-  --color-french_gray-500: #c5c3c6;
-  --color-french_gray-600: #777279;
-  --color-french_gray-700: #4f4c51;
-  --color-french_gray-800: #282628;
-  --color-french_gray-900: #f3f3f4;
+  /* signal — full saturation, reserved for nav rule + focus ring only */
+  --color-signal: #8d8fc7;
+  --color-signal-wash: #ecedf7;
+  --color-signal-wash-dark: #2a2a3d;
+  --color-signal-text: #4a4c82;
+  --color-signal-text-dark: #b3b5e0;
 
-  --color-outer_space: #46494c;
-  --color-outer_space-50: #d9dbdc;
-  --color-outer_space-100: #b4b7b9;
-  --color-outer_space-200: #8e9297;
-  --color-outer_space-300: #6a6e73;
-  --color-outer_space-400: #393b3e;
-  --color-outer_space-500: #46494c;
-  --color-outer_space-600: #2b2c2e;
-  --color-outer_space-700: #1c1e1f;
-  --color-outer_space-800: #0e0f0f;
-  --color-outer_space-900: #d9dbdc;
+  /* status semantics — mid tone for icons/borders, wash for backgrounds, text for labels on wash */
+  --color-done: #7fa487;
+  --color-done-wash: #e8f0e9;
+  --color-done-wash-dark: #263029;
+  --color-done-text: #3d5943;
+  --color-done-text-dark: #a3c2a9;
 
-  --color-paynes_gray: #4c5c68;
-  --color-paynes_gray-50: #d9dfe3;
-  --color-paynes_gray-100: #b2bec7;
-  --color-paynes_gray-200: #8c9eab;
-  --color-paynes_gray-300: #677d8e;
-  --color-paynes_gray-400: #3c4953;
-  --color-paynes_gray-500: #4c5c68;
-  --color-paynes_gray-600: #2d373e;
-  --color-paynes_gray-700: #1e2429;
-  --color-paynes_gray-800: #0f1215;
-  --color-paynes_gray-900: #d9dfe3;
+  --color-blocked: #c97b7b;
+  --color-blocked-wash: #f7e9e9;
+  --color-blocked-wash-dark: #362627;
+  --color-blocked-text: #7a3b3b;
+  --color-blocked-text-dark: #e0a3a3;
 
-  --color-blue_munsell: #1985a1;
-  --color-blue_munsell-50: #c7edf6;
-  --color-blue_munsell-100: #8edaed;
-  --color-blue_munsell-200: #56c8e5;
-  --color-blue_munsell-300: #22b3d7;
-  --color-blue_munsell-400: #146a7f;
-  --color-blue_munsell-500: #1985a1;
-  --color-blue_munsell-600: #0f4f5f;
-  --color-blue_munsell-700: #0a3540;
-  --color-blue_munsell-800: #051a20;
-  --color-blue_munsell-900: #c7edf6;
+  --color-review: #7d93b2;
+  --color-review-wash: #e8edf3;
+  --color-review-wash-dark: #232a35;
+  --color-review-text: #3f5470;
+  --color-review-text-dark: #a8bcd6;
 
-  /* lavender (primary accent) + mint (secondary accent) */
-  --color-lavender-50: #f5f3ff;
-  --color-lavender-100: #ede9fe;
-  --color-lavender-200: #ddd6fe;
-  --color-lavender-300: #c4b5fd;
-  --color-lavender-400: #a78bfa;
-  --color-lavender-500: #8b7cf6;
-  --color-lavender-600: #7c6ae8;
-  --color-lavender-700: #6552c7;
-  --color-lavender-800: #4c3d96;
-  --color-lavender-900: #362b6e;
+  --font-sans: "Geist", sans-serif;
+  --font-mono: "Geist Mono", monospace;
 
-  --color-mint-50: #f0fdf9;
-  --color-mint-100: #d8f8ec;
-  --color-mint-200: #b4f0d9;
-  --color-mint-300: #86e4c1;
-  --color-mint-400: #55d1a4;
-  --color-mint-500: #2fbb8a;
-  --color-mint-600: #1f9c71;
-  --color-mint-700: #167a5a;
-  --color-mint-800: #135f47;
-  --color-mint-900: #114d3b;
-
-  /* font + radius */
-  --font-sans: "Inter", sans-serif;
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -189,10 +151,10 @@
   }
 }
 
-/* Custom scrollbar styles */
+/* custom scrollbar styles */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-french_gray) transparent;
+  scrollbar-color: var(--color-line) transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -204,6 +166,6 @@
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: var(--color-french_gray);
+  background-color: var(--color-line);
   border-radius: 3px;
 }

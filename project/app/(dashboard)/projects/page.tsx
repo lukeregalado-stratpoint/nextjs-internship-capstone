@@ -11,8 +11,8 @@ export default async function ProjectsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">Projects</h1>
-          <p className="text-paynes_gray-500 dark:text-french_gray-500 mt-2">
+          <h1 className="text-3xl font-bold text-foreground">Projects</h1>
+          <p className="text-muted-foreground mt-2">
             Manage and organize your team projects
           </p>
         </div>

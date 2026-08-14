@@ -36,15 +36,15 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white dark:bg-outer_space-500 p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500">
+          <h2 className="text-lg font-semibold text-foreground">
             New Project
           </h2>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="text-paynes_gray-500 hover:text-outer_space-500 dark:hover:text-platinum-500"
+            className="text-muted-foreground hover:text-foreground"
           >
             <X size={20} />
           </button>
@@ -52,7 +52,7 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Name
             </label>
             <input
@@ -61,12 +61,12 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Website redesign"
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+              className="w-full px-3 py-2 border border-input rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Description
             </label>
             <textarea
@@ -75,36 +75,36 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
               rows={3}
               maxLength={2000}
               placeholder="What's this project about?"
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+              className="w-full px-3 py-2 border border-input rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Due date
             </label>
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-lg bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+              className="w-full px-3 py-2 border border-input rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="px-4 py-2 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 text-outer_space-500 dark:text-platinum-500 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 transition-colors"
+              className="px-4 py-2 rounded-lg border border-input text-foreground hover:bg-muted transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isPending || !name.trim()}
-              className="px-4 py-2 rounded-lg bg-blue_munsell-500 text-white hover:bg-blue_munsell-600 disabled:opacity-50 transition-colors"
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               {isPending ? "Creating…" : "Create project"}
             </button>

@@ -21,8 +21,8 @@ export default function CalendarLoading() {
         </div>
 
         {/* Month grid: 7-day header + 5 weeks */}
-        <div className="rounded-2xl border border-lavender-100 dark:border-paynes_gray-400 overflow-hidden">
-          <div className="grid grid-cols-7 bg-lavender-50 dark:bg-paynes_gray-500/40">
+        <div className="rounded-2xl border border-border overflow-hidden">
+          <div className="grid grid-cols-7 bg-muted">
             {Array.from({ length: 7 }).map((_, i) => (
               <div key={i} className="p-2">
                 <Skeleton className="h-4 w-8 mx-auto" />
@@ -33,7 +33,7 @@ export default function CalendarLoading() {
             {Array.from({ length: 35 }).map((_, i) => (
               <div
                 key={i}
-                className="h-24 border-t border-l border-lavender-100 dark:border-paynes_gray-400 p-1.5 space-y-1 first:border-l-0 [&:nth-child(7n+1)]:border-l-0"
+                className="h-24 border-t border-l border-border p-1.5 space-y-1 first:border-l-0 [&:nth-child(7n+1)]:border-l-0"
               >
                 <Skeleton className="h-3 w-4" />
                 {i % 3 === 0 && <Skeleton className="h-3 w-full rounded" />}

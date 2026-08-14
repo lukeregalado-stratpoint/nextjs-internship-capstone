@@ -116,7 +116,7 @@ function CalendarToolbar({
         <button
           type="button"
           onClick={onToday}
-          className="px-3 py-1.5 text-sm font-medium rounded-xl text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-100 dark:hover:bg-paynes_gray-400 transition-colors">
+          className="px-3 py-1.5 text-sm font-medium rounded-md text-ink dark:text-paper hover:bg-paper dark:hover:bg-paper-dark transition-colors">
           Today
         </button>
 
@@ -126,7 +126,7 @@ function CalendarToolbar({
               type="button"
               onClick={() => onNavigate("PREV")}
               aria-label="Previous"
-              className="p-1.5 rounded-xl text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-100 dark:hover:bg-paynes_gray-400 transition-colors">
+              className="p-1.5 rounded-md text-ink dark:text-paper hover:bg-paper dark:hover:bg-paper-dark transition-colors">
               <ChevronLeft size={18} />
             </button>
 
@@ -134,28 +134,28 @@ function CalendarToolbar({
               type="button"
               onClick={() => onNavigate("NEXT")}
               aria-label="Next"
-              className="p-1.5 rounded-xl text-outer_space-500 dark:text-platinum-500 hover:bg-lavender-100 dark:hover:bg-paynes_gray-400 transition-colors">
+              className="p-1.5 rounded-md text-ink dark:text-paper hover:bg-paper dark:hover:bg-paper-dark transition-colors">
               <ChevronRight size={18} />
             </button>
           </>
         )}
 
-        <h2 className="ml-1 text-lg font-semibold text-outer_space-500 dark:text-platinum-500">
+        <h2 className="ml-1 text-lg font-semibold text-ink dark:text-paper">
           {label}
         </h2>
       </div>
 
-      <div className="flex items-center gap-1 rounded-xl bg-lavender-50 dark:bg-paynes_gray-500/40 p-1">
+      <div className="flex items-center gap-1 rounded-md bg-paper dark:bg-paper-dark p-1">
         {VIEW_OPTIONS.map((option) => (
           <button
             key={option.key}
             type="button"
             onClick={() => onViewChange(option.key)}
             className={cn(
-              "px-3 py-1 text-sm font-medium rounded-lg transition-colors",
+              "px-3 py-1 text-sm font-medium rounded-md transition-colors",
               view === option.key
-                ? "bg-white dark:bg-outer_space-500 text-lavender-700 dark:text-lavender-300 shadow-sm"
-                : "text-paynes_gray-500 dark:text-french_gray-500 hover:text-outer_space-500 dark:hover:text-platinum-500")}>
+                ? "bg-surface dark:bg-surface-dark text-primary"
+                : "text-slate dark:text-slate-dark hover:text-ink dark:hover:text-paper")}>
             {option.label}
           </button>
         ))}
@@ -165,13 +165,13 @@ function CalendarToolbar({
 
 function CalendarLegend() {
   const items: { label: string; className: string }[] = [
-    { label: "Low priority", className: "bg-mint-500" },
-    { label: "Medium priority", className: "bg-lavender-500" },
-    { label: "High priority", className: "bg-destructive" },
-    { label: "Project due date", className: "bg-blue_munsell-500" },]
+    { label: "Low priority", className: "bg-done" },
+    { label: "Medium priority", className: "bg-primary" },
+    { label: "High priority", className: "bg-blocked" },
+    { label: "Project due date", className: "bg-primary" },]
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4 text-xs text-paynes_gray-500 dark:text-french_gray-500">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4 text-xs text-slate dark:text-slate-dark">
       {items.map((item) => (
         <div key={item.label} className="flex items-center gap-1.5">
           <span className={cn("h-2.5 w-2.5 rounded-full", item.className)} />
@@ -179,7 +179,7 @@ function CalendarLegend() {
         </div>
       ))}
 
-      <span className="text-paynes_gray-400 dark:text-french_gray-600">· click an item to open its project</span>
+      <span className="text-slate dark:text-slate-dark">· click an item to open its project</span>
     </div>
   )}
 
@@ -204,7 +204,7 @@ function ItemTooltip({ hovered }: { hovered: HoveredItem }) {
 
   return createPortal(
     <div
-      className="fixed z-50 pointer-events-none rounded-2xl border border-white/50 dark:border-white/10 bg-white/95 dark:bg-outer_space-500/95 backdrop-blur-xl shadow-lg p-3"
+      className="fixed z-50 pointer-events-none rounded-md border border-line dark:border-line-dark bg-surface dark:bg-surface-dark p-3"
       style={{
         left,
         top,
@@ -213,41 +213,41 @@ function ItemTooltip({ hovered }: { hovered: HoveredItem }) {
       <div className="flex items-start gap-2.5">
         <div
           className={cn(
-            "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white",
+            "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-white",
             isTask
               ? item.priority === "high"
-                ? "bg-destructive"
+                ? "bg-blocked"
                 : item.priority === "low"
-                  ? "bg-mint-500"
-                  : "bg-lavender-500"
-              : "bg-blue_munsell-500")}>
+                  ? "bg-done"
+                  : "bg-primary"
+              : "bg-primary")}>
           {isTask ? <CheckSquare size={15} /> : <FolderOpen size={15} />}
         </div>
 
         <div className="min-w-0">
-          <p className="font-semibold text-sm text-outer_space-500 dark:text-platinum-500 truncate">
+          <p className="font-semibold text-sm text-ink dark:text-paper truncate">
             {item.title}
           </p>
 
-          <p className="text-xs text-paynes_gray-500 dark:text-french_gray-500">
+          <p className="text-xs text-slate dark:text-slate-dark">
             {isTask ? `Due ${format(item.date, "PP")}` : `Project due ${format(item.date, "PP")}`}
           </p>
 
           {isTask && item.projectName && (
-            <p className="text-xs text-paynes_gray-500 dark:text-french_gray-500 mt-1 truncate">
+            <p className="text-xs text-slate dark:text-slate-dark mt-1 truncate">
               {item.projectName}
               {item.listName ? ` · ${item.listName}` : ""}
             </p>
           )}
 
           {isTask && item.priority && (
-            <div className="flex items-center gap-1 mt-1.5 text-[11px] font-medium text-paynes_gray-500 dark:text-french_gray-500">
+            <div className="flex items-center gap-1 mt-1.5 text-[11px] font-medium text-slate dark:text-slate-dark">
               <Flag size={11} />
               <span className="capitalize">{item.priority} priority</span>
             </div>
           )}
 
-          <div className="flex items-center gap-1 mt-2 text-[11px] font-medium text-lavender-600 dark:text-lavender-400">
+          <div className="flex items-center gap-1 mt-2 text-[11px] font-medium text-primary">
             View project <ArrowRight size={11} />
           </div>
         </div>
@@ -271,11 +271,11 @@ function ItemChip({
 
   const dotClassName = isTask
     ? item.priority === "high"
-      ? "bg-destructive"
+      ? "bg-blocked"
       : item.priority === "low"
-        ? "bg-mint-500"
-        : "bg-lavender-500"
-    : "bg-blue_munsell-500"
+        ? "bg-done"
+        : "bg-primary"
+    : "bg-primary"
 
   return (
     <button
@@ -284,11 +284,11 @@ function ItemChip({
       onMouseEnter={onHover}
       onMouseMove={onHover}
       onMouseLeave={onHoverEnd}
-      className="w-full flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs
-       bg-white dark:bg-outer_space-500 border border-lavender-100 dark:border-paynes_gray-400
-        hover:border-lavender-300 dark:hover:border-lavender-500/50 transition-colors">
+      className="w-full flex items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs
+       bg-surface dark:bg-surface-dark border border-line dark:border-line-dark
+        hover:border-primary/50 transition-colors">
       <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", dotClassName)} />
-      <span className="truncate text-outer_space-500 dark:text-platinum-500">{item.title}</span>
+      <span className="truncate text-ink dark:text-paper">{item.title}</span>
     </button>
   )}
 
@@ -320,12 +320,12 @@ function WeekView({
           <div
             key={key}
             className={cn(
-              "w-[70vw] max-w-[220px] sm:w-auto shrink-0 snap-start rounded-2xl border p-2.5 flex flex-col",
+              "w-[70vw] max-w-[220px] sm:w-auto shrink-0 snap-start rounded-md border p-2.5 flex flex-col",
               today
-                ? "border-lavender-400 bg-lavender-50/60 dark:bg-lavender-500/10"
-                : "border-lavender-100 dark:border-paynes_gray-400 bg-white/50 dark:bg-outer_space-500/40")}>
+                ? "border-primary bg-primary/5"
+                : "border-line dark:border-line-dark bg-surface dark:bg-surface-dark")}>
             <div className="flex items-baseline justify-between mb-2 px-0.5">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-paynes_gray-500 dark:text-french_gray-500">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-slate dark:text-slate-dark">
                 {format(day, "EEE")}
               </span>
 
@@ -333,15 +333,15 @@ function WeekView({
                 className={cn(
                   "text-sm font-semibold",
                   today
-                    ? "text-lavender-600 dark:text-lavender-300"
-                    : "text-outer_space-500 dark:text-platinum-500")}>
+                    ? "text-primary"
+                    : "text-ink dark:text-paper")}>
                 {format(day, "d")}
               </span>
             </div>
 
             <div className="flex-1 space-y-1.5 min-h-[60px] max-h-[420px] overflow-y-auto scrollbar-thin">
               {dayItems.length === 0 ? (
-                <p className="text-[11px] text-paynes_gray-400 dark:text-french_gray-600 px-0.5">
+                <p className="text-[11px] text-slate dark:text-slate-dark px-0.5">
                   Nothing due
                 </p>
               ) : (
@@ -395,15 +395,15 @@ function AgendaView({
                 className={cn(
                   "text-sm font-semibold",
                   overdue
-                    ? "text-destructive"
+                    ? "text-blocked"
                     : today
-                      ? "text-lavender-600 dark:text-lavender-300"
-                      : "text-outer_space-500 dark:text-platinum-500")}>
+                      ? "text-primary"
+                      : "text-ink dark:text-paper")}>
                 {label}
               </h3>
 
               {overdue && (
-                <span className="text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive">
+                <span className="text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-blocked/10 text-blocked">
                   Overdue
                 </span>
               )}
@@ -421,29 +421,29 @@ function AgendaView({
                     onMouseEnter={(e) => onHover(item, e)}
                     onMouseMove={(e) => onHover(item, e)}
                     onMouseLeave={onHoverEnd}
-                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left
-                     bg-white dark:bg-outer_space-500 border border-lavender-100 dark:border-paynes_gray-400
-                      hover:border-lavender-300 dark:hover:border-lavender-500/50 transition-colors">
+                    className="w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-left
+                     bg-surface dark:bg-surface-dark border border-line dark:border-line-dark
+                      hover:border-primary/50 transition-colors">
                     <div
                       className={cn(
                         "flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-white",
                         isTask
                           ? item.priority === "high"
-                            ? "bg-destructive"
+                            ? "bg-blocked"
                             : item.priority === "low"
-                              ? "bg-mint-500"
-                              : "bg-lavender-500"
-                          : "bg-blue_munsell-500")}>
+                              ? "bg-done"
+                              : "bg-primary"
+                          : "bg-primary")}>
                       {isTask ? <CheckSquare size={12} /> : <FolderOpen size={12} />}
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-outer_space-500 dark:text-platinum-500 truncate">
+                      <p className="text-sm text-ink dark:text-paper truncate">
                         {item.title}
                       </p>
 
                       {isTask && item.projectName && (
-                        <p className="text-[11px] text-paynes_gray-500 dark:text-french_gray-500 truncate">
+                        <p className="text-[11px] text-slate dark:text-slate-dark truncate">
                           {item.projectName}
                           {item.listName ? ` · ${item.listName}` : ""}
                         </p>
@@ -460,13 +460,13 @@ function AgendaView({
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="h-12 w-12 rounded-2xl bg-lavender-100 dark:bg-paynes_gray-500/40 flex items-center justify-center mb-4">
-        <CalendarX className="text-lavender-500" size={22} />
+      <div className="h-12 w-12 rounded-md bg-paper dark:bg-paper-dark flex items-center justify-center mb-4">
+        <CalendarX className="text-primary" size={22} />
       </div>
 
-      <p className="font-medium text-outer_space-500 dark:text-platinum-500">Nothing on the calendar yet</p>
+      <p className="font-medium text-ink dark:text-paper">Nothing on the calendar yet</p>
 
-      <p className="text-sm text-paynes_gray-500 dark:text-french_gray-500 mt-1 max-w-xs">
+      <p className="text-sm text-slate dark:text-slate-dark mt-1 max-w-xs">
         Tasks assigned to you and projects with due dates will show up here.
       </p>
     </div>
@@ -567,13 +567,13 @@ export function CalendarView({ tasks, projects }: CalendarViewProps) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-3xl border-2 border-white/50 dark:border-white/10 bg-white/70 dark:bg-outer_space-500/60 backdrop-blur-xl backdrop-saturate-150 shadow-[4px_4px_0_0_rgba(139,124,246,0.14)] dark:shadow-[4px_4px_0_0_rgba(0,0,0,0.35)] p-4 sm:p-6">
+      <div className="rounded-md border border-line dark:border-line-dark bg-surface dark:bg-surface-dark p-4 sm:p-6">
         <EmptyState />
       </div>
     )}
 
   return (
-    <div className="rounded-3xl border-2 border-white/50 dark:border-white/10 bg-white/70 dark:bg-outer_space-500/60 backdrop-blur-xl backdrop-saturate-150 shadow-[4px_4px_0_0_rgba(139,124,246,0.14)] dark:shadow-[4px_4px_0_0_rgba(0,0,0,0.35)] p-4 sm:p-6">
+    <div className="rounded-md border border-line dark:border-line-dark bg-surface dark:bg-surface-dark p-4 sm:p-6">
       <CalendarToolbar
         view={view}
         onViewChange={setView}

@@ -32,6 +32,10 @@ export default async function ProjectDetailPage({
     ...project.members.map((m) => ({ id: m.user.id, name: m.user.name })),
   ]
 
+  // Surfaced in the header's stats strip.
+  const listCount = project.lists.length
+  const taskCount = project.lists.reduce((sum, list) => sum + list.tasks.length, 0)
+
   return (
     <div className="space-y-6">
       <ProjectHeader
@@ -39,6 +43,8 @@ export default async function ProjectDetailPage({
         isOwner={isOwner}
         owner={{ name: project.owner.name, email: project.owner.email }}
         members={project.members}
+        listCount={listCount}
+        taskCount={taskCount}
       />
       <KanbanBoard
         projectId={project.id}

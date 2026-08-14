@@ -514,7 +514,7 @@ export function KanbanBoard({
               {addingColumn ? (
                 <form
                   onSubmit={handleAddColumn}
-                  className="bg-lavender-50 dark:bg-paynes_gray-400/20 rounded-2xl p-3 space-y-2"
+                  className="bg-muted rounded-2xl p-3 space-y-2"
                 >
                   <input
                     autoFocus
@@ -522,15 +522,15 @@ export function KanbanBoard({
                     onChange={(e) => setNewColumnName(e.target.value)}
                     placeholder="Column name"
                     maxLength={60}
-                    className="w-full px-3 py-2 border border-lavender-200 dark:border-paynes_gray-400
-                     rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500
-                      focus:outline-none focus:ring-2 focus:ring-lavender-400"
+                    className="w-full px-3 py-2 border border-border
+                     rounded-xl bg-card text-foreground dark:text-paper
+                      focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   <div className="flex gap-2">
                     <button
                       type="submit"
                       disabled={isPending || !newColumnName.trim()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-xl bg-lavender-500 text-white hover:bg-lavender-600
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-xl bg-primary text-primary-foreground hover:bg-primary/90
                        disabled:opacity-50"
                     >
                       {isPending && <Loader2 size={14} className="animate-spin" />}
@@ -542,8 +542,8 @@ export function KanbanBoard({
                         setAddingColumn(false)
                         setNewColumnName("")
                       }}
-                      className="px-3 py-1.5 text-sm rounded-xl border border-lavender-200 dark:border-paynes_gray-400
-                       text-outer_space-500 dark:text-platinum-500"
+                      className="px-3 py-1.5 text-sm rounded-xl border border-border
+                       text-foreground dark:text-paper"
                     >
                       Cancel
                     </button>
@@ -552,9 +552,9 @@ export function KanbanBoard({
               ) : (
                 <button
                   onClick={() => setAddingColumn(true)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-lavender-200
-                   dark:border-paynes_gray-400 rounded-2xl text-paynes_gray-500 dark:text-french_gray-400
-                    hover:border-lavender-400 hover:text-lavender-600 hover:bg-lavender-50 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-primary
+                   dark:border-border rounded-2xl text-muted-foreground dark:text-paper/60
+                    hover:border-primary hover:text-primary hover:bg-primary transition-colors"
                 >
                   <Plus size={16} /> Add column
                 </button>
@@ -577,10 +577,10 @@ export function KanbanBoard({
       {selectedCount > 0 && (
         <div
           className="sticky bottom-3 z-20 mx-3 sm:mx-0 flex flex-wrap items-center gap-2 rounded-2xl
-           border border-lavender-200 dark:border-paynes_gray-400 bg-white dark:bg-outer_space-500
+           border border-border bg-card
             px-4 py-2.5 shadow-lg"
         >
-          <span className="text-sm font-medium text-outer_space-500 dark:text-platinum-500 shrink-0">
+          <span className="text-sm font-medium text-foreground dark:text-paper shrink-0">
             {selectedCount} selected
           </span>
 
@@ -591,8 +591,8 @@ export function KanbanBoard({
               e.target.value = ""
             }}
             disabled={taskPending}
-            className="text-sm px-2 py-1.5 rounded-lg border border-lavender-200 dark:border-paynes_gray-400
-             bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 disabled:opacity-50"
+            className="text-sm px-2 py-1.5 rounded-lg border border-border
+             bg-card text-foreground dark:text-paper disabled:opacity-50"
           >
             <option value="" disabled>
               Move to…
@@ -611,8 +611,8 @@ export function KanbanBoard({
               e.target.value = ""
             }}
             disabled={taskPending}
-            className="text-sm px-2 py-1.5 rounded-lg border border-lavender-200 dark:border-paynes_gray-400
-             bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 disabled:opacity-50"
+            className="text-sm px-2 py-1.5 rounded-lg border border-border
+             bg-card text-foreground dark:text-paper disabled:opacity-50"
           >
             <option value="" disabled>
               Set priority…
@@ -635,7 +635,7 @@ export function KanbanBoard({
           <button
             onClick={clearSelection}
             className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg ml-auto
-             text-paynes_gray-500 dark:text-french_gray-400 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400/40"
+             text-muted-foreground dark:text-paper/60 hover:bg-muted"
           >
             <X size={14} /> Clear
           </button>
@@ -746,16 +746,16 @@ const BoardColumn = memo(function BoardColumn({
       ref={setNodeRef}
       style={style}
       className="w-[85vw] max-w-[288px] sm:w-72 shrink-0 snap-start flex flex-col
-                h-[67dvh]
-              bg-lavender-50 dark:bg-paynes_gray-400/20 rounded-2xl border
-              border-lavender-100/80 dark:border-transparent"
+                h-[58dvh]
+              bg-muted rounded-2xl border
+              border-border/80 dark:border-transparent"
     >
       <div className="flex items-center justify-between px-3 py-2 shrink-0">
         <div className="flex items-center gap-1 flex-1 min-w-0">
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab text-paynes_gray-500 dark:text-french_gray-400 touch-none shrink-0 p-1 -m-1"
+            className="cursor-grab text-muted-foreground dark:text-paper/60 touch-none shrink-0 p-1 -m-1"
             aria-label="Drag to reorder column"
           >
             <GripVertical size={16} />
@@ -776,31 +776,31 @@ const BoardColumn = memo(function BoardColumn({
               }}
               disabled={isColumnPending}
               maxLength={60}
-              className="flex-1 min-w-0 px-2 py-1 text-sm font-semibold bg-white dark:bg-outer_space-500
-               border border-lavender-400 rounded-lg"
+              className="flex-1 min-w-0 px-2 py-1 text-sm font-semibold bg-card
+               border border-primary rounded-lg"
             />
           ) : (
             <button
               onClick={() => setEditing(true)}
-              className="flex-1 min-w-0 text-left truncate text-sm font-semibold text-outer_space-500
-               dark:text-platinum-500"
+              className="flex-1 min-w-0 text-left truncate text-sm font-semibold text-foreground
+               dark:text-paper"
             >
               {list.name}
             </button>
           )}
 
-          <span className="text-xs text-paynes_gray-500 dark:text-french_gray-400 shrink-0 pb-1 pr-2">
+          <span className="text-xs text-muted-foreground dark:text-paper/60 shrink-0 pb-1 pr-2">
             {list.tasks.length}
           </span>
           {isSearching && (
-            <span className="text-[10px] uppercase tracking-wide text-lavender-500 shrink-0 pb-1">
+            <span className="text-[10px] uppercase tracking-wide text-primary shrink-0 pb-1">
               matches
             </span>
           )}
           {isColumnPending && (
             <Loader2
               size={12}
-              className="animate-spin text-lavender-500 shrink-0"
+              className="animate-spin text-primary shrink-0"
               aria-label="Saving column"
             />
           )}
@@ -810,14 +810,14 @@ const BoardColumn = memo(function BoardColumn({
           <div className="relative shrink-0">
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              className="p-2 -m-1 rounded-lg hover:bg-white dark:hover:bg-outer_space-500"
+              className="p-2 -m-1 rounded-lg hover:bg-card"
             >
-              <MoreVertical size={14} className="text-paynes_gray-500 dark:text-french_gray-400" />
+              <MoreVertical size={14} className="text-muted-foreground dark:text-paper/60" />
             </button>
             {menuOpen && (
               <div
-                className="absolute right-0 mt-1 w-36 sm:w-32 bg-white dark:bg-outer_space-500 border
-             border-lavender-100 dark:border-paynes_gray-400 rounded-xl shadow-lg z-10 overflow-hidden"
+                className="absolute right-0 mt-1 w-36 sm:w-32 bg-card border
+             border-border rounded-xl shadow-lg z-10 overflow-hidden"
               >
                 <button
                   onClick={() => {
@@ -825,8 +825,8 @@ const BoardColumn = memo(function BoardColumn({
                     setEditing(true)
                   }}
                   disabled={isColumnPending}
-                  className="w-full flex items-center px-3 py-2.5 sm:py-2 text-sm text-outer_space-500
-                 dark:text-platinum-500 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400 disabled:opacity-50"
+                  className="w-full flex items-center px-3 py-2.5 sm:py-2 text-sm text-foreground
+                 dark:text-paper hover:bg-muted disabled:opacity-50"
                 >
                   <Pencil size={14} className="mr-2" /> Rename
                 </button>
@@ -834,7 +834,7 @@ const BoardColumn = memo(function BoardColumn({
                   onClick={handleDelete}
                   disabled={isColumnPending}
                   className="w-full flex items-center px-3 py-2.5 sm:py-2 text-sm text-rose-500
-                 hover:bg-lavender-50 dark:hover:bg-paynes_gray-400 disabled:opacity-50"
+                 hover:bg-muted disabled:opacity-50"
                 >
                   <Trash2 size={14} className="mr-2" /> Delete
                 </button>
@@ -842,7 +842,7 @@ const BoardColumn = memo(function BoardColumn({
             )}
               <button
               onClick={() => onAddTask(list.id)}
-              className="p-2 -m-1 rounded-lg hover:bg-white dark:hover:bg-outer_space-500 text-paynes_gray-500 dark:text-french_gray-400 hover:text-lavender-600"
+              className="p-2 -m-1 rounded-lg hover:bg-card text-muted-foreground dark:text-paper/60 hover:text-primary"
               aria-label="Add task"
               title="Add task"
             >
@@ -858,7 +858,7 @@ const BoardColumn = memo(function BoardColumn({
           className="flex-1 min-h-[40px] overflow-y-auto overflow-x-hidden scrollbar-thin px-3 pb-3 space-y-2"
         >
           {list.tasks.length === 0 ? (
-            <p className="text-xs text-paynes_gray-500 dark:text-french_gray-400 px-1 py-2">
+            <p className="text-xs text-muted-foreground dark:text-paper/60 px-1 py-2">
               {isSearching ? "No matching tasks" : "No tasks yet"}
             </p>
           ) : isSearching ? (
@@ -889,8 +889,8 @@ const BoardColumn = memo(function BoardColumn({
           <button
             onClick={() => onAddTask(list.id)}
             className="w-full flex items-center justify-center gap-1.5 px-2 py-2.5 sm:py-1.5 text-xs
-             text-paynes_gray-500 dark:text-french_gray-400 hover:text-lavender-600
-              rounded-lg hover:bg-white dark:hover:bg-outer_space-500 transition-colors"
+             text-muted-foreground dark:text-paper/60 hover:text-primary
+              rounded-lg hover:bg-card transition-colors"
           >
             <Plus size={13} /> Add task
           </button>

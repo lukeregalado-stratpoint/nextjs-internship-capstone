@@ -56,17 +56,17 @@ export function EditProjectModal({
       onClick={() => onOpenChange(false)}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white dark:bg-outer_space-500 p-6 shadow-2xl"
+        className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500">
+          <h2 className="text-lg font-semibold text-foreground">
             Edit Project
           </h2>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="p-1 rounded-full hover:bg-lavender-50 dark:hover:bg-paynes_gray-500/20 text-paynes_gray-500 dark:text-french_gray-400"
+            className="p-1 rounded-full hover:bg-muted text-muted-foreground"
             aria-label="Close"
           >
             <X size={18} />
@@ -75,7 +75,7 @@ export function EditProjectModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Name
             </label>
             <input
@@ -83,12 +83,12 @@ export function EditProjectModal({
               maxLength={120}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+              className="w-full px-3 py-2 border border-input rounded-xl bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Description
             </label>
             <textarea
@@ -96,24 +96,24 @@ export function EditProjectModal({
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               maxLength={2000}
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+              className="w-full px-3 py-2 border border-input rounded-xl bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Due date
             </label>
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3 py-2 border border-french_gray-300 dark:border-paynes_gray-400 rounded-xl bg-white dark:bg-outer_space-500 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+              className="w-full px-3 py-2 border border-input rounded-xl bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           {error && (
-            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl">
+            <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-xl">
               {error}
             </p>
           )}
@@ -122,14 +122,14 @@ export function EditProjectModal({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="px-4 py-2 rounded-xl border border-french_gray-300 dark:border-paynes_gray-400 text-outer_space-500 dark:text-platinum-500 hover:bg-platinum-500 dark:hover:bg-paynes_gray-400 transition-colors"
+              className="px-4 py-2 rounded-xl border border-input text-foreground hover:bg-muted transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isPending || !name.trim()}
-              className="px-4 py-2 rounded-xl bg-lavender-500 text-white hover:bg-lavender-600 disabled:opacity-50 transition-colors"
+              className="px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               {isPending ? "Saving…" : "Save changes"}
             </button>

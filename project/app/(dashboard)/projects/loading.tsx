@@ -22,7 +22,7 @@ export default function ProjectsLoading() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white dark:bg-outer_space-500 rounded-2xl border border-lavender-100 dark:border-paynes_gray-400 p-6 space-y-4"
+            className="bg-card rounded-2xl border border-border p-6 space-y-4"
           >
             <div className="flex items-center justify-between">
               <Skeleton className="h-5 w-2/3" />
@@ -35,7 +35,7 @@ export default function ProjectsLoading() {
             <div className="flex items-center justify-between pt-2">
               <div className="flex -space-x-2">
                 {Array.from({ length: 3 }).map((_, j) => (
-                  <Skeleton key={j} className="h-7 w-7 rounded-full ring-2 ring-white dark:ring-outer_space-500" />
+                  <Skeleton key={j} className="h-7 w-7 rounded-full ring-2 ring-card" />
                 ))}
               </div>
               <Skeleton className="h-5 w-16 rounded-full" />

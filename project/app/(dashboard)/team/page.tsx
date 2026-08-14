@@ -26,15 +26,15 @@ export default async function TeamPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">Team</h1>
-        <p className="text-paynes_gray-500 dark:text-french_gray-500 mt-2">
+        <h1 className="text-3xl font-bold text-ink dark:text-paper">Team</h1>
+        <p className="text-slate dark:text-slate-dark mt-2">
           Everyone you share a project with
         </p>
       </div>
 
       {teammates.length === 0 ? (
-        <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-8 text-center">
-          <p className="text-paynes_gray-500 dark:text-french_gray-400">
+        <div className="bg-surface dark:bg-surface-dark rounded-md border border-line dark:border-line-dark p-8 text-center">
+          <p className="text-slate dark:text-slate-dark">
             No teammates yet. Open a project and use its{" "}
             <span className="font-medium">Members</span> button to add someone.
           </p>
@@ -44,23 +44,23 @@ export default async function TeamPage() {
           {teammates.map((mate) => (
             <div
               key={mate.id}
-              className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-paynes_gray-400 p-6"
+              className="bg-surface dark:bg-surface-dark rounded-md border border-line dark:border-line-dark p-6"
             >
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-12 h-12 bg-blue_munsell-500 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-semibold">
                   {initials(mate.name)}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-outer_space-500 dark:text-platinum-500">
+                  <h3 className="font-semibold text-ink dark:text-paper">
                     {mate.name}
                   </h3>
-                  <p className="text-sm text-paynes_gray-500 dark:text-french_gray-400">
+                  <p className="text-sm text-slate dark:text-slate-dark">
                     {mate.projects.length} project{mate.projects.length === 1 ? "" : "s"} together
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center text-sm text-paynes_gray-500 dark:text-french_gray-400 mb-4">
+              <div className="flex items-center text-sm text-slate dark:text-slate-dark mb-4">
                 <Mail size={16} className="mr-2" />
                 {mate.email}
               </div>
@@ -70,7 +70,7 @@ export default async function TeamPage() {
                   <span
                     key={p.projectId}
                     title={p.projectName}
-                    className="px-2 py-1 text-xs font-medium rounded-full bg-lavender-100 text-lavender-700 dark:bg-paynes_gray-400 dark:text-platinum-500"
+                    className="px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary"
                   >
                     {p.projectName} · {ROLE_LABELS[p.role] ?? p.role}
                   </span>

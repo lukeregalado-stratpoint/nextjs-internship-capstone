@@ -45,9 +45,9 @@ import type { KeyboardEvent, MouseEvent } from "react"
 import type { Task } from "@/lib/db/schema"
 
 const priorityStyles: Record<Task["priority"], string> = {
-  low: "bg-mint-100 text-mint-700 dark:bg-mint-900/30 dark:text-mint-300",
-  medium: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  high: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+  low: "bg-done-wash text-done-text dark:bg-done-wash-dark dark:text-done-text-dark",
+  medium: "bg-review-wash text-review-text dark:bg-review-wash-dark dark:text-review-text-dark",
+  high: "bg-blocked-wash text-blocked-text dark:bg-blocked-wash-dark dark:text-blocked-text-dark",
 }
 
 function initials(name: string) {
@@ -121,10 +121,10 @@ export const TaskCard = memo(function TaskCard({
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className={`group relative w-full text-left bg-white dark:bg-outer_space-500 rounded-xl border px-3 py-2.5 transition-all space-y-2 cursor-pointer ${
+      className={`group relative w-full text-left bg-surface dark:bg-surface-dark rounded-md border px-3 py-2.5 transition-colors space-y-2 cursor-pointer ${
         selected
-          ? "border-lavender-400 ring-2 ring-lavender-400/60"
-          : "border-lavender-100 dark:border-paynes_gray-400 hover:border-lavender-300 hover:shadow-sm"
+          ? "border-primary ring-1 ring-primary/30"
+          : "border-line dark:border-line-dark hover:border-primary"
       } ${pending ? "opacity-70" : ""}`}
     >
       {onToggleSelect && (
@@ -139,20 +139,20 @@ export const TaskCard = memo(function TaskCard({
           aria-pressed={selected}
           className={`absolute top-2 right-2 h-4.5 w-4.5 flex items-center justify-center rounded-md border transition-colors ${
             selected
-              ? "bg-lavender-500 border-lavender-500 text-white opacity-100"
-              : "border-lavender-200 dark:border-paynes_gray-400 bg-white dark:bg-outer_space-500 opacity-0 group-hover:opacity-100 focus:opacity-100"
+              ? "bg-primary border-primary text-primary-foreground opacity-100"
+              : "border-line dark:border-line-dark bg-surface dark:bg-surface-dark opacity-0 group-hover:opacity-100 focus:opacity-100"
           }`}
         >
           {selected && <Check size={11} strokeWidth={3} />}
         </button>
       )}
 
-      <p className="text-sm font-medium text-outer_space-500 dark:text-platinum-500 leading-snug pr-6">
+      <p className="text-sm font-medium text-ink dark:text-paper leading-snug pr-6">
         {task.title}
       </p>
 
       {task.description && (
-        <p className="text-xs text-paynes_gray-500 dark:text-french_gray-400 line-clamp-2">
+        <p className="text-xs text-slate dark:text-slate-dark line-clamp-2">
           {task.description}
         </p>
       )}
@@ -181,7 +181,7 @@ export const TaskCard = memo(function TaskCard({
 
           {pending && (
             <span
-              className="inline-flex items-center text-lavender-500 dark:text-lavender-300"
+              className="inline-flex items-center text-primary"
               aria-label="Saving"
               title="Saving…"
             >
@@ -192,7 +192,7 @@ export const TaskCard = memo(function TaskCard({
           {task.dueDate && (
             <span
               className={`inline-flex items-center gap-1 text-[11px] ${
-                isOverdue ? "text-rose-500" : "text-paynes_gray-500 dark:text-french_gray-400"
+                isOverdue ? "text-blocked" : "text-slate dark:text-slate-dark"
               }`}
             >
               <Calendar size={11} />
@@ -207,9 +207,9 @@ export const TaskCard = memo(function TaskCard({
         {assigneeName && (
           <span
             title={assigneeName}
-            className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full
-             bg-lavender-200 dark:bg-lavender-700/50 text-[10px] font-semibold
-              text-lavender-700 dark:text-lavender-200"
+            className="shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-sm
+             bg-signal-wash dark:bg-signal-wash-dark text-[10px] font-semibold
+              text-signal-text dark:text-signal-text-dark"
           >
             {initials(assigneeName)}
           </span>

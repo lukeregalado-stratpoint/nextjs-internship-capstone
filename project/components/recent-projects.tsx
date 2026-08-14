@@ -5,8 +5,8 @@ import { CreateTaskButton } from "@/components/create-task-button"
 type ProjectRole = "product_owner" | "scrum_master" | "developer" | "stakeholder"
 
 const ROLE_LABELS: Record<ProjectRole, string> = {
-  product_owner: "Product Owner",
-  scrum_master: "Scrum Master",
+  product_owner: "Product owner",
+  scrum_master: "Scrum master",
   developer: "Developer",
   stakeholder: "Stakeholder",
 }
@@ -33,15 +33,15 @@ interface RecentProjectsProps {
 
 export function RecentProjects({ projects }: RecentProjectsProps) {
   return (
-    <div className="bg-white dark:bg-outer_space-500 rounded-2xl border border-lavender-100 dark:border-paynes_gray-400 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500">Recent Projects</h3>
+    <div className="bg-surface dark:bg-surface-dark rounded-md border border-line dark:border-line-dark">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-line dark:border-line-dark">
+        <h3 className="text-sm font-medium text-ink dark:text-paper">Recent projects</h3>
         <CreateProjectButton />
       </div>
 
-      <div className="space-y-3">
+      <div className="divide-y divide-line dark:divide-line-dark">
         {projects.length === 0 && (
-          <p className="text-sm text-paynes_gray-500 dark:text-french_gray-500">
+          <p className="text-sm text-slate dark:text-slate-dark px-5 py-6">
             No projects yet. Create your first one to get started.
           </p>
         )}
@@ -52,34 +52,34 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
           return (
             <div
               key={project.id}
-              className="rounded-xl border border-lavender-100 dark:border-paynes_gray-400 p-4 flex items-center justify-between gap-4 hover:border-lavender-300 transition-colors"
+              className="px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-paper dark:hover:bg-paper-dark/60 transition-colors"
             >
               <div className="min-w-0">
                 <Link
                   href={`/projects/${project.id}`}
-                  className="font-medium text-outer_space-500 dark:text-platinum-500 hover:underline truncate block"
+                  className="text-sm font-medium text-ink dark:text-paper hover:text-signal-text dark:hover:text-signal-text-dark truncate block transition-colors"
                 >
                   {project.name}
                 </Link>
                 {project.description && (
-                  <p className="text-sm text-paynes_gray-500 dark:text-french_gray-500 truncate">
+                  <p className="text-xs text-slate dark:text-slate-dark truncate mt-0.5">
                     {project.description}
                   </p>
                 )}
 
                 {members.length > 0 && (
-                  <div className="flex items-center -space-x-2 mt-2">
+                  <div className="flex items-center -space-x-1.5 mt-2">
                     {members.slice(0, 4).map((member) => (
                       <div
                         key={member.userId}
                         title={`${member.user.name} — ${ROLE_LABELS[member.role]}`}
-                        className="h-7 w-7 rounded-full ring-2 ring-white dark:ring-outer_space-500 bg-lavender-100 dark:bg-paynes_gray-400 flex items-center justify-center text-xs font-medium text-lavender-700 dark:text-platinum-500"
+                        className="h-6 w-6 rounded-sm ring-2 ring-surface dark:ring-surface-dark bg-signal-wash dark:bg-signal-wash-dark flex items-center justify-center text-[10px] font-medium text-signal-text dark:text-signal-text-dark"
                       >
                         {member.user.name.charAt(0).toUpperCase()}
                       </div>
                     ))}
                     {members.length > 4 && (
-                      <div className="h-7 w-7 rounded-full ring-2 ring-white dark:ring-outer_space-500 bg-lavender-500 flex items-center justify-center text-xs font-medium text-white">
+                      <div className="h-6 w-6 rounded-sm ring-2 ring-surface dark:ring-surface-dark bg-ink dark:bg-paper flex items-center justify-center text-[10px] font-medium text-paper dark:text-ink">
                         +{members.length - 4}
                       </div>
                     )}

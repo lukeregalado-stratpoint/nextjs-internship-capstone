@@ -38,10 +38,10 @@ export function Features() {
     <section id="features" className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="container mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-outer_space-500 dark:text-platinum-500 mb-4">
+          <h2 className="text-4xl font-bold text-foreground dark:text-paper mb-4">
             Everything You Need to Succeed
           </h2>
-          <p className="text-xl text-paynes_gray-500 dark:text-french_gray-500 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Powerful features designed to help teams collaborate effectively and deliver projects on time.
           </p>
         </div>
@@ -50,15 +50,15 @@ export function Features() {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="p-6 bg-white dark:bg-outer_space-400 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-french_gray-300 dark:border-paynes_gray-400"
+              className="p-6 bg-card rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-border"
             >
-              <div className="w-12 h-12 bg-blue_munsell-100 dark:bg-blue_munsell-900 rounded-lg flex items-center justify-center mb-4">
-                <feature.icon className="text-blue_munsell-500" size={24} />
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <feature.icon className="text-primary" size={24} />
               </div>
-              <h3 className="text-xl font-semibold text-outer_space-500 dark:text-platinum-500 mb-2">
+              <h3 className="text-xl font-semibold text-foreground dark:text-paper mb-2">
                 {feature.title}
               </h3>
-              <p className="text-paynes_gray-500 dark:text-french_gray-500">{feature.description}</p>
+              <p className="text-muted-foreground">{feature.description}</p>
             </div>
           ))}
         </div>

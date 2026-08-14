@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, inArray, isNotNull, notInArray, or, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, notInArray, or, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   activities,
@@ -805,6 +805,138 @@ export async function logActivity(
   metadata?: Record<string, unknown>
 ) {
   return createActivity({ taskId, userId, type, metadata })
+}
+
+// ANALYTICS
+
+/**
+ * top-level numbers for the analytics page. reuses getDashboardStatsForOwner
+ * for the completed/in-progress/backlog split so the two pages can't drift,
+ * then layers on completion rate and team size.
+ */
+export async function getAnalyticsOverviewForOwner(userId: string) {
+  const stats = await getDashboardStatsForOwner(userId)
+  const totalTasks = stats.completedTasks + stats.inProgressTasks + stats.backlogTasks
+  const completionRate = totalTasks === 0 ? 0 : Math.round((stats.completedTasks / totalTasks) * 100)
+
+  const ownedProjects = await db.query.projects.findMany({
+    where: eq(projects.ownerId, userId),
+    columns: { id: true },
+  })
+  const projectIds = ownedProjects.map((p) => p.id)
+
+  let teamMembersCount = 0
+  if (projectIds.length > 0) {
+    const members = await db
+      .selectDistinct({ userId: projectMembers.userId })
+      .from(projectMembers)
+      .where(inArray(projectMembers.projectId, projectIds))
+    teamMembersCount = members.length
+  }
+
+  return {
+    totalTasks,
+    completedTasks: stats.completedTasks,
+    inProgressTasks: stats.inProgressTasks,
+    backlogTasks: stats.backlogTasks,
+    completionRate,
+    activeProjects: stats.activeProjects,
+    teamMembersCount,
+  }
+}
+
+/**
+ * per-project completion %, same "last list = done" definition used by
+ * getDashboardStatsForOwner / getProjectsForUser. powers the project
+ * progress chart.
+ */
+export async function getProjectProgressForOwner(userId: string) {
+  const projectsData = await db.query.projects.findMany({
+    where: eq(projects.ownerId, userId),
+    orderBy: [asc(projects.createdAt)],
+    with: {
+      lists: {
+        orderBy: [asc(lists.position)],
+        with: { tasks: { columns: { id: true } } },
+      },
+    },
+  })
+
+  return projectsData.map((project) => {
+    const allTasks = project.lists.flatMap((l) => l.tasks)
+    const lastList = project.lists[project.lists.length - 1]
+    const doneCount = lastList?.tasks.length ?? 0
+
+    return {
+      id: project.id,
+      name: project.name,
+      taskCount: allTasks.length,
+      progress: allTasks.length === 0 ? 0 : Math.round((doneCount / allTasks.length) * 100),
+    }
+  })
+}
+
+/** task counts by priority, across every project the user owns. */
+export async function getPriorityBreakdownForOwner(userId: string) {
+  const ownedProjects = await db.query.projects.findMany({
+    where: eq(projects.ownerId, userId),
+    columns: { id: true },
+  })
+  const projectIds = ownedProjects.map((p) => p.id)
+  if (projectIds.length === 0) return []
+
+  const rows = await db
+    .select({
+      priority: tasks.priority,
+      count: sql<number>`count(${tasks.id})`,
+    })
+    .from(tasks)
+    .innerJoin(lists, eq(tasks.listId, lists.id))
+    .where(inArray(lists.projectId, projectIds))
+    .groupBy(tasks.priority)
+
+  return rows.map((r) => ({ priority: r.priority, count: Number(r.count) }))
+}
+
+/**
+ * daily activity counts for the last `days` days, across every task in
+ * every project the user owns. zero-fills days with no activity so the
+ * chart doesn't show gaps.
+ */
+export async function getActivityTimelineForOwner(userId: string, days = 14) {
+  const ownedProjects = await db.query.projects.findMany({
+    where: eq(projects.ownerId, userId),
+    columns: { id: true },
+  })
+  const projectIds = ownedProjects.map((p) => p.id)
+  if (projectIds.length === 0) return []
+
+  const since = new Date()
+  since.setDate(since.getDate() - (days - 1))
+  since.setHours(0, 0, 0, 0)
+
+  const rows = await db
+    .select({
+      day: sql<string>`date_trunc('day', ${activities.createdAt})`,
+      count: sql<number>`count(${activities.id})`,
+    })
+    .from(activities)
+    .innerJoin(tasks, eq(activities.taskId, tasks.id))
+    .innerJoin(lists, eq(tasks.listId, lists.id))
+    .where(and(inArray(lists.projectId, projectIds), gte(activities.createdAt, since)))
+    .groupBy(sql`date_trunc('day', ${activities.createdAt})`)
+    .orderBy(sql`date_trunc('day', ${activities.createdAt})`)
+
+  const counts = new Map(rows.map((r) => [new Date(r.day).toISOString().slice(0, 10), Number(r.count)]))
+
+  const result: { date: string; count: number }[] = []
+  for (let i = 0; i < days; i++) {
+    const d = new Date(since)
+    d.setDate(d.getDate() + i)
+    const key = d.toISOString().slice(0, 10)
+    result.push({ date: key, count: counts.get(key) ?? 0 })
+  }
+  return result
 }
 
 // CALENDAR

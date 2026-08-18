@@ -6,6 +6,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "./theme-provider"
+import { CommandPalette } from "./command-palette"
+import { useCommandPaletteStore } from "@/stores/command-palette-store"
 import { UserButton } from "@clerk/nextjs"
 import {
   Home,
@@ -20,6 +22,7 @@ import {
   Calendar,
   PanelLeftClose,
   PanelLeftOpen,
+  Search,
 } from "lucide-react"
 
 const navigation = [
@@ -38,6 +41,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   const { theme, setTheme } = useTheme()
   const pathname = usePathname()
+  const openCommandPalette = useCommandPaletteStore((s) => s.open)
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,6 +98,29 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
+        {/* Search trigger — opens the command palette (click or ⌘K/Ctrl+K
+            from anywhere). Styled like a disabled search input rather than
+            a nav row so it reads as "type here", not "go here". */}
+        <div className={`px-2.5 pt-2.5 ${collapsed ? "lg:px-1.5" : ""}`}>
+          <button
+            onClick={openCommandPalette}
+            title="Search (⌘K)"
+            className={`flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md text-sm text-slate dark:text-slate-dark border border-line dark:border-line-dark hover:bg-paper dark:hover:bg-paper-dark transition-colors ${
+              collapsed ? "lg:justify-center lg:px-0" : ""
+            }`}
+          >
+            <Search size={16} className="shrink-0" />
+            <span className={`truncate ${collapsed ? "lg:hidden" : ""}`}>Search</span>
+            <kbd
+              className={`ml-auto hidden lg:inline-block shrink-0 text-[10px] border border-line dark:border-line-dark rounded px-1 py-0.5 ${
+                collapsed ? "lg:hidden" : ""
+              }`}
+            >
+              ⌘K
+            </kbd>
+          </button>
+        </div>
+
         {/* Nav — plain rows, active item gets a quiet fill, nothing else does */}
         <nav className="flex-1 overflow-y-auto px-2.5 py-3">
           <ul className="space-y-0.5">
@@ -140,7 +167,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <div className={`transition-all duration-200 ${collapsed ? "lg:pl-[68px]" : "lg:pl-60"}`}>
         {/* Mobile-only top bar: just the drawer trigger. No persistent
             desktop chrome — content starts right under the sidebar. */}
-        <div className="flex h-14 items-center px-4 border-b border-line dark:border-line-dark lg:hidden">
+        <div className="flex h-14 items-center justify-between px-4 border-b border-line dark:border-line-dark lg:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-2 -ml-2 rounded-md hover:bg-paper dark:hover:bg-paper-dark text-slate dark:text-slate-dark"
@@ -148,11 +175,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           >
             <Menu size={20} />
           </button>
+          <button
+            onClick={openCommandPalette}
+            className="p-2 -mr-2 rounded-md hover:bg-paper dark:hover:bg-paper-dark text-slate dark:text-slate-dark"
+            aria-label="Search"
+          >
+            <Search size={19} />
+          </button>
         </div>
 
         {/* Page content */}
         <main className="py-4 px-4 sm:px-6">{children}</main>
       </div>
+
+      <CommandPalette />
     </div>
   )
 }

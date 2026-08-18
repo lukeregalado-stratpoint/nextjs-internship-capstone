@@ -948,6 +948,130 @@ export async function getActivityTimelineForOwner(userId: string, days = 14) {
  * so this also picks up tasks assigned to a member on a project they don't
  * own.
  */
+// GLOBAL SEARCH (command palette)
+
+/**
+ * Lightweight, one-shot search index for the command palette: every
+ * accessible project and a bounded set of recently-touched tasks, in two
+ * queries instead of the five `globalSearchForUser` runs per keystroke.
+ * Unlike `globalSearchForUser`, this takes no `query` — the caller (the
+ * palette, via `search-index-store`) fetches this once when it opens and
+ * filters client-side, so access-scoping still happens here (server-side,
+ * behind `requireUser` in the action) but text matching doesn't need a
+ * round trip per character typed.
+ *
+ * `taskLimit` bounds the payload for users with a lot of history; it's an
+ * ORDER BY updatedAt DESC cap, so the palette's local search stays fast
+ * without shipping someone's entire task history to the client.
+ */
+export async function getSearchIndexForUser(userId: string, taskLimit = 300) {
+  const accessibleProjectIds = await getAccessibleProjectIds(userId)
+  if (accessibleProjectIds.size === 0) return { projects: [], tasks: [] }
+  const projectIdList = Array.from(accessibleProjectIds)
+
+  const indexProjects = await db.query.projects.findMany({
+    where: inArray(projects.id, projectIdList),
+    columns: { id: true, name: true, description: true },
+    orderBy: [asc(projects.name)],
+  })
+
+  const accessibleLists = await db.query.lists.findMany({
+    where: inArray(lists.projectId, projectIdList),
+    columns: { id: true, name: true, projectId: true },
+  })
+  const listIds = accessibleLists.map((l) => l.id)
+  const listById = new Map(accessibleLists.map((l) => [l.id, l]))
+
+  const indexTasks =
+    listIds.length === 0
+      ? []
+      : await db.query.tasks.findMany({
+          where: inArray(tasks.listId, listIds),
+          columns: { id: true, title: true, listId: true, priority: true },
+          orderBy: [desc(tasks.updatedAt)],
+          limit: taskLimit,
+        })
+
+  return {
+    projects: indexProjects,
+    tasks: indexTasks.map((t) => {
+      const list = listById.get(t.listId)
+      return {
+        id: t.id,
+        title: t.title,
+        priority: t.priority,
+        listName: list?.name ?? "",
+        projectId: list?.projectId ?? "",
+      }
+    }),
+  }
+}
+
+/**
+ * Search projects (by name/description) and tasks (by title) for the
+ * command palette. Scoped the same way the rest of the app scopes
+ * visibility: owned projects plus projects the user is a member of, via
+ * `getAccessibleProjectIds`. Two extra round trips (accessible project ids,
+ * then accessible list ids) — same tradeoff `getProjectsForUser` already
+ * makes elsewhere in this file, favoring simple queries over one clever
+ * join for a feature that isn't hot-path.
+ *
+ * Superseded as the palette's primary search by `getSearchIndexForUser`
+ * (see `search-index-store.ts`), which avoids a DB round trip per
+ * keystroke. Left in place as a fallback path for accounts with more
+ * projects/tasks than the index cares to cache client-side.
+ */
+export async function globalSearchForUser(userId: string, query: string, limit = 6) {
+  const trimmed = query.trim()
+  if (!trimmed) return { projects: [], tasks: [] }
+
+  const accessibleProjectIds = await getAccessibleProjectIds(userId)
+  if (accessibleProjectIds.size === 0) return { projects: [], tasks: [] }
+  const projectIdList = Array.from(accessibleProjectIds)
+  const pattern = `%${trimmed}%`
+
+  const matchedProjects = await db.query.projects.findMany({
+    where: and(
+      inArray(projects.id, projectIdList),
+      or(ilike(projects.name, pattern), ilike(projects.description, pattern))
+    ),
+    columns: { id: true, name: true, description: true },
+    orderBy: [asc(projects.name)],
+    limit,
+  })
+
+  const accessibleLists = await db.query.lists.findMany({
+    where: inArray(lists.projectId, projectIdList),
+    columns: { id: true, name: true, projectId: true },
+  })
+  const listIds = accessibleLists.map((l) => l.id)
+  const listById = new Map(accessibleLists.map((l) => [l.id, l]))
+
+  const matchedTasks =
+    listIds.length === 0
+      ? []
+      : await db.query.tasks.findMany({
+          where: and(inArray(tasks.listId, listIds), ilike(tasks.title, pattern)),
+          columns: { id: true, title: true, listId: true, priority: true },
+          orderBy: [desc(tasks.updatedAt)],
+          limit,
+        })
+
+  return {
+    projects: matchedProjects,
+    tasks: matchedTasks.map((t) => {
+      const list = listById.get(t.listId)
+      return {
+        id: t.id,
+        title: t.title,
+        priority: t.priority,
+        listName: list?.name ?? "",
+        projectId: list?.projectId ?? "",
+      }
+    }),
+  }
+}
+
 export async function getTasksForAssigneeCalendar(userId: string) {
   return db.query.tasks.findMany({
     where: and(eq(tasks.assigneeId, userId), isNotNull(tasks.dueDate)),

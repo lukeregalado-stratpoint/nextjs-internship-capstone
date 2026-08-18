@@ -1,10 +1,11 @@
-import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, notInArray, or, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, notInArray, or, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   activities,
   comments,
   labels,
   lists,
+  notifications,
   projectMembers,
   projects,
   taskLabels,
@@ -15,6 +16,7 @@ import {
   type NewComment,
   type NewLabel,
   type NewList,
+  type NewNotification,
   type NewProject,
   type NewProjectMember,
   type NewTask,
@@ -805,6 +807,57 @@ export async function logActivity(
   metadata?: Record<string, unknown>
 ) {
   return createActivity({ taskId, userId, type, metadata })
+}
+
+// NOTIFICATIONS
+
+export async function createNotification(data: NewNotification) {
+  const [notification] = await db.insert(notifications).values(data).returning()
+  return notification
+}
+
+/** Newest first, capped — the dropdown only ever shows a bounded recent list. */
+export async function getNotificationsForUser(userId: string, limit = 30) {
+  return db.query.notifications.findMany({
+    where: eq(notifications.recipientId, userId),
+    orderBy: [desc(notifications.createdAt)],
+    limit,
+    with: {
+      actor: { columns: { id: true, name: true } },
+    },
+  })
+}
+
+export async function getUnreadNotificationCount(userId: string) {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(notifications)
+    .where(and(eq(notifications.recipientId, userId), isNull(notifications.readAt)))
+  return Number(row?.count ?? 0)
+}
+
+export async function ownsNotification(notificationId: string, userId: string) {
+  const notification = await db.query.notifications.findFirst({
+    where: eq(notifications.id, notificationId),
+    columns: { recipientId: true },
+  })
+  return notification?.recipientId === userId
+}
+
+export async function markNotificationRead(notificationId: string) {
+  const [notification] = await db
+    .update(notifications)
+    .set({ readAt: new Date() })
+    .where(eq(notifications.id, notificationId))
+    .returning()
+  return notification ?? null
+}
+
+export async function markAllNotificationsRead(userId: string) {
+  await db
+    .update(notifications)
+    .set({ readAt: new Date() })
+    .where(and(eq(notifications.recipientId, userId), isNull(notifications.readAt)))
 }
 
 // ANALYTICS

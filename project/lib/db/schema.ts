@@ -64,6 +64,11 @@ export const activityTypeEnum = pgEnum("activity_type", [
   "comment_added",
   "comment_deleted",
 ])
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "task_assigned",
+  "comment_added",
+  "due_date_reminder",
+])
 
 // TABLES
 
@@ -147,6 +152,12 @@ export const tasks = pgTable(
     }),
     priority: priorityEnum("priority").notNull().default("medium"),
     dueDate: timestamp("due_date"),
+    // Set once a due-date reminder notification has gone out for this task,
+    // so the daily cron (app/api/cron/due-date-reminders) doesn't re-send
+    // one on every run. Cleared implicitly whenever dueDate changes to a
+    // later date, since that's a new deadline to remind about — see the
+    // due_date_changed handling in updateTaskAction.
+    dueReminderSentAt: timestamp("due_reminder_sent_at"),
     position: integer("position").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -236,6 +247,33 @@ export const activities = pgTable(
   ]
 )
 
+// One row per notification a user receives. Unlike `activities` (an
+// append-only log scoped to a task), this is scoped to the *recipient* —
+// readAt tracks per-user read state, and rows are queried by recipientId,
+// not taskId. `actorId` is nullable since system-generated notifications
+// (due-date reminders) have no acting user.
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    recipientId: uuid("recipient_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+    type: notificationTypeEnum("type").notNull(),
+    taskId: uuid("task_id").references(() => tasks.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    body: text("body"),
+    readAt: timestamp("read_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("notifications_recipient_id_idx").on(table.recipientId),
+    index("notifications_recipient_unread_idx").on(table.recipientId, table.readAt),
+  ]
+)
+
 // RELATIONS
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -244,6 +282,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   comments: many(comments),
   activities: many(activities),
   projectMemberships: many(projectMembers),
+  receivedNotifications: many(notifications, { relationName: "notification_recipient" }),
+  sentNotifications: many(notifications, { relationName: "notification_actor" }),
 }))
  
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -311,6 +351,29 @@ export const activitiesRelations = relations(activities, ({ one }) => ({
   }),
 }))
 
+// Two FKs into `users` (recipient, actor) need relationName to disambiguate
+// which is which — without it, drizzle can't tell the two apart.
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  recipient: one(users, {
+    fields: [notifications.recipientId],
+    references: [users.id],
+    relationName: "notification_recipient",
+  }),
+  actor: one(users, {
+    fields: [notifications.actorId],
+    references: [users.id],
+    relationName: "notification_actor",
+  }),
+  task: one(tasks, {
+    fields: [notifications.taskId],
+    references: [tasks.id],
+  }),
+  project: one(projects, {
+    fields: [notifications.projectId],
+    references: [projects.id],
+  }),
+}))
+
 export const labelsRelations = relations(labels, ({ one, many }) => ({
   project: one(projects, {
     fields: [labels.projectId],
@@ -358,3 +421,7 @@ export type NewTaskLabel = typeof taskLabels.$inferInsert
 export type Activity = typeof activities.$inferSelect
 export type NewActivity = typeof activities.$inferInsert
 export type ActivityType = (typeof activityTypeEnum.enumValues)[number]
+
+export type Notification = typeof notifications.$inferSelect
+export type NewNotification = typeof notifications.$inferInsert
+export type NotificationType = (typeof notificationTypeEnum.enumValues)[number]

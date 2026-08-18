@@ -7,6 +7,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "./theme-provider"
 import { CommandPalette } from "./command-palette"
+import { NotificationBell } from "./notification-bell"
 import { useCommandPaletteStore } from "@/stores/command-palette-store"
 import { UserButton } from "@clerk/nextjs"
 import {
@@ -152,7 +153,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             collapsed ? "lg:flex-col lg:justify-center lg:gap-2" : ""
           }`}
         >
-          <UserButton />
+          <div className="flex items-center gap-1">
+            <UserButton />
+            <NotificationBell dropdownPosition="bottom" />
+          </div>
           <button
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             className="p-2 rounded-md text-slate dark:text-slate-dark hover:bg-paper dark:hover:bg-paper-dark transition-colors"
@@ -175,13 +179,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           >
             <Menu size={20} />
           </button>
-          <button
-            onClick={openCommandPalette}
-            className="p-2 -mr-2 rounded-md hover:bg-paper dark:hover:bg-paper-dark text-slate dark:text-slate-dark"
-            aria-label="Search"
-          >
-            <Search size={19} />
-          </button>
+          <div className="flex items-center -mr-2">
+            <NotificationBell dropdownPosition="top" />
+            <button
+              onClick={openCommandPalette}
+              className="p-2 rounded-md hover:bg-paper dark:hover:bg-paper-dark text-slate dark:text-slate-dark"
+              aria-label="Search"
+            >
+              <Search size={19} />
+            </button>
+          </div>
         </div>
 
         {/* Page content */}

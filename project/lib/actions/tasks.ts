@@ -21,6 +21,7 @@ import {
   setTaskLabels,
   updateTask as updateTaskRow,
 } from "@/lib/db/queries"
+import { notifyUser } from "@/lib/notifications"
 import {
   taskBulkDeleteSchema,
   taskBulkUpdateSchema,
@@ -73,6 +74,18 @@ export async function createTaskAction(
 
   await logActivity(task.id, user.id, "task_created", { title: task.title })
 
+  if (task.assigneeId && task.assigneeId !== user.id) {
+    notifyUser({
+      recipientId: task.assigneeId,
+      actorId: user.id,
+      type: "task_assigned",
+      taskId: task.id,
+      projectId,
+      title: "You were assigned a task",
+      body: task.title,
+    }).catch((err) => console.error("Failed to send assignment notification", err))
+  }
+
   revalidatePath(`/projects/${projectId}`)
 
   return { success: true, data: { ...task, labels } }
@@ -121,6 +134,17 @@ export async function updateTaskAction(
   const { listId, labelIds, ...fields } = parsed.data
   let updateData: Partial<Task> = fields
 
+  // A changed due date means a new deadline to potentially remind about —
+  // clear the guard so app/api/cron/due-date-reminders doesn't skip it as
+  // "already reminded" based on the old date.
+  if ("dueDate" in fields) {
+    const prevTime = previous.dueDate ? new Date(previous.dueDate).getTime() : null
+    const nextTime = fields.dueDate ? new Date(fields.dueDate).getTime() : null
+    if (prevTime !== nextTime) {
+      updateData = { ...updateData, dueReminderSentAt: null }
+    }
+  }
+
   // moving to a different column -> verify ownership of the destination and
   // re-slot the task at the end of it (drag-and-drop reordering uses
   // moveTaskAction/moveTask instead)
@@ -147,6 +171,23 @@ export async function updateTaskAction(
   const labels = await getLabelsForTask(taskId)
 
   await logTaskUpdateActivities(previous, fields, listId, user.id)
+
+  if (
+    "assigneeId" in fields &&
+    fields.assigneeId &&
+    fields.assigneeId !== previous.assigneeId &&
+    fields.assigneeId !== user.id
+  ) {
+    notifyUser({
+      recipientId: fields.assigneeId,
+      actorId: user.id,
+      type: "task_assigned",
+      taskId: task.id,
+      projectId,
+      title: "You were assigned a task",
+      body: task.title,
+    }).catch((err) => console.error("Failed to send assignment notification", err))
+  }
 
   revalidatePath(`/projects/${projectId}`)
 

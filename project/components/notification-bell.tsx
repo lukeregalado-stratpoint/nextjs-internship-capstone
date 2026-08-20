@@ -1,8 +1,10 @@
 "use client"
 
 import Link from "next/link"
+import { useState } from "react"
 import { Bell, Check } from "lucide-react"
 import { useNotifications } from "@/hooks/use-notifications"
+import { useInvitations } from "@/hooks/use-invitations"
 import { useNotificationStore } from "@/stores/notification-store"
 import type { Notification as AppNotification } from "@/lib/db/schema"
 
@@ -28,9 +30,33 @@ export function NotificationBell({
   dropdownPosition?: "top" | "bottom"
 }) {
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications()
+  const { acceptInvitationForProject, declineInvitationForProject, isPending: isRespondingToInvite } =
+    useInvitations()
   const isOpen = useNotificationStore((s) => s.isOpen)
   const toggleOpen = useNotificationStore((s) => s.toggleOpen)
   const setOpen = useNotificationStore((s) => s.setOpen)
+
+  // Notifications aren't deleted on accept/decline (they're a permanent
+  // log), so once a project_invitation notification is responded to here
+  // we track it locally to swap its buttons for a static "Accepted" /
+  // "Declined" label instead of re-showing Accept/Decline on every open.
+  const [respondedIds, setRespondedIds] = useState<Record<string, "accepted" | "declined">>({})
+
+  function handleAccept(n: AppNotification) {
+    if (!n.projectId) return
+    acceptInvitationForProject(n.projectId, () => {
+      setRespondedIds((prev) => ({ ...prev, [n.id]: "accepted" }))
+      if (!n.readAt) markRead(n.id)
+    })
+  }
+
+  function handleDecline(n: AppNotification) {
+    if (!n.projectId) return
+    declineInvitationForProject(n.projectId, () => {
+      setRespondedIds((prev) => ({ ...prev, [n.id]: "declined" }))
+      if (!n.readAt) markRead(n.id)
+    })
+  }
 
   return (
     <div className="relative">
@@ -74,37 +100,89 @@ export function NotificationBell({
               </p>
             ) : (
               <ul className="divide-y divide-line dark:divide-line-dark">
-                {notifications.map((n) => (
-                  <li key={n.id}>
-                    <Link
-                      href={notificationHref(n)}
-                      onClick={() => {
-                        if (!n.readAt) markRead(n.id)
-                        setOpen(false)
-                      }}
-                      className={`block px-3 py-2.5 hover:bg-paper dark:hover:bg-paper-dark transition-colors ${
-                        n.readAt ? "" : "bg-primary/5"
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        {!n.readAt && (
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                {notifications.map((n) => {
+                  const responded = respondedIds[n.id]
+                  const isPendingInvite = n.type === "project_invitation" && !responded
+
+                  const body = (
+                    <div className="flex items-start gap-2">
+                      {!n.readAt && (
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                      )}
+                      <div className={n.readAt ? "pl-3.5" : ""}>
+                        <p className="text-sm text-ink dark:text-paper">{n.title}</p>
+                        {n.body && (
+                          <p className="text-xs text-slate dark:text-slate-dark mt-0.5">{n.body}</p>
                         )}
-                        <div className={n.readAt ? "pl-3.5" : ""}>
-                          <p className="text-sm text-ink dark:text-paper">{n.title}</p>
-                          {n.body && (
-                            <p className="text-xs text-slate dark:text-slate-dark mt-0.5">
-                              {n.body}
-                            </p>
-                          )}
-                          <p className="text-[11px] text-slate dark:text-slate-dark mt-1">
-                            {timeAgo(n.createdAt)}
+                        <p className="text-[11px] text-slate dark:text-slate-dark mt-1">
+                          {timeAgo(n.createdAt)}
+                        </p>
+
+                        {isPendingInvite && (
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                handleAccept(n)
+                              }}
+                              disabled={isRespondingToInvite}
+                              className="px-2.5 py-1 text-xs font-medium rounded-md bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                handleDecline(n)
+                              }}
+                              disabled={isRespondingToInvite}
+                              className="px-2.5 py-1 text-xs font-medium rounded-md border border-line dark:border-line-dark text-slate dark:text-slate-dark hover:bg-paper dark:hover:bg-paper-dark disabled:opacity-50 transition-colors"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        )}
+                        {responded && (
+                          <p className="mt-1.5 text-[11px] font-medium text-slate dark:text-slate-dark">
+                            {responded === "accepted" ? "Invitation accepted" : "Invitation declined"}
                           </p>
-                        </div>
+                        )}
                       </div>
-                    </Link>
-                  </li>
-                ))}
+                    </div>
+                  )
+
+                  const rowClassName = `block px-3 py-2.5 transition-colors ${
+                    n.readAt ? "" : "bg-primary/5"
+                  } ${isPendingInvite ? "" : "hover:bg-paper dark:hover:bg-paper-dark"}`
+
+                  // A pending invitation isn't "go look at this" like other
+                  // notification types — it needs an explicit Accept/Decline,
+                  // so it renders as a plain row instead of a navigating Link.
+                  if (isPendingInvite) {
+                    return (
+                      <li key={n.id} className={rowClassName}>
+                        {body}
+                      </li>
+                    )
+                  }
+
+                  return (
+                    <li key={n.id}>
+                      <Link
+                        href={notificationHref(n)}
+                        onClick={() => {
+                          if (!n.readAt) markRead(n.id)
+                          setOpen(false)
+                        }}
+                        className={`${rowClassName} hover:bg-paper dark:hover:bg-paper-dark`}
+                      >
+                        {body}
+                      </Link>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </div>

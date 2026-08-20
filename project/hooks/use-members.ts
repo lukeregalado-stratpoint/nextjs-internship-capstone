@@ -1,15 +1,18 @@
 "use client"
 
-import { useRef, useState, useTransition } from "react"
+import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   addMemberAction,
   addMemberByIdAction,
+  getPendingInvitationsAction,
+  revokeInvitationAction,
   searchMembersAction,
   updateMemberRoleAction,
   removeMemberAction,
 } from "@/lib/actions/members"
 import type { AddMemberByUserIdInput, AddMemberInput, UpdateMemberRoleInput } from "@/lib/validations"
+import type { ProjectInvitation } from "@/lib/db/schema"
 
 export interface MemberSearchResult {
   id: string
@@ -17,10 +20,31 @@ export interface MemberSearchResult {
   email: string
 }
 
+export type PendingInvitation = ProjectInvitation & {
+  invitee: { id: string; name: string; email: string }
+}
+
 export function useMembers(projectId: string) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  // Loaded client-side rather than threaded through as a server prop, so
+  // adopting this hook doesn't require every page that renders
+  // ManageMembersModal to also fetch+pass invitations.
+  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([])
+  const [invitationsLoaded, setInvitationsLoaded] = useState(false)
+
+  const refreshInvitations = useCallback(() => {
+    getPendingInvitationsAction(projectId).then((result) => {
+      setInvitationsLoaded(true)
+      if (result.success) setPendingInvitations(result.data)
+    })
+  }, [projectId])
+
+  useEffect(() => {
+    refreshInvitations()
+  }, [refreshInvitations])
 
   // Search runs independently of the mutation `isPending`/`error` state
   // above — a slow or failed search shouldn't disable the Add button or
@@ -62,6 +86,7 @@ export function useMembers(projectId: string) {
         setError(result.error)
         return
       }
+      refreshInvitations()
       router.refresh()
       onSuccess?.()
     })
@@ -76,6 +101,21 @@ export function useMembers(projectId: string) {
         return
       }
       clearSearch()
+      refreshInvitations()
+      router.refresh()
+      onSuccess?.()
+    })
+  }
+
+  function revokeInvitation(invitationId: string, onSuccess?: () => void) {
+    setError(null)
+    startTransition(async () => {
+      const result = await revokeInvitationAction({ invitationId })
+      if (!result.success) {
+        setError(result.error)
+        return
+      }
+      refreshInvitations()
       router.refresh()
       onSuccess?.()
     })
@@ -122,5 +162,8 @@ export function useMembers(projectId: string) {
     clearSearch,
     searchResults,
     isSearching,
+    pendingInvitations,
+    invitationsLoaded,
+    revokeInvitation,
   }
 }

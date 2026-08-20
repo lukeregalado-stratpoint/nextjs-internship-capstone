@@ -2,11 +2,13 @@
 
 import { requireUser } from "@/lib/auth"
 import {
+  getNotificationPreferences,
   getNotificationsForUser,
   getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
   ownsNotification,
+  upsertNotificationPreferences,
 } from "@/lib/db/queries"
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
@@ -43,4 +45,47 @@ export async function markAllNotificationsReadAction(): Promise<ActionResult<{ o
   const user = await requireUser()
   await markAllNotificationsRead(user.id)
   return { success: true, data: { ok: true } }
+}
+
+export type NotificationPreferencesPayload = {
+  taskAssigned: boolean
+  commentAdded: boolean
+  dueDateReminder: boolean
+}
+
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferencesPayload = {
+  taskAssigned: true,
+  commentAdded: true,
+  dueDateReminder: true,
+}
+
+export async function getNotificationPreferencesAction(): Promise<
+  ActionResult<NotificationPreferencesPayload>
+> {
+  const user = await requireUser()
+  const prefs = await getNotificationPreferences(user.id)
+  if (!prefs) return { success: true, data: DEFAULT_NOTIFICATION_PREFERENCES }
+  return {
+    success: true,
+    data: {
+      taskAssigned: prefs.taskAssigned,
+      commentAdded: prefs.commentAdded,
+      dueDateReminder: prefs.dueDateReminder,
+    },
+  }
+}
+
+export async function updateNotificationPreferencesAction(
+  updates: Partial<NotificationPreferencesPayload>
+): Promise<ActionResult<NotificationPreferencesPayload>> {
+  const user = await requireUser()
+  const prefs = await upsertNotificationPreferences(user.id, updates)
+  return {
+    success: true,
+    data: {
+      taskAssigned: prefs.taskAssigned,
+      commentAdded: prefs.commentAdded,
+      dueDateReminder: prefs.dueDateReminder,
+    },
+  }
 }

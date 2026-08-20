@@ -170,6 +170,13 @@ export const addMemberByUserIdSchema = z.object({
 })
 export type AddMemberByUserIdInput = z.infer<typeof addMemberByUserIdSchema>
 
+// PROJECT INVITATIONS
+
+export const invitationIdSchema = z.object({
+  invitationId: z.string().uuid(),
+})
+export type InvitationIdInput = z.infer<typeof invitationIdSchema>
+
 // COMMENTS
 
 export const commentSchema = z.object({

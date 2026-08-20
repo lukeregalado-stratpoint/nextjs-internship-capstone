@@ -1,7 +1,66 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { updateProfileAction } from "@/lib/actions/users"
+import {
+  getNotificationPreferencesAction,
+  updateNotificationPreferencesAction,
+  type NotificationPreferencesPayload,
+} from "@/lib/actions/notifications"
+
+const NOTIFICATION_TOGGLES: {
+  key: keyof NotificationPreferencesPayload
+  label: string
+  description: string
+}[] = [
+  {
+    key: "taskAssigned",
+    label: "Task assigned",
+    description: "When someone assigns a task to you",
+  },
+  {
+    key: "commentAdded",
+    label: "Comments",
+    description: "When someone comments on one of your tasks",
+  },
+  {
+    key: "dueDateReminder",
+    label: "Due date reminders",
+    description: "When a task assigned to you is coming up on its due date",
+  },
+]
+
+function ToggleSwitch({
+  checked,
+  onChange,
+  disabled,
+  label,
+}: {
+  checked: boolean
+  onChange: () => void
+  disabled?: boolean
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={onChange}
+      disabled={disabled}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+        checked ? "bg-primary" : "bg-muted"
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+          checked ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
+    </button>
+  )
+}
 
 export function SettingsForm({ user }: { user: { name: string; email: string } }) {
   const [name, setName] = useState(user.name)
@@ -34,69 +93,135 @@ export function SettingsForm({ user }: { user: { name: string; email: string } }
   }
 
   return (
-    <div className="lg:col-span-2 bg-card rounded-lg border border-border p-6">
-      <h3 className="text-lg font-semibold text-foreground dark:text-paper mb-6">Profile Settings</h3>
+    <div className="lg:col-span-2 space-y-6">
+      <div className="bg-card rounded-lg border border-border p-6">
+        <h3 className="text-lg font-semibold text-foreground dark:text-paper mb-6">Profile Settings</h3>
 
-      <div className="space-y-6">
-        <div>
-          <label htmlFor="full-name" className="block text-sm font-medium text-foreground dark:text-paper mb-2">
-            Full Name
-          </label>
-          <input
-            id="full-name"
-            type="text"
-            value={name}
-            onChange={(e) => {
-              setSaved(false)
-              setName(e.target.value)
-            }}
-            className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground dark:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
+        <div className="space-y-6">
+          <div>
+            <label htmlFor="full-name" className="block text-sm font-medium text-foreground dark:text-paper mb-2">
+              Full Name
+            </label>
+            <input
+              id="full-name"
+              type="text"
+              value={name}
+              onChange={(e) => {
+                setSaved(false)
+                setName(e.target.value)
+              }}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground dark:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
 
-        {/* Read-only: `email` is populated from Clerk and stays in sync via
-            the Clerk webhook, so it isn't editable here — changing it in
-            this app without going through the auth provider would desync
-            the two. Clerk's own account UI (the UserButton in the sidebar)
-            is where email actually gets changed. */}
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-foreground dark:text-paper mb-2">
-            Email Address
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={user.email}
-            disabled
-            className="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
-          />
-          <p className="text-xs text-muted-foreground mt-1.5">
-            Managed through your sign-in provider — use the account menu to change it.
-          </p>
-        </div>
+          {/* Read-only: `email` is populated from Clerk and stays in sync via
+              the Clerk webhook, so it isn't editable here — changing it in
+              this app without going through the auth provider would desync
+              the two. Clerk's own account UI (the UserButton in the sidebar)
+              is where email actually gets changed. */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-foreground dark:text-paper mb-2">
+              Email Address
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={user.email}
+              disabled
+              className="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
+            />
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Managed through your sign-in provider — use the account menu to change it.
+            </p>
+          </div>
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-        {saved && !error && <p className="text-sm text-green-600 dark:text-green-400">Saved.</p>}
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          {saved && !error && <p className="text-sm text-green-600 dark:text-green-400">Saved.</p>}
 
-        <div className="flex justify-end space-x-3 pt-4">
-          <button
-            type="button"
-            onClick={handleCancel}
-            disabled={!dirty || isPending}
-            className="px-4 py-2 text-muted-foreground dark:text-paper/60 hover:bg-muted rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!canSave}
-            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isPending ? "Saving..." : "Save Changes"}
-          </button>
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={!dirty || isPending}
+              className="px-4 py-2 text-muted-foreground dark:text-paper/60 hover:bg-muted rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!canSave}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isPending ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
         </div>
       </div>
+
+      <NotificationPreferencesCard />
+    </div>
+  )
+}
+
+function NotificationPreferencesCard() {
+  const [prefs, setPrefs] = useState<NotificationPreferencesPayload | null>(null)
+  const [pendingKey, setPendingKey] = useState<keyof NotificationPreferencesPayload | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    getNotificationPreferencesAction().then((result) => {
+      if (result.success) setPrefs(result.data)
+    })
+  }, [])
+
+  function handleToggle(key: keyof NotificationPreferencesPayload) {
+    if (!prefs || pendingKey) return
+
+    const next = { ...prefs, [key]: !prefs[key] }
+    const previous = prefs
+    setError(null)
+    setPrefs(next) // optimistic
+    setPendingKey(key)
+
+    updateNotificationPreferencesAction({ [key]: next[key] }).then((result) => {
+      setPendingKey(null)
+      if (!result.success) {
+        setPrefs(previous) // revert
+        setError(result.error)
+        return
+      }
+      setPrefs(result.data)
+    })
+  }
+
+  return (
+    <div className="bg-card rounded-lg border border-border p-6">
+      <h3 className="text-lg font-semibold text-foreground dark:text-paper mb-1">Notifications</h3>
+      <p className="text-sm text-muted-foreground mb-6">Choose what you want to be notified about.</p>
+
+      {!prefs ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : (
+        <div className="space-y-4">
+          {NOTIFICATION_TOGGLES.map(({ key, label, description }) => (
+            <div key={key} className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground dark:text-paper">{label}</p>
+                <p className="text-xs text-muted-foreground">{description}</p>
+              </div>
+              <ToggleSwitch
+                checked={prefs[key]}
+                onChange={() => handleToggle(key)}
+                disabled={pendingKey !== null}
+                label={label}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {error && <p className="text-sm text-red-600 dark:text-red-400 mt-4">{error}</p>}
     </div>
   )
 }

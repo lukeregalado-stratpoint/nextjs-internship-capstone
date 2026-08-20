@@ -5,21 +5,28 @@ import {
   comments,
   labels,
   lists,
+  notificationPreferences,
   notifications,
+  projectInvitations,
   projectMembers,
   projects,
   taskLabels,
   tasks,
   users,
   type ActivityType,
+  type InvitationStatus,
   type NewActivity,
   type NewComment,
   type NewLabel,
   type NewList,
   type NewNotification,
+  type NewNotificationPreferences,
   type NewProject,
+  type NewProjectInvitation,
   type NewProjectMember,
   type NewTask,
+  type NotificationPreferences,
+  type NotificationType,
   type ProjectMember,
 } from "@/lib/db/schema"
 
@@ -197,6 +204,16 @@ export async function ownsProject(projectId: string, userId: string) {
     columns: { id: true },
   })
   return !!project
+}
+
+/** Just id/name — used to compose notification text without pulling the full project graph. */
+export async function getProjectSummary(projectId: string) {
+  const [project] = await db
+    .select({ id: projects.id, name: projects.name })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1)
+  return project ?? null
 }
 
 export async function getProjectsForOwner(userId: string) {
@@ -595,7 +612,16 @@ export async function searchUsersForProject(projectId: string, query: string, li
   })
   if (!project) return []
 
-  const excludeIds = [project.ownerId, ...project.members.map((m) => m.userId)]
+  const pendingInvites = await db.query.projectInvitations.findMany({
+    where: and(eq(projectInvitations.projectId, projectId), eq(projectInvitations.status, "pending")),
+    columns: { inviteeId: true },
+  })
+
+  const excludeIds = [
+    project.ownerId,
+    ...project.members.map((m) => m.userId),
+    ...pendingInvites.map((i) => i.inviteeId),
+  ]
   const pattern = `%${trimmed}%`
 
   return db
@@ -639,6 +665,93 @@ export async function updateProjectMemberRole(memberId: string, role: ProjectMem
 
 export async function removeProjectMember(memberId: string) {
   await db.delete(projectMembers).where(eq(projectMembers.id, memberId))
+}
+
+// PROJECT INVITATIONS
+
+/**
+ * Creates a pending invitation, or — if this project/invitee pair already
+ * has a row (e.g. a previous invite was declined, or expired off-screen) —
+ * resets that existing row back to pending with the latest role instead of
+ * inserting a duplicate. Relies on the unique index on (projectId,
+ * inviteeId). This is the only way a project_members row gets created now;
+ * see acceptInvitationAction in lib/actions/invitations.ts.
+ */
+export async function createOrRefreshInvitation(data: NewProjectInvitation) {
+  const [invitation] = await db
+    .insert(projectInvitations)
+    .values(data)
+    .onConflictDoUpdate({
+      target: [projectInvitations.projectId, projectInvitations.inviteeId],
+      set: {
+        inviterId: data.inviterId,
+        role: data.role,
+        status: "pending",
+        createdAt: new Date(),
+        respondedAt: null,
+      },
+    })
+    .returning()
+  return invitation
+}
+
+/** Used to block re-inviting someone who already has an outstanding invite. */
+export async function getPendingInvitation(projectId: string, inviteeId: string) {
+  return db.query.projectInvitations.findFirst({
+    where: and(
+      eq(projectInvitations.projectId, projectId),
+      eq(projectInvitations.inviteeId, inviteeId),
+      eq(projectInvitations.status, "pending")
+    ),
+  })
+}
+
+export async function getInvitationById(invitationId: string) {
+  return db.query.projectInvitations.findFirst({
+    where: eq(projectInvitations.id, invitationId),
+    with: {
+      project: { columns: { id: true, name: true, ownerId: true } },
+      inviter: { columns: { id: true, name: true, email: true } },
+      invitee: { columns: { id: true, name: true, email: true } },
+    },
+  })
+}
+
+/** Pending invitations on a project, for the "manage members" modal's owner-side view. */
+export async function getPendingInvitationsForProject(projectId: string) {
+  return db.query.projectInvitations.findMany({
+    where: and(eq(projectInvitations.projectId, projectId), eq(projectInvitations.status, "pending")),
+    orderBy: [desc(projectInvitations.createdAt)],
+    with: {
+      invitee: { columns: { id: true, name: true, email: true } },
+    },
+  })
+}
+
+/** Pending invitations addressed to a user, for their notification bell / an "invites" list. */
+export async function getPendingInvitationsForUser(userId: string) {
+  return db.query.projectInvitations.findMany({
+    where: and(eq(projectInvitations.inviteeId, userId), eq(projectInvitations.status, "pending")),
+    orderBy: [desc(projectInvitations.createdAt)],
+    with: {
+      project: { columns: { id: true, name: true } },
+      inviter: { columns: { id: true, name: true, email: true } },
+    },
+  })
+}
+
+export async function updateInvitationStatus(invitationId: string, status: InvitationStatus) {
+  const [invitation] = await db
+    .update(projectInvitations)
+    .set({ status, respondedAt: new Date() })
+    .where(eq(projectInvitations.id, invitationId))
+    .returning()
+  return invitation ?? null
+}
+
+/** Owner revoking a still-pending invite (equivalent of removeProjectMember, pre-acceptance). */
+export async function deleteInvitation(invitationId: string) {
+  await db.delete(projectInvitations).where(eq(projectInvitations.id, invitationId))
 }
 
 /** Owner or member — used to gate project-detail page access. */
@@ -858,6 +971,45 @@ export async function markAllNotificationsRead(userId: string) {
     .update(notifications)
     .set({ readAt: new Date() })
     .where(and(eq(notifications.recipientId, userId), isNull(notifications.readAt)))
+}
+
+// NOTIFICATION PREFERENCES
+
+export async function getNotificationPreferences(userId: string) {
+  const [prefs] = await db
+    .select()
+    .from(notificationPreferences)
+    .where(eq(notificationPreferences.userId, userId))
+  return prefs ?? null
+}
+
+export async function upsertNotificationPreferences(
+  userId: string,
+  updates: Partial<Pick<NewNotificationPreferences, "taskAssigned" | "commentAdded" | "dueDateReminder">>
+) {
+  const [prefs] = await db
+    .insert(notificationPreferences)
+    .values({ userId, ...updates })
+    .onConflictDoUpdate({
+      target: notificationPreferences.userId,
+      set: { ...updates, updatedAt: new Date() },
+    })
+    .returning()
+  return prefs
+}
+
+const NOTIFICATION_PREFERENCE_COLUMN_BY_TYPE: Record<NotificationType, keyof NotificationPreferences> = {
+  task_assigned: "taskAssigned",
+  comment_added: "commentAdded",
+  due_date_reminder: "dueDateReminder",
+  project_invitation: "projectInvitation",
+}
+
+/** No row yet = every type enabled, matching the notificationPreferences column defaults. */
+export async function isNotificationTypeEnabled(userId: string, type: NotificationType) {
+  const prefs = await getNotificationPreferences(userId)
+  if (!prefs) return true
+  return prefs[NOTIFICATION_PREFERENCE_COLUMN_BY_TYPE[type]]
 }
 
 // ANALYTICS

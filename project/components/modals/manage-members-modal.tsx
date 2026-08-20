@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type FormEvent } from "react"
-import { X, UserPlus, Trash2, Search } from "lucide-react"
+import { X, UserPlus, Trash2, Search, Mail } from "lucide-react"
 import { useMembers, type MemberSearchResult } from "@/hooks/use-members"
 import type { ProjectMember } from "@/lib/db/schema"
 
@@ -46,11 +46,14 @@ export function ManageMembersModal({
     clearSearch,
     searchResults,
     isSearching,
+    pendingInvitations,
+    revokeInvitation,
   } = useMembers(projectId)
   const [query, setQuery] = useState("")
   const [role, setRole] = useState<ProjectMember["role"]>("developer")
   const [selected, setSelected] = useState<MemberSearchResult | null>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [invitedMessage, setInvitedMessage] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Debounce the autocomplete: wait for a pause in typing before hitting
@@ -93,8 +96,14 @@ export function ManageMembersModal({
 
   function handleAdd(e: FormEvent) {
     e.preventDefault()
+    setInvitedMessage(null)
+
     if (selected) {
-      addMemberById({ projectId, userId: selected.id, role }, resetAddForm)
+      const name = selected.name
+      addMemberById({ projectId, userId: selected.id, role }, () => {
+        resetAddForm()
+        setInvitedMessage(`Invitation sent to ${name}.`)
+      })
       return
     }
     // Fallback: no autocomplete suggestion was picked (e.g. they typed a
@@ -102,7 +111,10 @@ export function ManageMembersModal({
     // is prefix/substring matched, this catches an exact-match edge case).
     const typed = query.trim()
     if (!typed) return
-    addMember({ projectId, email: typed, role }, resetAddForm)
+    addMember({ projectId, email: typed, role }, () => {
+      resetAddForm()
+      setInvitedMessage(`Invitation sent to ${typed}.`)
+    })
   }
 
   function handleRemove(memberId: string, name: string) {
@@ -190,11 +202,49 @@ export function ManageMembersModal({
             disabled={isPending}
             className="inline-flex items-center px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
-            <UserPlus size={16} className="mr-1" /> Add
+            <UserPlus size={16} className="mr-1" /> Invite
           </button>
         </form>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
+        {invitedMessage && !error && (
+          <p className="text-sm text-muted-foreground">{invitedMessage}</p>
+        )}
+
+        {pendingInvitations.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Pending invitations
+            </p>
+            {pendingInvitations.map((invite) => (
+              <div
+                key={invite.id}
+                className="flex items-center justify-between py-2 border-b border-border last:border-0"
+              >
+                <div className="flex items-center gap-2">
+                  <Mail size={14} className="text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {invite.invitee.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {invite.invitee.email} · {ROLE_LABELS[invite.role]}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => revokeInvitation(invite.id)}
+                  disabled={isPending}
+                  className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded disabled:opacity-50"
+                  aria-label={`Revoke invitation to ${invite.invitee.name}`}
+                  title="Revoke invitation"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="space-y-1 max-h-72 overflow-y-auto">
           <div className="flex items-center justify-between py-2 border-b border-border">

@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events"
-import { createNotification } from "@/lib/db/queries"
+import { createNotification, isNotificationTypeEnabled } from "@/lib/db/queries"
 import type { NewNotification, Notification } from "@/lib/db/schema"
 
 // A single process-wide emitter, one "channel" per recipient (`user:<id>`).
@@ -38,12 +38,15 @@ export function subscribeToNotifications(
 
 /**
  * Creates a notification row and pushes it live to the recipient's open SSE
- * connection(s), if any. Same "best-effort, non-fatal" spirit as the
- * activity-logging helpers in queries.ts — callers wrap this in try/catch
- * (see lib/actions/tasks.ts) so a failure here never blocks or rolls back
- * whatever action triggered it.
+ * connection(s), if any. Returns null (no row created, nothing emitted) if
+ * the recipient has disabled this notification type in their preferences.
+ * Same "best-effort, non-fatal" spirit as before — callers wrap this in
+ * try/catch and shouldn't assume a non-null return.
  */
-export async function notifyUser(data: NewNotification) {
+export async function notifyUser(data: NewNotification): Promise<Notification | null> {
+  const enabled = await isNotificationTypeEnabled(data.recipientId, data.type)
+  if (!enabled) return null
+
   const notification = await createNotification(data)
   notificationEmitter.emit(channelFor(data.recipientId), notification)
   return notification

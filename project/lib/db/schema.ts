@@ -44,13 +44,16 @@ import {
   uuid,
   pgEnum,
   index,
+  uniqueIndex,
   jsonb,
+  boolean,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
 
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"])
 export const projectRoleEnum = pgEnum("project_role", ["product_owner", "scrum_master", "developer", "stakeholder"])
+export const invitationStatusEnum = pgEnum("invitation_status", ["pending", "accepted", "declined"])
 export const activityTypeEnum = pgEnum("activity_type", [
   "task_created",
   "title_changed",
@@ -68,6 +71,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "task_assigned",
   "comment_added",
   "due_date_reminder",
+  "project_invitation",
 ])
 
 // TABLES
@@ -120,6 +124,45 @@ export const projectMembers = pgTable(
   (table) => [
     index("project_members_project_id_idx").on(table.projectId),
     index("project_members_user_id_idx").on(table.userId),
+  ]
+)
+
+// Adding someone to a project no longer inserts into project_members
+// directly — it creates a pending row here, the invitee gets a
+// notification, and only accepting turns it into a real project_members
+// row (see addProjectMember calls in acceptInvitationAction). One row is
+// kept per (project, invitee) invite ever sent rather than deleted on
+// respond, so "already invited"/"declined before" can be checked without a
+// separate audit table. A fresh invite after a decline re-uses the same
+// row (see createOrRefreshInvitation) rather than piling up duplicates.
+export const projectInvitations = pgTable(
+  "project_invitations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    inviterId: uuid("inviter_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    inviteeId: uuid("invitee_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: projectRoleEnum("role").notNull().default("developer"),
+    status: invitationStatusEnum("status").notNull().default("pending"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    respondedAt: timestamp("responded_at"),
+  },
+  (table) => [
+    index("project_invitations_project_id_idx").on(table.projectId),
+    index("project_invitations_invitee_id_idx").on(table.inviteeId),
+    // One invitation row per (project, invitee) — re-inviting after a
+    // decline upserts this row (onConflictDoUpdate) instead of inserting
+    // a duplicate.
+    uniqueIndex("project_invitations_project_invitee_unique").on(
+      table.projectId,
+      table.inviteeId
+    ),
   ]
 )
  
@@ -274,16 +317,41 @@ export const notifications = pgTable(
   ]
 )
 
+// One row per user, created lazily on first preference change (see
+// upsertNotificationPreferences). Absence of a row means "all enabled" —
+// isNotificationTypeEnabled() falls back to true when no row exists, so
+// this matches the column defaults below without needing a backfill.
+export const notificationPreferences = pgTable(
+  "notification_preferences",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" })
+      .unique(),
+    taskAssigned: boolean("task_assigned").notNull().default(true),
+    commentAdded: boolean("comment_added").notNull().default(true),
+    dueDateReminder: boolean("due_date_reminder").notNull().default(true),
+    projectInvitation: boolean("project_invitation").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [index("notification_preferences_user_id_idx").on(table.userId)]
+)
+
 // RELATIONS
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   ownedProjects: many(projects),
   assignedTasks: many(tasks),
   comments: many(comments),
   activities: many(activities),
   projectMemberships: many(projectMembers),
+  sentInvitations: many(projectInvitations, { relationName: "invitation_inviter" }),
+  receivedInvitations: many(projectInvitations, { relationName: "invitation_invitee" }),
   receivedNotifications: many(notifications, { relationName: "notification_recipient" }),
   sentNotifications: many(notifications, { relationName: "notification_actor" }),
+  notificationPreferences: one(notificationPreferences),
 }))
  
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -293,6 +361,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   }),
   lists: many(lists),
   members: many(projectMembers),
+  invitations: many(projectInvitations),
   labels: many(labels),
 }))
 
@@ -304,6 +373,25 @@ export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
   user: one(users, {
     fields: [projectMembers.userId],
     references: [users.id],
+  }),
+}))
+
+// Two FKs into `users` (inviter, invitee) need relationName to disambiguate,
+// same pattern as notificationsRelations below.
+export const projectInvitationsRelations = relations(projectInvitations, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectInvitations.projectId],
+    references: [projects.id],
+  }),
+  inviter: one(users, {
+    fields: [projectInvitations.inviterId],
+    references: [users.id],
+    relationName: "invitation_inviter",
+  }),
+  invitee: one(users, {
+    fields: [projectInvitations.inviteeId],
+    references: [users.id],
+    relationName: "invitation_invitee",
   }),
 }))
  
@@ -374,6 +462,13 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }))
 
+export const notificationPreferencesRelations = relations(notificationPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [notificationPreferences.userId],
+    references: [users.id],
+  }),
+}))
+
 export const labelsRelations = relations(labels, ({ one, many }) => ({
   project: one(projects, {
     fields: [labels.projectId],
@@ -402,6 +497,10 @@ export type NewProject = typeof projects.$inferInsert
 
 export type ProjectMember = typeof projectMembers.$inferSelect
 export type NewProjectMember = typeof projectMembers.$inferInsert
+
+export type ProjectInvitation = typeof projectInvitations.$inferSelect
+export type NewProjectInvitation = typeof projectInvitations.$inferInsert
+export type InvitationStatus = (typeof invitationStatusEnum.enumValues)[number]
  
 export type List = typeof lists.$inferSelect
 export type NewList = typeof lists.$inferInsert
@@ -425,3 +524,6 @@ export type ActivityType = (typeof activityTypeEnum.enumValues)[number]
 export type Notification = typeof notifications.$inferSelect
 export type NewNotification = typeof notifications.$inferInsert
 export type NotificationType = (typeof notificationTypeEnum.enumValues)[number]
+
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect
+export type NewNotificationPreferences = typeof notificationPreferences.$inferInsert

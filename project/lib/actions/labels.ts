@@ -49,7 +49,7 @@ export async function createLabelAction(
 
   const label = await createLabelRow(parsed.data)
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: label }
 }
@@ -76,7 +76,7 @@ export async function updateLabelAction(
     return { success: false, error: "Label not found" }
   }
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: label }
 }
@@ -94,7 +94,7 @@ export async function deleteLabelAction(
 
   await deleteLabelRow(labelId)
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: { id: labelId } }
 }

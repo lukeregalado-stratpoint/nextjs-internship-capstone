@@ -58,7 +58,6 @@ export async function updateProjectAction(
   }
 
   revalidatePath("/projects")
-  revalidatePath(`/projects/${projectId}`)
   revalidatePath("/dashboard")
 
   return { success: true, data: project }

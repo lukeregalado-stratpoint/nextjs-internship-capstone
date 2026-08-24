@@ -75,10 +75,11 @@ export function EditProjectModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
+            <label htmlFor="edit-project-name" className="block text-sm font-medium text-foreground mb-1">
               Name
             </label>
             <input
+              id="edit-project-name"
               required
               maxLength={120}
               value={name}
@@ -88,10 +89,11 @@ export function EditProjectModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
+            <label htmlFor="edit-project-description" className="block text-sm font-medium text-foreground mb-1">
               Description
             </label>
             <textarea
+              id="edit-project-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -101,10 +103,11 @@ export function EditProjectModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
+            <label htmlFor="edit-project-due-date" className="block text-sm font-medium text-foreground mb-1">
               Due date
             </label>
             <input
+              id="edit-project-due-date"
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}

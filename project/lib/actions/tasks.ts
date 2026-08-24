@@ -86,7 +86,7 @@ export async function createTaskAction(
     }).catch((err) => console.error("Failed to send assignment notification", err))
   }
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: { ...task, labels } }
 }
@@ -189,7 +189,7 @@ export async function updateTaskAction(
     }).catch((err) => console.error("Failed to send assignment notification", err))
   }
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: { ...task, labels } }
 }
@@ -278,7 +278,7 @@ export async function deleteTaskAction(
 
   await deleteTaskRow(taskId)
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: { id: taskId } }
 }
@@ -320,7 +320,7 @@ export async function moveTaskAction(
     }
   }
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: { taskId: parsed.data.taskId } }
 }
@@ -348,7 +348,7 @@ export async function bulkDeleteTasksAction(
 
   await bulkDeleteTasksRow(parsed.data.taskIds)
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: { ids: parsed.data.taskIds } }
 }
@@ -423,7 +423,7 @@ export async function bulkUpdateTasksAction(
     console.error("Failed to log bulk update activity", err)
   }
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: { ids: taskIds } }
 }

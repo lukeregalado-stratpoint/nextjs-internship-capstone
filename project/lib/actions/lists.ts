@@ -59,7 +59,7 @@ export async function updateListAction(
     return { success: false, error: "Column not found" }
   }
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: list }
 }
@@ -77,7 +77,7 @@ export async function deleteListAction(
 
   await deleteListRow(listId)
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: { id: listId } }
 }

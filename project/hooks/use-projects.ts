@@ -24,6 +24,7 @@ export function useProjects() {
       }
       router.refresh()
       onSuccess?.()
+      router.push(`/projects/${result.data.id}`)
     })
   }
 

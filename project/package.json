@@ -21,7 +21,13 @@
     "start": "next start",
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",
@@ -59,7 +65,14 @@
     "postcss": "^8.5",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.1",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/user-event": "^14.5.2",
+    "@vitest/coverage-v8": "^4.1.10",
+    "jsdom": "^25.0.1",
+    "@playwright/test": "^1.49.0",
+    "@clerk/testing": "^1.4.16"
   },
   "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39"
 }

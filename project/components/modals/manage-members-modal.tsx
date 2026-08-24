@@ -146,10 +146,10 @@ export function ManageMembersModal({
             />
             <input
               type="text"
+              aria-label="Search by name or email"
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
               onFocus={() => setDropdownOpen(true)}
-              // Delay so a click on a dropdown option registers before blur closes it.
               onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
               placeholder="Search by name or email…"
               autoComplete="off"
@@ -187,6 +187,7 @@ export function ManageMembersModal({
             )}
           </div>
           <select
+            aria-label="Role"
             value={role}
             onChange={(e) => setRole(e.target.value as ProjectMember["role"])}
             className="rounded-lg border border-input bg-transparent px-2 py-2 text-sm text-foreground"

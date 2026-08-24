@@ -90,7 +90,7 @@ async function inviteUserToProject(
     console.error("Failed to notify invitee of project invitation", err)
   }
 
-  revalidatePath(`/projects/${projectId}`)
+  
   revalidatePath("/projects")
   revalidatePath("/team")
 
@@ -269,7 +269,7 @@ export async function updateMemberRoleAction(
     return { success: false, error: "Member not found" }
   }
 
-  revalidatePath(`/projects/${projectId}`)
+  
   revalidatePath("/team")
 
   return { success: true, data: member }
@@ -293,7 +293,7 @@ export async function removeMemberAction(
 
   await removeProjectMemberRow(memberId)
 
-  revalidatePath(`/projects/${projectId}`)
+  
   revalidatePath("/projects")
   revalidatePath("/team")
 

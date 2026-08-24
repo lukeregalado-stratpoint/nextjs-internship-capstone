@@ -81,7 +81,7 @@ export async function createCommentAction(
 
   await logActivity(taskId, user.id, "comment_added", { commentId: comment.id })
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: { ...comment, authorName: user.name } }
 }
@@ -110,7 +110,7 @@ export async function updateCommentAction(
     return { success: false, error: "Comment not found" }
   }
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: comment }
 }
@@ -142,7 +142,7 @@ export async function deleteCommentAction(
   await deleteCommentRow(commentId)
   await logActivity(taskId, user.id, "comment_deleted", { commentId })
 
-  revalidatePath(`/projects/${projectId}`)
+  
 
   return { success: true, data: { id: commentId } }
 }

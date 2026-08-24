@@ -13,4 +13,3 @@ export default async function DashboardGroupLayout({
   await getOrCreateCurrentUser()
   return <DashboardLayout><div className="mx-auto w-full max-w-6xl px-6 py-8">{children}</div></DashboardLayout>
 }
-

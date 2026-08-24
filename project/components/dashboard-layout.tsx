@@ -37,8 +37,7 @@ const navigation = [
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  // Desktop-only icon-rail collapse — mobile always uses the full drawer
-  // width regardless of this, via the `lg:` prefix on every class it drives.
+  // only collapses on desktop, mobile always shows the full drawer width (lg: prefixes handle it)
   const [collapsed, setCollapsed] = useState(false)
   const { theme, setTheme } = useTheme()
   const pathname = usePathname()
@@ -46,7 +45,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mobile sidebar overlay */}
+      {/* mobile sidebar overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/20 lg:hidden"
@@ -54,17 +53,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Sidebar — flush against the edge, flat, single hairline border.
-          No floating tile, no blur, no shadow: a plain panel that sits
-          directly on the page like Claude's sidebar. */}
+      {/* sidebar, flat panel flush with the edge, no shadow or blur */}
       <div
         className={`fixed inset-y-0 left-0 z-50 flex flex-col w-64 ${collapsed ? "lg:w-[68px]" : "lg:w-60"}
          bg-surface dark:bg-surface-dark border-r border-line dark:border-line-dark
           transform transition-all duration-200 ease-in-out lg:translate-x-0
            ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        {/* Brand row — when collapsed, the toggle moves to the left of the
-            logo instead of sitting pinned against the right edge. */}
+        {/* brand row, toggle moves next to logo when collapsed */}
         <div
           className={`flex items-center justify-between h-14 shrink-0 px-3 border-b border-line dark:border-line-dark ${
             collapsed ? "lg:justify-start lg:gap-1.5" : ""
@@ -82,7 +78,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </button>
 
           <Link href="/" className="flex items-center gap-2 min-w-0 overflow-hidden">
-            <span className="h-6 w-6 rounded-md bg-primary shrink-0" />
+            <span className="flex h-6 w-6 items-end gap-[2px] rounded-md border border-line bg-paper p-1 shrink-0 dark:border-line-dark dark:bg-paper-dark">
+              <span className="h-full w-full rounded-[1px] bg-primary" />
+              <span className="h-2/3 w-full rounded-[1px] bg-slate/50 dark:bg-slate-dark/50" />
+              <span className="h-1/3 w-full rounded-[1px] bg-ink/20 dark:bg-paper/20" />
+            </span>
             <span
               className={`text-base font-semibold text-ink dark:text-paper truncate ${collapsed ? "lg:hidden" : ""}`}
             >
@@ -99,9 +99,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* Search trigger — opens the command palette (click or ⌘K/Ctrl+K
-            from anywhere). Styled like a disabled search input rather than
-            a nav row so it reads as "type here", not "go here". */}
+        {/* opens the command palette, styled like a search bar not a nav link */}
         <div className={`px-2.5 pt-2.5 ${collapsed ? "lg:px-1.5" : ""}`}>
           <button
             onClick={openCommandPalette}
@@ -122,7 +120,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* Nav — plain rows, active item gets a quiet fill, nothing else does */}
+        {/* nav links, active one just gets a light fill */}
         <nav className="flex-1 overflow-y-auto px-2.5 py-3">
           <ul className="space-y-0.5">
             {navigation.map((item) => {
@@ -147,7 +145,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </ul>
         </nav>
 
-        {/* Account row — pinned to the bottom, like Claude's sidebar */}
+        {/* account row, stays pinned to the bottom */}
         <div
           className={`shrink-0 border-t border-line dark:border-line-dark p-2.5 flex items-center justify-between ${
             collapsed ? "lg:flex-col lg:justify-center lg:gap-2" : ""
@@ -167,10 +165,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Main content, offset to clear the flush sidebar */}
+      {/* main content, pushed over to clear the sidebar */}
       <div className={`transition-all duration-200 ${collapsed ? "lg:pl-[68px]" : "lg:pl-60"}`}>
-        {/* Mobile-only top bar: just the drawer trigger. No persistent
-            desktop chrome — content starts right under the sidebar. */}
+        {/* mobile top bar, just has the menu button, no desktop chrome here */}
         <div className="flex h-14 items-center justify-between px-4 border-b border-line dark:border-line-dark lg:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -191,7 +188,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Page content */}
+        {/* page content */}
         <main className="py-4 px-4 sm:px-6">{children}</main>
       </div>
 

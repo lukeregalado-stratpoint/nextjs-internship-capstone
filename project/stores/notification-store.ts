@@ -1,5 +1,7 @@
 import { create } from "zustand"
-import type { Notification as AppNotification } from "@/lib/db/schema"
+import type { NotificationWithInvitationStatus } from "@/lib/db/queries"
+
+type AppNotification = NotificationWithInvitationStatus
 
 interface NotificationState {
   notifications: AppNotification[]
@@ -9,6 +11,9 @@ interface NotificationState {
   addNotification: (notification: AppNotification) => void
   markRead: (id: string) => void
   markAllRead: () => void
+  // called right after accept/decline succeeds, so the buttons update
+  // immediately instead of waiting on the next SSE event or a refresh
+  setInvitationStatus: (projectId: string, status: "accepted" | "declined") => void
   toggleOpen: () => void
   setOpen: (open: boolean) => void
 }
@@ -42,6 +47,15 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     set((state) => ({
       notifications: state.notifications.map((n) => (n.readAt ? n : { ...n, readAt: new Date() })),
       unreadCount: 0,
+    })),
+
+  setInvitationStatus: (projectId, status) =>
+    set((state) => ({
+      notifications: state.notifications.map((n) =>
+        n.type === "project_invitation" && n.projectId === projectId
+          ? { ...n, invitationStatus: status }
+          : n
+      ),
     })),
 
   toggleOpen: () => set((state) => ({ isOpen: !state.isOpen })),

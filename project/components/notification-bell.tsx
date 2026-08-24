@@ -1,12 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
 import { Bell, Check } from "lucide-react"
 import { useNotifications } from "@/hooks/use-notifications"
 import { useInvitations } from "@/hooks/use-invitations"
 import { useNotificationStore } from "@/stores/notification-store"
-import type { Notification as AppNotification } from "@/lib/db/schema"
+import type { NotificationWithInvitationStatus as AppNotification } from "@/lib/db/queries"
 
 function notificationHref(n: AppNotification) {
   if (n.taskId && n.projectId) return `/projects/${n.projectId}?task=${n.taskId}`
@@ -35,17 +34,16 @@ export function NotificationBell({
   const isOpen = useNotificationStore((s) => s.isOpen)
   const toggleOpen = useNotificationStore((s) => s.toggleOpen)
   const setOpen = useNotificationStore((s) => s.setOpen)
+  const setInvitationStatus = useNotificationStore((s) => s.setInvitationStatus)
 
-  // Notifications aren't deleted on accept/decline (they're a permanent
-  // log), so once a project_invitation notification is responded to here
-  // we track it locally to swap its buttons for a static "Accepted" /
-  // "Declined" label instead of re-showing Accept/Decline on every open.
-  const [respondedIds, setRespondedIds] = useState<Record<string, "accepted" | "declined">>({})
-
+  // invitationStatus comes from project_invitations itself (see
+  // getNotificationsForUser), so it survives a refresh instead of resetting
+  // like local component state would. setInvitationStatus updates the store
+  // right away so the buttons swap out without waiting on a refetch.
   function handleAccept(n: AppNotification) {
     if (!n.projectId) return
     acceptInvitationForProject(n.projectId, () => {
-      setRespondedIds((prev) => ({ ...prev, [n.id]: "accepted" }))
+      setInvitationStatus(n.projectId!, "accepted")
       if (!n.readAt) markRead(n.id)
     })
   }
@@ -53,7 +51,7 @@ export function NotificationBell({
   function handleDecline(n: AppNotification) {
     if (!n.projectId) return
     declineInvitationForProject(n.projectId, () => {
-      setRespondedIds((prev) => ({ ...prev, [n.id]: "declined" }))
+      setInvitationStatus(n.projectId!, "declined")
       if (!n.readAt) markRead(n.id)
     })
   }
@@ -101,8 +99,11 @@ export function NotificationBell({
             ) : (
               <ul className="divide-y divide-line dark:divide-line-dark">
                 {notifications.map((n) => {
-                  const responded = respondedIds[n.id]
-                  const isPendingInvite = n.type === "project_invitation" && !responded
+                  const responded =
+                    n.type === "project_invitation" && n.invitationStatus !== "pending"
+                      ? n.invitationStatus
+                      : null
+                  const isPendingInvite = n.type === "project_invitation" && n.invitationStatus === "pending"
 
                   const body = (
                     <div className="flex items-start gap-2">

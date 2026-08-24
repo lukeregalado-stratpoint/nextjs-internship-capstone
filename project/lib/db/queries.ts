@@ -216,9 +216,24 @@ export async function getProjectSummary(projectId: string) {
   return project ?? null
 }
 
+/**
+ * Projects for the dashboard's "recent projects" list: ones the user owns,
+ * plus ones they've been added to as a member. This used to only match
+ * ownerId, so a project you were invited into (but don't own) showed up
+ * fine on /projects but never on the dashboard.
+ */
 export async function getProjectsForOwner(userId: string) {
+  const memberships = await db.query.projectMembers.findMany({
+    where: eq(projectMembers.userId, userId),
+    columns: { projectId: true },
+  })
+  const memberProjectIds = memberships.map((m) => m.projectId)
+
   return db.query.projects.findMany({
-    where: eq(projects.ownerId, userId),
+    where:
+      memberProjectIds.length > 0
+        ? or(eq(projects.ownerId, userId), inArray(projects.id, memberProjectIds))
+        : eq(projects.ownerId, userId),
     orderBy: [desc(projects.updatedAt)],
     with: {
       members: {
@@ -228,12 +243,24 @@ export async function getProjectsForOwner(userId: string) {
   })
 }
 
+/**
+ * Dashboard stat cards: counts projects and tasks across everything the
+ * user can see, owned or just a member of. Same bug as above, this used to
+ * only look at owned projects, so a member's active project count and task
+ * totals silently excluded any project they didn't own.
+ */
 export async function getDashboardStatsForOwner(userId: string) {
+  const memberships = await db.query.projectMembers.findMany({
+    where: eq(projectMembers.userId, userId),
+    columns: { projectId: true },
+  })
+  const memberProjectIds = memberships.map((m) => m.projectId)
+
   const ownedProjects = await db.query.projects.findMany({
     where: eq(projects.ownerId, userId),
     columns: { id: true },
   })
-  const projectIds = ownedProjects.map((p) => p.id)
+  const projectIds = [...new Set([...ownedProjects.map((p) => p.id), ...memberProjectIds])]
 
   if (projectIds.length === 0) {
     return { activeProjects: 0, completedTasks: 0, inProgressTasks: 0, backlogTasks: 0 }
@@ -924,14 +951,28 @@ export async function logActivity(
 
 // NOTIFICATIONS
 
+/** Shape returned by getNotificationsForUser, includes the real invite status. */
+export type NotificationWithInvitationStatus = Awaited<
+  ReturnType<typeof getNotificationsForUser>
+>[number]
+
 export async function createNotification(data: NewNotification) {
   const [notification] = await db.insert(notifications).values(data).returning()
   return notification
 }
 
-/** Newest first, capped — the dropdown only ever shows a bounded recent list. */
+/**
+ * Newest first, capped — the dropdown only ever shows a bounded recent list.
+ *
+ * notifications is a plain event log with no status of its own, so a
+ * project_invitation row can't say by itself whether it's still pending.
+ * We look up the real status from project_invitations and attach it as
+ * invitationStatus, so the bell can stop showing Accept/Decline once the
+ * invite has actually been responded to, instead of relying on local state
+ * that resets on every page load.
+ */
 export async function getNotificationsForUser(userId: string, limit = 30) {
-  return db.query.notifications.findMany({
+  const rows = await db.query.notifications.findMany({
     where: eq(notifications.recipientId, userId),
     orderBy: [desc(notifications.createdAt)],
     limit,
@@ -939,6 +980,35 @@ export async function getNotificationsForUser(userId: string, limit = 30) {
       actor: { columns: { id: true, name: true } },
     },
   })
+
+  const inviteProjectIds = [
+    ...new Set(
+      rows
+        .filter((n) => n.type === "project_invitation" && n.projectId)
+        .map((n) => n.projectId as string)
+    ),
+  ]
+
+  if (inviteProjectIds.length === 0) {
+    return rows.map((n) => ({ ...n, invitationStatus: null as InvitationStatus | null }))
+  }
+
+  const invites = await db.query.projectInvitations.findMany({
+    where: and(
+      inArray(projectInvitations.projectId, inviteProjectIds),
+      eq(projectInvitations.inviteeId, userId)
+    ),
+    columns: { projectId: true, status: true },
+  })
+  const statusByProjectId = new Map(invites.map((i) => [i.projectId, i.status]))
+
+  return rows.map((n) => ({
+    ...n,
+    invitationStatus:
+      n.type === "project_invitation" && n.projectId
+        ? statusByProjectId.get(n.projectId) ?? null
+        : null,
+  }))
 }
 
 export async function getUnreadNotificationCount(userId: string) {

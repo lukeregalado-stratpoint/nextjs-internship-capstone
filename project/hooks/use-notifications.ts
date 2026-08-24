@@ -7,7 +7,7 @@ import {
   markNotificationReadAction,
 } from "@/lib/actions/notifications"
 import { useNotificationStore } from "@/stores/notification-store"
-import type { Notification as AppNotification } from "@/lib/db/schema"
+import type { NotificationWithInvitationStatus as AppNotification } from "@/lib/db/queries"
 
 /**
  * Loads the initial notification list once on mount, then keeps it live via

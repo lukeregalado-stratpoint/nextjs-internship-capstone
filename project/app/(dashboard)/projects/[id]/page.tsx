@@ -26,6 +26,12 @@ export default async function ProjectDetailPage({
     notFound()
   }
 
+  // The owner isn't a row in project_members, so their "role" for display
+  // purposes is just "owner" rather than one of the projectRoleEnum values.
+  const currentUserRole = isOwner
+    ? "owner"
+    : project.members.find((m) => m.user.id === user.id)?.role ?? null
+
   // Owner + members, for the assignee picker and task-card avatars.
   const members = [
     { id: project.owner.id, name: project.owner.name },
@@ -41,6 +47,7 @@ export default async function ProjectDetailPage({
       <ProjectHeader
         project={project}
         isOwner={isOwner}
+        currentUserRole={currentUserRole}
         owner={{ name: project.owner.name, email: project.owner.email }}
         members={project.members}
         listCount={listCount}

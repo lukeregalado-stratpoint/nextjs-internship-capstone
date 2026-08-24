@@ -25,6 +25,8 @@ interface MemberRow {
 interface ProjectHeaderProps {
   project: ProjectHeaderData
   isOwner: boolean
+  /** The signed-in user's role on this project: "owner" or a project_members role. */
+  currentUserRole: ProjectMember["role"] | "owner" | null
   owner: { name: string; email: string }
   members: MemberRow[]
   /** Number of board columns — shown in the stats strip. */
@@ -40,9 +42,16 @@ function initials(name: string) {
   return (first + last).toUpperCase()
 }
 
+// "product_owner" -> "Product owner"
+function formatRole(role: string) {
+  const spaced = role.replace(/_/g, " ")
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+
 export function ProjectHeader({
   project,
   isOwner,
+  currentUserRole,
   owner,
   members,
   listCount,
@@ -79,9 +88,16 @@ export function ProjectHeader({
         {/* Title row */}
         <div className="p-6 flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-foreground dark:text-paper">
-              {project.name}
-            </h1>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-3xl font-bold text-foreground dark:text-paper">
+                {project.name}
+              </h1>
+              {currentUserRole && (
+                <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground dark:text-paper shrink-0">
+                  {formatRole(currentUserRole)}
+                </span>
+              )}
+            </div>
             {project.description && (
               <p className="text-muted-foreground mt-2 max-w-2xl">
                 {project.description}

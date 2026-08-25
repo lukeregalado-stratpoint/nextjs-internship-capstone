@@ -6,11 +6,12 @@ import {
   createList as createListRow,
   deleteList as deleteListRow,
   getNextListPosition,
-  ownsList,
-  ownsProject,
+  getProjectRole,
+  getProjectRoleForList,
   reorderLists as reorderListsRow,
   updateList as updateListRow,
 } from "@/lib/db/queries"
+import { hasPermission } from "@/lib/permissions"
 import { listReorderSchema, listSchema, listUpdateSchema } from "@/lib/validations"
 import type { List } from "@/lib/db/schema"
 
@@ -24,8 +25,8 @@ export async function createListAction(input: unknown): Promise<ActionResult<Lis
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
 
-  const owns = await ownsProject(parsed.data.projectId, user.id)
-  if (!owns) {
+  const role = await getProjectRole(parsed.data.projectId, user.id)
+  if (!hasPermission(role, "list:manage")) {
     return { success: false, error: "You don't have permission to add columns to this project" }
   }
 
@@ -44,8 +45,8 @@ export async function updateListAction(
 ): Promise<ActionResult<List>> {
   const user = await requireUser()
 
-  const owns = await ownsList(listId, user.id)
-  if (!owns) {
+  const role = await getProjectRoleForList(listId, user.id)
+  if (!hasPermission(role, "list:manage")) {
     return { success: false, error: "You don't have permission to edit this column" }
   }
 
@@ -70,8 +71,8 @@ export async function deleteListAction(
 ): Promise<ActionResult<{ id: string }>> {
   const user = await requireUser()
 
-  const owns = await ownsList(listId, user.id)
-  if (!owns) {
+  const role = await getProjectRoleForList(listId, user.id)
+  if (!hasPermission(role, "list:manage")) {
     return { success: false, error: "You don't have permission to delete this column" }
   }
 
@@ -92,8 +93,8 @@ export async function reorderListsAction(
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
 
-  const owns = await ownsProject(parsed.data.projectId, user.id)
-  if (!owns) {
+  const role = await getProjectRole(parsed.data.projectId, user.id)
+  if (!hasPermission(role, "list:manage")) {
     return { success: false, error: "You don't have permission to reorder columns in this project" }
   }
 

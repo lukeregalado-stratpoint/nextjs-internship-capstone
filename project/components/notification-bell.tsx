@@ -1,11 +1,18 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react"
 import { Bell, Check } from "lucide-react"
 import { useNotifications } from "@/hooks/use-notifications"
 import { useInvitations } from "@/hooks/use-invitations"
 import { useNotificationStore } from "@/stores/notification-store"
 import type { NotificationWithInvitationStatus as AppNotification } from "@/lib/db/queries"
+
+// gap between the button and the panel, and the minimum breathing room kept
+// between the panel and the viewport edge - both in px, matching the
+// existing mb-2/mt-2 (0.5rem) and the page gutter used elsewhere.
+const PANEL_GAP = 8
+const VIEWPORT_MARGIN = 12
 
 function notificationHref(n: AppNotification) {
   if (n.taskId && n.projectId) return `/projects/${n.projectId}?task=${n.taskId}`
@@ -36,6 +43,67 @@ export function NotificationBell({
   const setOpen = useNotificationStore((s) => s.setOpen)
   const setInvitationStatus = useNotificationStore((s) => s.setInvitationStatus)
 
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const [panelStyle, setPanelStyle] = useState<CSSProperties>({})
+
+  // Positions the panel relative to the viewport rather than the nearest
+  // positioned ancestor. Default behavior mirrors the old `right-0` anchor
+  // (panel's right edge lines up with the button's right edge, opening
+  // toward the left) - that's kept as-is whenever it fits. It only gets
+  // pulled in from the left edge when the default anchor would clip it,
+  // which is what was happening in the wider desktop header.
+  useLayoutEffect(() => {
+    if (!isOpen) return
+
+    function updatePosition() {
+      const button = buttonRef.current
+      const panel = panelRef.current
+      if (!button || !panel) return
+
+      const buttonRect = button.getBoundingClientRect()
+      const panelWidth = panel.offsetWidth
+
+      const style: CSSProperties = {}
+
+      if (dropdownPosition === "bottom") {
+        style.bottom = window.innerHeight - buttonRect.top + PANEL_GAP
+      } else {
+        style.top = buttonRect.bottom + PANEL_GAP
+      }
+
+      const defaultLeftEdge = buttonRect.right - panelWidth
+      if (defaultLeftEdge < VIEWPORT_MARGIN) {
+        // default anchor would clip the left edge - pin to a safe inset
+        // from the viewport instead.
+        style.left = VIEWPORT_MARGIN
+        style.right = "auto"
+      } else {
+        style.right = window.innerWidth - buttonRect.right
+        style.left = "auto"
+      }
+
+      setPanelStyle(style)
+    }
+
+    updatePosition()
+    window.addEventListener("resize", updatePosition)
+    return () => window.removeEventListener("resize", updatePosition)
+  }, [isOpen, dropdownPosition])
+
+  // dropdown positioning above is computed once on open (and on resize) -
+  // rather than tracking scroll continuously, close on scroll so it never
+  // visibly detaches from the button. matches how most menu/dropdown
+  // patterns behave.
+  useEffect(() => {
+    if (!isOpen) return
+    function handleScroll() {
+      setOpen(false)
+    }
+    window.addEventListener("scroll", handleScroll, true)
+    return () => window.removeEventListener("scroll", handleScroll, true)
+  }, [isOpen, setOpen])
+
   // invitationstatus comes from project_invitations itself (see
   // getnotificationsforuser), so it survives a refresh instead of resetting
   // like local component state would. setinvitationstatus updates the store
@@ -59,6 +127,7 @@ export function NotificationBell({
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={toggleOpen}
         className="relative p-2 rounded-md text-slate dark:text-slate-dark hover:bg-paper dark:hover:bg-paper-dark transition-colors"
         aria-label="Notifications"
@@ -75,9 +144,9 @@ export function NotificationBell({
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className={`absolute ${
-              dropdownPosition === "bottom" ? "bottom-full mb-2" : "top-full mt-2"
-            } right-0 z-50 w-80 max-w-[calc(100vw-1.5rem)] max-h-96 overflow-y-auto rounded-lg border border-line dark:border-line-dark bg-surface dark:bg-surface-dark shadow-lg`}
+            ref={panelRef}
+            style={panelStyle}
+            className="fixed z-50 w-80 max-w-[calc(100vw-1.5rem)] max-h-96 overflow-y-auto rounded-lg border border-line dark:border-line-dark bg-surface dark:bg-surface-dark shadow-lg"
           >
             <div className="flex items-center justify-between px-3 py-2 border-b border-line dark:border-line-dark">
               <span className="text-sm font-medium text-ink dark:text-paper">Notifications</span>

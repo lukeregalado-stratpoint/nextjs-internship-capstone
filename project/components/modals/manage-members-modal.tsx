@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
 import { X, UserPlus, Trash2, Search, Mail } from "lucide-react"
 import { useMembers, type MemberSearchResult } from "@/hooks/use-members"
+import { ROLE_DESCRIPTIONS } from "@/lib/permissions"
 import type { ProjectMember } from "@/lib/db/schema"
 
 const ROLE_LABELS: Record<ProjectMember["role"], string> = {
@@ -207,6 +208,8 @@ export function ManageMembersModal({
           </button>
         </form>
 
+        <p className="text-xs text-muted-foreground -mt-3">{ROLE_DESCRIPTIONS[role]}</p>
+
         {error && <p className="text-sm text-destructive">{error}</p>}
         {invitedMessage && !error && (
           <p className="text-sm text-muted-foreground">{invitedMessage}</p>
@@ -279,13 +282,14 @@ export function ManageMembersModal({
                 <select
                   value={m.role}
                   disabled={isPending}
+                  title={ROLE_DESCRIPTIONS[m.role]}
                   onChange={(e) =>
                     updateMemberRole(m.id, { role: e.target.value as ProjectMember["role"] })
                   }
                   className="rounded-lg border border-input bg-transparent px-2 py-1 text-xs text-foreground"
                 >
                   {ROLES.map((r) => (
-                    <option key={r} value={r}>
+                    <option key={r} value={r} title={ROLE_DESCRIPTIONS[r]}>
                       {ROLE_LABELS[r]}
                     </option>
                   ))}

@@ -12,15 +12,17 @@ import {
   getListById,
   getNextTaskPosition,
   getProjectLabelIds,
+  getProjectRole,
+  getProjectRoleForList,
+  getProjectRoleForTask,
+  getProjectRoleForTasks,
   getTaskById,
   logActivity,
   moveTask as moveTaskRow,
-  ownsList,
-  ownsTask,
-  ownsTasks,
   setTaskLabels,
   updateTask as updateTaskRow,
 } from "@/lib/db/queries"
+import { hasPermission } from "@/lib/permissions"
 import { notifyUser } from "@/lib/notifications"
 import {
   taskBulkDeleteSchema,
@@ -46,8 +48,8 @@ export async function createTaskAction(
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
 
-  const owns = await ownsList(parsed.data.listId, user.id)
-  if (!owns) {
+  const role = await getProjectRoleForList(parsed.data.listId, user.id)
+  if (!hasPermission(role, "task:create")) {
     return { success: false, error: "You don't have permission to add tasks to this column" }
   }
 
@@ -98,8 +100,8 @@ export async function updateTaskAction(
 ): Promise<ActionResult<TaskWithLabels>> {
   const user = await requireUser()
 
-  const owns = await ownsTask(taskId, user.id)
-  if (!owns) {
+  const role = await getProjectRoleForTask(taskId, user.id)
+  if (!hasPermission(role, "task:edit")) {
     return { success: false, error: "You don't have permission to edit this task" }
   }
 
@@ -149,8 +151,8 @@ export async function updateTaskAction(
   // re-slot the task at the end of it (drag-and-drop reordering uses
   // movetaskaction/movetask instead)
   if (listId) {
-    const ownsDestList = await ownsList(listId, user.id)
-    if (!ownsDestList) {
+    const destRole = await getProjectRoleForList(listId, user.id)
+    if (!hasPermission(destRole, "task:edit")) {
       return { success: false, error: "You don't have permission to move this task there" }
     }
     const position = await getNextTaskPosition(listId)
@@ -271,8 +273,8 @@ export async function deleteTaskAction(
 ): Promise<ActionResult<{ id: string }>> {
   const user = await requireUser()
 
-  const owns = await ownsTask(taskId, user.id)
-  if (!owns) {
+  const role = await getProjectRoleForTask(taskId, user.id)
+  if (!hasPermission(role, "task:delete")) {
     return { success: false, error: "You don't have permission to delete this task" }
   }
 
@@ -294,11 +296,11 @@ export async function moveTaskAction(
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
 
-  const [taskOwned, destListOwned] = await Promise.all([
-    ownsTask(parsed.data.taskId, user.id),
-    ownsList(parsed.data.destListId, user.id),
+  const [taskRole, destRole] = await Promise.all([
+    getProjectRoleForTask(parsed.data.taskId, user.id),
+    getProjectRoleForList(parsed.data.destListId, user.id),
   ])
-  if (!taskOwned || !destListOwned) {
+  if (!hasPermission(taskRole, "task:edit") || !hasPermission(destRole, "task:edit")) {
     return { success: false, error: "You don't have permission to move this task" }
   }
 
@@ -341,8 +343,8 @@ export async function bulkDeleteTasksAction(
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" }
   }
 
-  const owns = await ownsTasks(parsed.data.taskIds, user.id)
-  if (!owns) {
+  const role = await getProjectRoleForTasks(parsed.data.taskIds, user.id)
+  if (!hasPermission(role, "task:delete")) {
     return { success: false, error: "You don't have permission to delete one or more of these tasks" }
   }
 
@@ -377,14 +379,14 @@ export async function bulkUpdateTasksAction(
     return { success: false, error: "Nothing to update" }
   }
 
-  const owns = await ownsTasks(taskIds, user.id)
-  if (!owns) {
+  const role = await getProjectRoleForTasks(taskIds, user.id)
+  if (!hasPermission(role, "task:edit")) {
     return { success: false, error: "You don't have permission to edit one or more of these tasks" }
   }
 
   if (updates.listId) {
-    const ownsDestList = await ownsList(updates.listId, user.id)
-    if (!ownsDestList) {
+    const destRole = await getProjectRoleForList(updates.listId, user.id)
+    if (!hasPermission(destRole, "task:edit")) {
       return { success: false, error: "You don't have permission to move tasks there" }
     }
   }

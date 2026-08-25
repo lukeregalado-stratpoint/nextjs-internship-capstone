@@ -7,8 +7,9 @@ import {
   createProject as createProjectRow,
   updateProject as updateProjectRow,
   deleteProject as deleteProjectRow,
-  ownsProject,
+  getProjectRole,
 } from "@/lib/db/queries"
+import { hasPermission } from "@/lib/permissions"
 import type { Project } from "@/lib/db/schema"
 
 type ActionResult<T> =
@@ -42,8 +43,8 @@ export async function updateProjectAction(
 ): Promise<ActionResult<Project>> {
   const user = await requireUser()
 
-  const owns = await ownsProject(projectId, user.id)
-  if (!owns) {
+  const role = await getProjectRole(projectId, user.id)
+  if (!hasPermission(role, "project:edit")) {
     return { success: false, error: "You don't have permission to edit this project" }
   }
 
@@ -68,8 +69,8 @@ export async function deleteProjectAction(
 ): Promise<ActionResult<{ id: string }>> {
   const user = await requireUser()
 
-  const owns = await ownsProject(projectId, user.id)
-  if (!owns) {
+  const role = await getProjectRole(projectId, user.id)
+  if (!hasPermission(role, "project:delete")) {
     return { success: false, error: "You don't have permission to delete this project" }
   }
 

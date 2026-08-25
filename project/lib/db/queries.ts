@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, notInArray, or, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
+import type { ProjectRole } from "@/lib/permissions"
 import {
   activities,
   comments,
@@ -204,6 +205,75 @@ export async function ownsProject(projectId: string, userId: string) {
     columns: { id: true },
   })
   return !!project
+}
+
+/**
+ * A user's effective role on a project, for the `hasPermission` checks in
+ * `lib/permissions.ts`: "owner" if they own it (not a `project_members`
+ * row), their `project_members.role` if they're a member, or null if they
+ * have no access at all. This is the single source of truth actions should
+ * check against instead of the narrower owner-only `ownsX` helpers below
+ * (which stay in place for call sites that are deliberately owner-only,
+ * e.g. deleting the project itself).
+ */
+export async function getProjectRole(
+  projectId: string,
+  userId: string
+): Promise<ProjectRole | null> {
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { ownerId: true },
+  })
+  if (!project) return null
+  if (project.ownerId === userId) return "owner"
+
+  const member = await db.query.projectMembers.findFirst({
+    where: and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)),
+    columns: { role: true },
+  })
+  return member?.role ?? null
+}
+
+/** `getProjectRole`, resolved by walking up from a list id. */
+export async function getProjectRoleForList(listId: string, userId: string) {
+  const list = await db.query.lists.findFirst({
+    where: eq(lists.id, listId),
+    columns: { projectId: true },
+  })
+  if (!list) return null
+  return getProjectRole(list.projectId, userId)
+}
+
+/** `getProjectRole`, resolved by walking up from a task id. */
+export async function getProjectRoleForTask(taskId: string, userId: string) {
+  const task = await db.query.tasks.findFirst({
+    where: eq(tasks.id, taskId),
+    with: { list: { columns: { projectId: true } } },
+  })
+  if (!task) return null
+  return getProjectRole(task.list.projectId, userId)
+}
+
+/**
+ * For bulk task actions: every id must exist, and all of them must belong
+ * to the SAME project (defensive - the board only ever multi-selects
+ * within one project, but a forged request shouldn't be able to touch
+ * tasks across two different projects in one call). Returns the shared
+ * role, or null if either check fails.
+ */
+export async function getProjectRoleForTasks(taskIds: string[], userId: string) {
+  if (taskIds.length === 0) return null
+  const rows = await db.query.tasks.findMany({
+    where: inArray(tasks.id, taskIds),
+    with: { list: { columns: { projectId: true } } },
+  })
+  if (rows.length !== taskIds.length) return null
+
+  const projectIds = new Set(rows.map((r) => r.list.projectId))
+  if (projectIds.size !== 1) return null
+
+  const [projectId] = projectIds
+  return getProjectRole(projectId, userId)
 }
 
 /** just id/name - used to compose notification text without pulling the full project graph. */

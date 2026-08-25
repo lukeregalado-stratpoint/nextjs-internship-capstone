@@ -153,7 +153,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         >
           <div className="flex items-center gap-1">
             <UserButton />
-            <NotificationBell dropdownPosition="bottom" />
+            {/* the mobile top bar already has its own bell, so this one only
+                needs to show up once we're on the desktop sidebar */}
+            <div className="hidden lg:block">
+              <NotificationBell dropdownPosition="bottom" />
+            </div>
           </div>
           <button
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}

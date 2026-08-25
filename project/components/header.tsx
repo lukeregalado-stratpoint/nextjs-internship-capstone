@@ -27,17 +27,6 @@ export function Header() {
             WIP
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="#features" className="text-sm text-slate transition-colors hover:text-ink dark:text-slate-dark dark:hover:text-paper">
-              Features
-            </Link>
-            <Link href="#pricing" className="text-sm text-slate transition-colors hover:text-ink dark:text-slate-dark dark:hover:text-paper">
-              Pricing
-            </Link>
-            <Link href="#about" className="text-sm text-slate transition-colors hover:text-ink dark:text-slate-dark dark:hover:text-paper">
-              About
-            </Link>
-          </nav>
 
           <div className="flex items-center gap-3">
             <button

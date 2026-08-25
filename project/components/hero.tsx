@@ -1,12 +1,12 @@
 import Link from "next/link"
 import { ArrowRight, Check } from "lucide-react"
 
-// just hardcoded fake cards for the landing page, not real data
+// fake data, board isn't wired up here
 function BoardPreview() {
   return (
     <div className="relative">
       <div className="grid grid-cols-3 gap-3 rounded-xl border border-line bg-surface p-4 dark:border-line-dark dark:bg-surface-dark">
-        {/* backlog column */}
+        {/* backlog */}
         <div className="space-y-2">
           <p className="font-mono text-[11px] uppercase tracking-wider text-slate dark:text-slate-dark">
             Backlog · 2
@@ -19,7 +19,7 @@ function BoardPreview() {
           </div>
         </div>
 
-        {/* in review column */}
+        {/* in review */}
         <div className="space-y-2">
           <p className="font-mono text-[11px] uppercase tracking-wider text-slate dark:text-slate-dark">
             In review · 1
@@ -29,7 +29,7 @@ function BoardPreview() {
           </div>
         </div>
 
-        {/* done column */}
+        {/* done */}
         <div className="space-y-2">
           <p className="font-mono text-[11px] uppercase tracking-wider text-slate dark:text-slate-dark">
             Done · 1
@@ -50,14 +50,14 @@ export function Hero() {
       <div className="container mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <div>
           <h1 className="text-5xl font-bold tracking-tight text-ink dark:text-paper md:text-6xl">
-            Every task,
+            Work in progress,
             <br />
-            <span className="text-primary">exactly where it stands.</span>
+            <span className="text-primary">always in your radar.</span>
           </h1>
 
           <p className="mt-6 max-w-lg text-lg text-slate dark:text-slate-dark">
-            One board your whole team can see: backlog, in review, done. No status
-            meeting required to find out what happened to a task.
+            One board your whole team can see: backlog, in review, done. Nobody has to sit
+            through a status meeting to find out what happened to a task.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">

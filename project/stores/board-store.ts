@@ -17,22 +17,22 @@ interface BoardState {
   moveTask: (taskId: string, destListId: string, destIndex?: number) => void
   reorderTasksInList: (listId: string, orderedTaskIds: string[]) => void
 
-  // SELECTION (task 5 — bulk operations)
+  // selection (task 5, bulk operations)
   selectedTaskIds: Set<string>
   toggleTaskSelection: (taskId: string) => void
   selectTasks: (taskIds: string[]) => void
   clearSelection: () => void
 
-  // BULK MUTATIONS — optimistic counterparts to the single-task actions
-  // above, applied from useTasks().bulkUpdateTasks / bulkDeleteTasks.
+  // bulk mutations, optimistic counterparts to the single-task actions
+  // above. applied from useTasks().bulkUpdateTasks / bulkDeleteTasks.
   bulkUpdateTasks: (taskIds: string[], updates: Partial<TaskWithLabels>) => void
   bulkRemoveTasks: (taskIds: string[]) => void
 
-  // PENDING STATE — granular in-flight tracking so components can show a
-  // loading affordance on just the thing that's saving, without needing a
-  // blanket "something on the board is loading" flag. Kept as plain Sets
-  // (not derived from useTransition) because a single shared useTransition
-  // per hook can't tell you *which* task/list triggered it.
+  // pending state, granular in-flight tracking so components can show a
+  // loading spinner on just the thing that's saving, not a blanket
+  // "something on the board is loading" flag. plain Sets instead of
+  // useTransition because one shared transition per hook can't tell you
+  // which task or list actually triggered it.
   pendingTaskIds: Set<string>
   setTaskPending: (taskId: string, pending: boolean) => void
   pendingListIds: Set<string>
@@ -75,13 +75,13 @@ export const useBoardStore = create<BoardState>((set) => ({
       ),
     })),
 
-  // In-place field update only — does NOT move the task between lists.
-  // Use `moveTask` for that (kept separate so a listId change can't be
-  // applied to the wrong list's task array by accident).
+  // in-place field update only, does not move the task between lists.
+  // use `moveTask` for that (kept separate so a listId change can't
+  // accidentally get applied to the wrong list's task array).
   //
-  // Only the one list that actually contains `taskId` gets a new object
-  // reference — every other list passes through untouched, so
-  // React.memo(BoardColumn) can skip re-rendering the other three columns.
+  // only the one list that actually contains `taskId` gets a new object
+  // reference, every other list passes through untouched, so
+  // React.memo(BoardColumn) can skip re-rendering the other columns.
   updateTask: (taskId, updates) =>
     set((state) => {
       const listIndex = state.lists.findIndex((l) => l.tasks.some((t) => t.id === taskId))
@@ -98,8 +98,8 @@ export const useBoardStore = create<BoardState>((set) => ({
 
   removeTask: (taskId) =>
     set((state) => {
-      // also drop it from the current selection so a deleted task can't
-      // linger as "selected" for a subsequent bulk action
+      // also drop it from the current selection so a deleted task doesn't
+      // linger as "selected" for whatever bulk action runs next
       const selectedTaskIds = new Set(state.selectedTaskIds)
       selectedTaskIds.delete(taskId)
 
@@ -112,8 +112,8 @@ export const useBoardStore = create<BoardState>((set) => ({
       return { selectedTaskIds, lists }
     }),
 
-  // Touches at most two lists (source + destination) — or exactly one if
-  // it's a same-list reorder. Every uninvolved list keeps its reference.
+  // touches at most two lists (source and destination), or just one if
+  // it's a same-list reorder. every uninvolved list keeps its reference.
   moveTask: (taskId, destListId, destIndex) =>
     set((state) => {
       const srcListIndex = state.lists.findIndex((l) => l.tasks.some((t) => t.id === taskId))
@@ -124,7 +124,7 @@ export const useBoardStore = create<BoardState>((set) => ({
       if (!movedTask) return state
       const relocated = { ...movedTask, listId: destListId }
 
-      // Same-list reorder: only that one list changes.
+      // same-list reorder, only that one list changes
       if (srcList.id === destListId) {
         const tasks = srcList.tasks.filter((t) => t.id !== taskId)
         const insertAt = destIndex === undefined ? tasks.length : destIndex
@@ -161,7 +161,7 @@ export const useBoardStore = create<BoardState>((set) => ({
       }),
     })),
 
-  // SELECTION
+  // selection
 
   toggleTaskSelection: (taskId) =>
     set((state) => {
@@ -178,7 +178,7 @@ export const useBoardStore = create<BoardState>((set) => ({
 
   clearSelection: () => set({ selectedTaskIds: new Set() }),
 
-  // BULK MUTATIONS
+  // bulk mutations
 
   bulkUpdateTasks: (taskIds, updates) =>
     set((state) => {
@@ -186,7 +186,7 @@ export const useBoardStore = create<BoardState>((set) => ({
       const { listId: destListId, ...fields } = updates
 
       // no column change -> plain field merge, same shape as `updateTask`.
-      // Skip any list that doesn't contain a selected task entirely.
+      // skip any list that doesn't contain a selected task at all.
       if (!destListId) {
         let changed = false
         const lists = state.lists.map((l) => {
@@ -202,7 +202,7 @@ export const useBoardStore = create<BoardState>((set) => ({
 
       // column change -> only lists that actually hold a selected task
       // (sources losing tasks, plus the destination) get rebuilt.
-      // Everything else passes through by reference, same as `moveTask`.
+      // everything else passes through by reference, same as `moveTask`.
       const touchedListIds = new Set(
         state.lists.filter((l) => l.tasks.some((t) => idSet.has(t.id))).map((l) => l.id)
       )
@@ -240,7 +240,7 @@ export const useBoardStore = create<BoardState>((set) => ({
       return changed ? { selectedTaskIds, lists } : { selectedTaskIds }
     }),
 
-  // PENDING STATE
+  // pending state
 
   setTaskPending: (taskId, pending) =>
     set((state) => {

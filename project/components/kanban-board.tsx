@@ -4,8 +4,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import {
   DndContext,
   DragOverlay,
-  MouseSensor,
-  TouchSensor,
+  PointerSensor,
   closestCorners,
   useDroppable,
   useSensor,
@@ -50,7 +49,7 @@ export function KanbanBoard({
   isOwner = false,
 }: {
   projectId: string
-  /** Needed for the Comments tab — whose comments can be edited/deleted inline, and who a new comment is posted as. */
+  /** needed for the comments tab, controls whose comments can be edited/deleted inline and who a new comment posts as */
   currentUserId: string
   initialLists: ListWithTasks[]
   members?: { id: string; name: string }[]
@@ -72,22 +71,35 @@ export function KanbanBoard({
   const [addingColumn, setAddingColumn] = useState(false)
   const [newColumnName, setNewColumnName] = useState("")
   const [labels, setLabels] = useState<Label[]>(initialLabels)
-  // `task` present = editing that task; absent = creating a new one in `listId`.
+  // `task` present means editing that task, absent means creating a new one in `listId`
   const [taskModal, setTaskModal] = useState<{ listId: string; task?: TaskWithLabels } | null>(
     null
   )
-  // Bumped every time we (re)open a fresh create modal so React remounts
-  // CreateTaskModal instead of reusing one with stale field values —
-  // needed for the "create another" flow below.
+  // bumped every time we (re)open a fresh create modal so React remounts
+  // CreateTaskModal instead of reusing one with stale field values, which
+  // is needed for the "create another" flow below.
   const [taskModalKey, setTaskModalKey] = useState(0)
-  // Lives here (not inside CreateTaskModal) so the checkbox's value
+  // lives here (not inside CreateTaskModal) so the checkbox's value
   // survives that remount instead of resetting to false each time.
   const [createAnother, setCreateAnother] = useState(false)
   const [activeTask, setActiveTask] = useState<TaskWithLabels | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
-  // Multi-select for bulk operations (task 5). Selection lives in the
-  // board store (not local state) so it's addressable from the store's own
+  // columns stack vertically below the sm breakpoint (see the board's
+  // className below), so the drag strategy for reordering columns needs
+  // to match: horizontalListSortingStrategy assumes a row, and produces
+  // wrong drag transforms once the layout is actually a column.
+  const [isMobileLayout, setIsMobileLayout] = useState(false)
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 639px)")
+    setIsMobileLayout(mql.matches)
+    const handleChange = (e: MediaQueryListEvent) => setIsMobileLayout(e.matches)
+    mql.addEventListener("change", handleChange)
+    return () => mql.removeEventListener("change", handleChange)
+  }, [])
+
+  // multi-select for bulk operations (task 5). selection lives in the
+  // board store, not local state, so it's addressable from the store's own
   // optimistic bulk mutations without threading callbacks everywhere.
   const selectedTaskIds = useBoardStore((s) => s.selectedTaskIds)
   const toggleTaskSelection = useBoardStore((s) => s.toggleTaskSelection)
@@ -95,10 +107,10 @@ export function KanbanBoard({
   const clearSelection = useBoardStore((s) => s.clearSelection)
   const selectedCount = selectedTaskIds.size
 
-  // Comments + activity for whichever task is currently open in edit mode.
-  // Fetched on open rather than kept on every task in `lists` — the board
-  // already carries enough per-task data as it is, and most opens never
-  // touch these tabs.
+  // comments and activity for whichever task is currently open in edit mode.
+  // fetched on open rather than kept on every task in `lists`, since the
+  // board already carries enough per-task data as it is, and most opens
+  // never touch these tabs.
   const [taskThread, setTaskThread] = useState<{
     comments: CommentWithAuthor[]
     activities: ActivityWithUser[]
@@ -126,10 +138,10 @@ export function KanbanBoard({
 
   const dragSnapshotRef = useRef<ListWithTasks[] | null>(null)
 
-  // hydrate — useLayoutEffect (not useEffect) so this flushes before the
-  // browser paints. The store's initial `lists` is always `[]`, so on a
-  // fresh mount there'd otherwise be one visible frame of an empty board
-  // before this fills it in.
+  // hydrate: useLayoutEffect instead of useEffect so this flushes before
+  // the browser paints. the store's initial `lists` is always `[]`, so on
+  // a fresh mount there'd otherwise be one visible frame of an empty
+  // board before this fills it in.
   useLayoutEffect(() => {
     setLists(initialLists)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -159,8 +171,8 @@ export function KanbanBoard({
     }
   }, [editingTaskId])
 
-  // Keyboard shortcuts: Cmd/Ctrl+A selects every currently-visible task,
-  // Escape clears the selection, Delete/Backspace bulk-deletes it. Ignored
+  // keyboard shortcuts: cmd/ctrl+a selects every currently-visible task,
+  // escape clears the selection, delete/backspace bulk-deletes it. ignored
   // while the task modal is open or while focus is in a text field, so
   // these never hijack normal typing (including inside the search bar).
   useEffect(() => {
@@ -212,18 +224,28 @@ export function KanbanBoard({
     bulkDeleteTasks,
   ])
 
-  // On touch devices, require a slightly longer press-hold before a drag
-  // starts so a normal horizontal swipe/scroll isn't hijacked as a drag.
+  // one PointerSensor handles mouse and touch. running separate MouseSensor
+  // + TouchSensor instances used to be the standard pattern, but on mobile
+  // they race each other: TouchSensor's delay-based activation loses to the
+  // browser's own scroll gesture recognition, which decides "this is a
+  // scroll" on the very first touchmove, before our 150ms hold even
+  // elapses. PointerSensor goes through the Pointer Events API instead,
+  // which respects the card's `touch-action: none` (the `touch-none` class
+  // below) from the first frame rather than relying on a JS
+  // preventDefault() that shows up too late.
+  //
+  // note: dnd-kit's activationConstraint is distance-or-delay, not both,
+  // passing both silently drops the delay, which is the one that matters
+  // for touch (distance alone can't tell a scroll from a drag since
+  // scrolling moves distance too). delay+tolerance works fine for mouse
+  // too, 150ms is short enough that a normal click still feels like a click.
   const sensors = useSensors(
-  useSensor(MouseSensor, {
-    activationConstraint: { distance: 6 },
-  }),
-  useSensor(TouchSensor, {
-    activationConstraint: { delay: 150, tolerance: 8 },
-  })
-)
+    useSensor(PointerSensor, {
+      activationConstraint: { delay: 150, tolerance: 8 },
+    })
+  )
 
-  // Stable across renders (deps are just setState functions, which React
+  // stable across renders (deps are just setState functions, which React
   // guarantees are stable) so they can be passed straight into memoized
   // BoardColumn instances without invalidating them every render.
   const handleAddTask = useCallback((listId: string) => {
@@ -241,7 +263,7 @@ export function KanbanBoard({
 
   // `over.id` can be a task id, a column's own sortable id, or the
   // dropzone id nested inside a column (used for dropping tasks into a
-  // short/empty column). This unwraps it back to a real list id.
+  // short/empty column). this unwraps it back to a real list id.
   function resolveOverListId(over: { id: string | number; data: { current?: Record<string, unknown> } }) {
     if (over.data.current?.type === "column-dropzone") {
       return over.data.current.listId as string
@@ -354,7 +376,7 @@ export function KanbanBoard({
         },
         () => {
           if (createAnother) {
-            // Reopen a blank create modal for the same column. The key
+            // reopen a blank create modal for the same column. the key
             // bump forces a remount so title/description/etc. reset.
             setTaskModalKey((k) => k + 1)
             setTaskModal({ listId })
@@ -393,8 +415,8 @@ export function KanbanBoard({
       setTaskThread((prev) =>
         prev ? { ...prev, comments: [...prev.comments, result.data] } : prev
       )
-      // A comment_added activity was logged server-side; refetch just the
-      // activity feed so the two tabs stay in sync without a full reload.
+      // a comment_added activity was logged server-side, so refetch just
+      // the activity feed to keep the two tabs in sync without a full reload.
       const refreshed = await getTaskThreadAction(taskId)
       if (refreshed.success) setTaskThread(refreshed.data)
     })
@@ -490,10 +512,13 @@ export function KanbanBoard({
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={lists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
+        <SortableContext
+          items={lists.map((l) => l.id)}
+          strategy={isMobileLayout ? verticalListSortingStrategy : horizontalListSortingStrategy}
+        >
           <div
-            className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto pb-4
-            snap-x snap-mandatory scroll-px-3 px-3 -mx-3 sm:mx-0 sm:px-0 sm:snap-none"
+            className="flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 sm:overflow-x-auto pb-4
+            px-3 -mx-3 sm:mx-0 sm:px-0 sm:snap-x sm:snap-mandatory sm:scroll-px-3"
           >
             {displayLists.map((list) => (
               <BoardColumn
@@ -510,8 +535,7 @@ export function KanbanBoard({
               />
             ))}
 
-            <div className="w-[85vw] max-w-[288px] sm:w-72 shrink-0 snap-start">
-              {addingColumn ? (
+            <div className="w-full sm:w-72 sm:shrink-0 sm:snap-start">              {addingColumn ? (
                 <form
                   onSubmit={handleAddColumn}
                   className="bg-muted rounded-2xl p-3 space-y-2"
@@ -700,12 +724,11 @@ const BoardColumn = memo(function BoardColumn({
     data: { type: "list" },
   })
 
-  // Read this column's own pending flag straight from the store instead of
-  // taking it as a prop. A prop here would mean any list's rename/delete
+  // read this column's own pending flag straight from the store instead of
+  // taking it as a prop. a prop here would mean any list's rename/delete
   // forces a new value down through KanbanBoard -> every BoardColumn,
-  // defeating memo for columns that aren't the one changing. Subscribing
-  // directly means only *this* column re-renders when *its* pending state
-  // flips.
+  // defeating memo for columns that aren't the one changing. subscribing
+  // directly means only this column re-renders when its pending state flips.
   const isColumnPending = useBoardStore((s) => s.pendingListIds.has(list.id))
 
   const { setNodeRef: setDroppableRef } = useDroppable({
@@ -745,8 +768,8 @@ const BoardColumn = memo(function BoardColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className="w-[85vw] max-w-[288px] sm:w-72 shrink-0 snap-start flex flex-col
-                h-[58dvh]
+      className="w-full sm:w-72 sm:shrink-0 sm:snap-start flex flex-col
+                h-[50vh] sm:h-[58dvh]
               bg-muted rounded-2xl border
               border-border/80 dark:border-transparent"
     >
@@ -918,7 +941,7 @@ const SortableTaskCard = memo(function SortableTaskCard({
     data: { type: "task" },
   })
 
-  // Subscribed directly (not passed as a prop) so a pending change on one
+  // subscribed directly (not passed as a prop) so a pending change on one
   // task only re-renders that task's own card, not its whole column.
   const pending = useBoardStore((s) => s.pendingTaskIds.has(task.id))
 
@@ -929,7 +952,13 @@ const SortableTaskCard = memo(function SortableTaskCard({
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none">
+    <div
+      ref={setNodeRef}
+      style={{ ...style, WebkitTouchCallout: "none" }}
+      {...attributes}
+      {...listeners}
+      className="touch-none select-none"
+    >
       <TaskCard
         task={task}
         assigneeName={assigneeName}
@@ -943,8 +972,8 @@ const SortableTaskCard = memo(function SortableTaskCard({
   )
 })
 
-// Same idea as SortableTaskCard but without drag wiring, used for the
-// non-draggable search-results list. Kept as its own memoized component
+// same idea as SortableTaskCard but without drag wiring, used for the
+// non-draggable search-results list. kept as its own memoized component
 // (rather than inlining useBoardStore in the .map() above) so each card
 // only re-renders for its own pending-state change.
 const SearchResultTaskCard = memo(function SearchResultTaskCard({

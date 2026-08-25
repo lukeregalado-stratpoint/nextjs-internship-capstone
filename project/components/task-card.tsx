@@ -1,40 +1,12 @@
-// TODO: Task 5.6 - Create task detail modals and editing interfaces
+// todo: task 5.6, task detail modal / editing interface (see modals/create-task-modal.tsx)
 
 /*
-TODO: Implementation Notes for Interns:
-
-This component should display:
-- Task title and description
-- Priority indicator
-- Assignee avatar
-- Due date
-- Labels/tags
-- Comments count
-- Drag handle for reordering
-
-Props interface:
-interface TaskCardProps {
-  task: {
-    id: string
-    title: string
-    description?: string
-    priority: 'low' | 'medium' | 'high'
-    assignee?: User
-    dueDate?: Date
-    labels: string[]
-    commentsCount: number
-  }
-  isDragging?: boolean
-  onEdit?: (id: string) => void
-  onDelete?: (id: string) => void
-}
-
-Features to implement:
-- Drag and drop support
-- Click to open task modal
-- Priority color coding
-- Overdue indicators
-- Responsive design
+old planning notes, keeping around for reference until the modal work above
+is actually done:
+- title, description, priority, assignee avatar, due date, labels, comment
+  count, drag handle
+- click opens the task modal, priority gets color coded, overdue shows a
+  flag, needs to hold up on small screens
 */
 
 "use client"
@@ -67,22 +39,22 @@ export const TaskCard = memo(function TaskCard({
   pending = false,
 }: {
   task: Task
-  /** Resolved from task.assigneeId by the parent, which has the member list. */
+  /** resolved from task.assigneeId by the parent, which has the member list */
   assigneeName?: string
-  /** Resolved from task.taskLabels by the parent, which has the project's label set. */
+  /** resolved from task.taskLabels by the parent, which has the project's label set */
   labels?: { id: string; name: string; color: string }[]
   onClick?: () => void
-  /** Whether this task is part of the board's current multi-select. */
+  /** whether this task is part of the board's current multi-select */
   selected?: boolean
   /**
-   * Present -> this card is selectable: shows a checkbox and lets
-   * Cmd/Ctrl+click toggle selection instead of opening the task. Omit to
+   * present -> this card is selectable: shows a checkbox and lets
+   * cmd/ctrl+click toggle selection instead of opening the task. omit to
    * render a plain (non-selectable) card, e.g. in the drag overlay.
    */
   onToggleSelect?: () => void
   /**
-   * True while this task has an unconfirmed optimistic mutation in flight
-   * (drag move, bulk edit, etc). Purely visual — the card stays fully
+   * true while this task has an unconfirmed optimistic mutation in flight
+   * (drag move, bulk edit, etc). purely visual, the card stays fully
    * interactive so a fast second edit isn't blocked by a slow first one.
    */
   pending?: boolean
@@ -106,16 +78,16 @@ export const TaskCard = memo(function TaskCard({
   }
 
   function handleCheckboxPointerDown(e: MouseEvent) {
-    // Cards inside SortableTaskCard have dnd-kit's drag listeners on an
-    // ancestor element (bound to pointerdown) — stop it here too, not just
-    // on click, or tapping the checkbox can be swallowed as a drag start.
+    // cards inside SortableTaskCard have dnd-kit's drag listeners on an
+    // ancestor element bound to pointerdown, so stop it here too, not just
+    // on click, or tapping the checkbox can get swallowed as a drag start.
     e.stopPropagation()
   }
 
   return (
-    // A plain <button> can't contain the nested checkbox <button> below
-    // (invalid HTML), so this is a div acting as a button: same click/
-    // keyboard/focus behavior via role, tabIndex, and onKeyDown.
+    // a plain <button> can't contain the nested checkbox <button> below
+    // (invalid HTML), so this is a div acting as a button: same click,
+    // keyboard, and focus behavior via role, tabIndex, and onKeyDown.
     <div
       role="button"
       tabIndex={0}

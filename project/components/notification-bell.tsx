@@ -77,7 +77,7 @@ export function NotificationBell({
           <div
             className={`absolute ${
               dropdownPosition === "bottom" ? "bottom-full mb-2" : "top-full mt-2"
-            } left-0 z-50 w-80 max-h-96 overflow-y-auto rounded-lg border border-line dark:border-line-dark bg-surface dark:bg-surface-dark shadow-lg`}
+            } right-0 z-50 w-80 max-w-[calc(100vw-1.5rem)] max-h-96 overflow-y-auto rounded-lg border border-line dark:border-line-dark bg-surface dark:bg-surface-dark shadow-lg`}
           >
             <div className="flex items-center justify-between px-3 py-2 border-b border-line dark:border-line-dark">
               <span className="text-sm font-medium text-ink dark:text-paper">Notifications</span>
@@ -158,8 +158,8 @@ export function NotificationBell({
                     n.readAt ? "" : "bg-primary/5"
                   } ${isPendingInvite ? "" : "hover:bg-paper dark:hover:bg-paper-dark"}`
 
-                  // A pending invitation isn't "go look at this" like other
-                  // notification types — it needs an explicit Accept/Decline,
+                  // a pending invitation isn't "go look at this" like other
+                  // notification types, it needs an explicit accept/decline,
                   // so it renders as a plain row instead of a navigating Link.
                   if (isPendingInvite) {
                     return (

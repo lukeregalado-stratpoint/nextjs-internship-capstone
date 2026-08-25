@@ -4,33 +4,33 @@ import { Kanban, Users, Calendar, BarChart3, Shield, Zap } from "lucide-react"
 const features: { icon: LucideIcon; title: string; description: string }[] = [
   {
     icon: Kanban,
-    title: "Boards that match how work moves",
-    description: "Drag a card from backlog to done. The board is the status update, nobody has to write one.",
+    title: "Boards that match how work actually moves",
+    description: "Drag a card from backlog to done and that's the status update. Nobody has to write one up.",
   },
   {
     icon: Users,
-    title: "One place for the whole team",
-    description: "Comments, assignments, and updates land where the work already lives.",
+    title: "Everyone's stuff lives in one place",
+    description: "Comments, assignments, whatever, it all shows up where the work already is.",
   },
   {
     icon: Calendar,
-    title: "Deadlines you don't have to track by hand",
-    description: "Calendar views and due-date reminders keep milestones visible without a spreadsheet.",
+    title: "Deadlines without a separate spreadsheet",
+    description: "Calendar view plus reminders means milestones don't quietly slip past you.",
   },
   {
     icon: BarChart3,
-    title: "See where things are actually stuck",
-    description: "Analytics surface bottlenecks by project and by person, not just a burndown chart.",
+    title: "Find out where things are actually stuck",
+    description: "Analytics break things down by project and by person, not just a burndown chart nobody reads.",
   },
   {
     icon: Shield,
-    title: "Access scoped to your team",
-    description: "Invite members, manage roles, and keep project data visible only to the people on it.",
+    title: "Only your team sees your stuff",
+    description: "Invite people, set roles, keep project data locked down to who's actually on it.",
   },
   {
     icon: Zap,
-    title: "Updates as they happen",
-    description: "Changes sync in real time, so the board you're looking at is never stale.",
+    title: "Updates land instantly",
+    description: "Everything syncs live, so the board you're staring at is never out of date.",
   },
 ]
 
@@ -39,7 +39,7 @@ export function Features() {
     <section id="features" className="px-4 py-20 sm:px-6 lg:px-8">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-16 max-w-xl">
-          <p className="font-mono text-xs uppercase tracking-wider text-primary">What's included</p>
+          <p className="font-mono text-xs uppercase tracking-wider text-primary">./ FEATURES</p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-ink dark:text-paper md:text-4xl">
             Built around the board, not around meetings
           </h2>

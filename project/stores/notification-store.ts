@@ -12,7 +12,7 @@ interface NotificationState {
   markRead: (id: string) => void
   markAllRead: () => void
   // called right after accept/decline succeeds, so the buttons update
-  // immediately instead of waiting on the next SSE event or a refresh
+  // immediately instead of waiting on the next sse event or a refresh
   setInvitationStatus: (projectId: string, status: "accepted" | "declined") => void
   toggleOpen: () => void
   setOpen: (open: boolean) => void

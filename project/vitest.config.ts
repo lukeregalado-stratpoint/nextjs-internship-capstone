@@ -14,7 +14,7 @@ export default defineConfig({
     setupFiles: ["./test/setup.ts"],
     globals: true,
     css: true,
-    // Two projects so coverage can attribute unit vs. integration tests
+    // two projects so coverage can attribute unit vs. integration tests
     // separately if needed later; both run under the same jsdom env for now.
     include: [
       "components/**/*.test.{ts,tsx}",
@@ -42,8 +42,8 @@ export default defineConfig({
         "db/migrations/**",
       ],
       thresholds: {
-        // Deliberately modest starting bar — ratchet these up as coverage
-        // grows instead of gating CI red on day one. See CI workflow notes.
+        // deliberately modest starting bar - ratchet these up as coverage
+        // grows instead of gating ci red on day one. see ci workflow notes.
         lines: 60,
         statements: 60,
         functions: 55,

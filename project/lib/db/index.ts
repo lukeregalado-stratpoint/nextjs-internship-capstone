@@ -1,5 +1,5 @@
-// TODO: Task 3.2 - Configure PostgreSQL database (Vercel Postgres or Neon)
-// TODO: Task 3.5 - Implement database connection and query utilities
+// todo: task 3.2 - configure postgresql database (vercel postgres or neon)
+// todo: task 3.5 - implement database connection and query utilities
 
 /*
 TODO: Implementation Notes for Interns:

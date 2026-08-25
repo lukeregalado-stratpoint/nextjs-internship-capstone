@@ -6,8 +6,8 @@ import { CreateTaskModal } from "@/components/modals/create-task-modal"
 import type { ListWithTasks } from "@/stores/board-store"
 import type { Task } from "@/lib/db/schema"
 
-// TaskComments/TaskActivity aren't part of this component's own contract —
-// stub them so this file tests CreateTaskModal's own logic (tabs, form,
+// taskcomments/taskactivity aren't part of this component's own contract -
+// stub them so this file tests createtaskmodal's own logic (tabs, form,
 // labels) rather than re-testing components that deserve their own files.
 vi.mock("@/components/task-comments", () => ({
   TaskComments: ({ comments }: { comments: unknown[] }) => (
@@ -36,7 +36,7 @@ function baseProps(overrides: Partial<ComponentProps<typeof CreateTaskModal>> = 
   }
 }
 
-describe("CreateTaskModal — create mode", () => {
+describe("CreateTaskModal - create mode", () => {
   it("disables submit until a title is entered, then enables it", async () => {
     const user = userEvent.setup()
     render(<CreateTaskModal {...baseProps()} />)
@@ -122,7 +122,7 @@ describe("CreateTaskModal — create mode", () => {
   })
 })
 
-describe("CreateTaskModal — labels", () => {
+describe("CreateTaskModal - labels", () => {
   const projectLabels = [
     { id: "label-1", name: "Bug", color: "#ff0000" },
     { id: "label-2", name: "Docs", color: "#00ff00" },
@@ -187,7 +187,7 @@ describe("CreateTaskModal — labels", () => {
   })
 })
 
-describe("CreateTaskModal — edit mode", () => {
+describe("CreateTaskModal - edit mode", () => {
   const existingTask = {
     id: "task-1",
     title: "Existing task",

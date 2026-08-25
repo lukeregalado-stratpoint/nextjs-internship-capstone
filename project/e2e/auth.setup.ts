@@ -5,8 +5,8 @@ import path from "node:path"
 const authFile = path.join(__dirname, ".auth/user.json")
 const PROJECT_NAME = "E2E Test Project"
 
-// clerkSetup() (registering the Testing Token for the whole run) now runs
-// once in globalSetup — see e2e/global-setup.ts — so this only needs to
+// clerksetup() (registering the testing token for the whole run) now runs
+// once in globalsetup - see e2e/global-setup.ts - so this only needs to
 // apply that token to this page before driving the real sign-in form.
 setup("authenticate", async ({ page }) => {
   await setupClerkTestingToken({ page })
@@ -15,7 +15,7 @@ setup("authenticate", async ({ page }) => {
   const testPassword = process.env.E2E_TEST_USER_PASSWORD
   if (!testEmail || !testPassword) {
     throw new Error(
-      "E2E_TEST_USER_EMAIL / E2E_TEST_USER_PASSWORD must be set — create a dedicated " +
+      "E2E_TEST_USER_EMAIL / E2E_TEST_USER_PASSWORD must be set - create a dedicated " +
         "Clerk test-instance user for E2E runs, never a real account."
     )
   }
@@ -28,9 +28,9 @@ setup("authenticate", async ({ page }) => {
 
   await page.waitForURL(/\/dashboard/)
 
-  // Several specs (board-task-lifecycle.spec.ts, project-and-members.spec.ts)
-  // assume a project called "E2E Test Project" already exists on the
-  // dashboard. Seed it here, once, idempotently, rather than each spec
+  // several specs (board-task-lifecycle.spec.ts, project-and-members.spec.ts)
+  // assume a project called "e2e test project" already exists on the
+  // dashboard. seed it here, once, idempotently, rather than each spec
   // creating (and potentially duplicating) it.
   const projectLink = page.getByRole("link", { name: PROJECT_NAME })
   if ((await projectLink.count()) === 0) {

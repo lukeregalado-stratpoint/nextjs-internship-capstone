@@ -23,12 +23,12 @@ export function useLists(projectId: string) {
     setListPending,
   } = useBoardStore()
 
-  // Every function below is wrapped in useCallback and reads current store
-  // state via `useBoardStore.getState()` rather than the subscribed `lists`
-  // value, so their identity only changes if `projectId` (or a store
-  // action, which Zustand keeps stable) changes — not on every board
-  // mutation. That stability is what lets BoardColumn/TaskCard be wrapped
-  // in React.memo and actually skip re-rendering columns that didn't
+  // every function below is wrapped in usecallback and reads current store
+  // state via `useboardstore.getstate()` rather than the subscribed `lists`
+  // value, so their identity only changes if `projectid` (or a store
+  // action, which zustand keeps stable) changes - not on every board
+  // mutation. that stability is what lets boardcolumn/taskcard be wrapped
+  // in react.memo and actually skip re-rendering columns that didn't
   // change, instead of getting a "new" callback prop every render.
 
   const createList = useCallback(

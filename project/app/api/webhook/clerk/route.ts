@@ -5,7 +5,7 @@ import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
 
 export async function POST(req: NextRequest) {
-  // verify it is from Clerk
+  // verify it is from clerk
   let evt
   try {
     evt = await verifyWebhook(req)

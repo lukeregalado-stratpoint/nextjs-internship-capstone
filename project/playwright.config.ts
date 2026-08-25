@@ -9,15 +9,15 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`
 
 export default defineConfig({
   testDir: "./e2e",
-  // Runs once before any project below — see e2e/global-setup.ts.
+  // runs once before any project below - see e2e/global-setup.ts.
   globalSetup: "./e2e/global-setup.ts",
-  // The E2E tests share one Clerk user and one Neon test database. Running
+  // the e2e tests share one clerk user and one neon test database. running
   // mutations in parallel makes the fixture and board assertions race.
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // E2E hits real Clerk + Neon test instances — cap workers in CI to avoid
-  // rate limits / connection pool exhaustion on the shared test DB.
+  // e2e hits real clerk + neon test instances - cap workers in ci to avoid
+  // rate limits / connection pool exhaustion on the shared test db.
   workers: 1,
   reporter: process.env.CI
     ? [["html", { open: "never" }], ["github"], ["junit", { outputFile: "e2e-results.xml" }]]
@@ -65,10 +65,10 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     env: {
-      // Falls back to the app's normal dev env var names so you don't have
-      // to duplicate them — set TEST_DATABASE_URL / CLERK_PUBLISHABLE_KEY
-      // explicitly only if you want E2E pointed somewhere different (e.g.
-      // a separate Neon branch) than your everyday dev values.
+      // falls back to the app's normal dev env var names so you don't have
+      // to duplicate them - set test_database_url / clerk_publishable_key
+      // explicitly only if you want e2e pointed somewhere different (e.g.
+      // a separate neon branch) than your everyday dev values.
       DATABASE_URL: process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? "",
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
         process.env.CLERK_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "",

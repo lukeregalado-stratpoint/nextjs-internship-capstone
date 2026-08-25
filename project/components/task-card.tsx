@@ -39,9 +39,9 @@ export const TaskCard = memo(function TaskCard({
   pending = false,
 }: {
   task: Task
-  /** resolved from task.assigneeId by the parent, which has the member list */
+  /** resolved from task.assigneeid by the parent, which has the member list */
   assigneeName?: string
-  /** resolved from task.taskLabels by the parent, which has the project's label set */
+  /** resolved from task.tasklabels by the parent, which has the project's label set */
   labels?: { id: string; name: string; color: string }[]
   onClick?: () => void
   /** whether this task is part of the board's current multi-select */
@@ -78,7 +78,7 @@ export const TaskCard = memo(function TaskCard({
   }
 
   function handleCheckboxPointerDown(e: MouseEvent) {
-    // cards inside SortableTaskCard have dnd-kit's drag listeners on an
+    // cards inside sortabletaskcard have dnd-kit's drag listeners on an
     // ancestor element bound to pointerdown, so stop it here too, not just
     // on click, or tapping the checkbox can get swallowed as a drag start.
     e.stopPropagation()
@@ -86,8 +86,8 @@ export const TaskCard = memo(function TaskCard({
 
   return (
     // a plain <button> can't contain the nested checkbox <button> below
-    // (invalid HTML), so this is a div acting as a button: same click,
-    // keyboard, and focus behavior via role, tabIndex, and onKeyDown.
+    // (invalid html), so this is a div acting as a button: same click,
+    // keyboard, and focus behavior via role, tabindex, and onkeydown.
     <div
       role="button"
       tabIndex={0}

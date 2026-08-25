@@ -1,5 +1,5 @@
-// TODO: Task 3.1 - Design database schema for users, projects, lists, and tasks
-// TODO: Task 3.3 - Set up Drizzle ORM with type-safe schema definitions
+// todo: task 3.1 - design database schema for users, projects, lists, and tasks
+// todo: task 3.3 - set up drizzle orm with type-safe schema definitions
 
 /*
 TODO: Implementation Notes for Interns:
@@ -74,7 +74,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "project_invitation",
 ])
 
-// TABLES
+// tables
 
 export const users = pgTable(
   "users",
@@ -127,14 +127,14 @@ export const projectMembers = pgTable(
   ]
 )
 
-// Adding someone to a project no longer inserts into project_members
-// directly — it creates a pending row here, the invitee gets a
+// adding someone to a project no longer inserts into project_members
+// directly - it creates a pending row here, the invitee gets a
 // notification, and only accepting turns it into a real project_members
-// row (see addProjectMember calls in acceptInvitationAction). One row is
+// row (see addprojectmember calls in acceptinvitationaction). one row is
 // kept per (project, invitee) invite ever sent rather than deleted on
 // respond, so "already invited"/"declined before" can be checked without a
-// separate audit table. A fresh invite after a decline re-uses the same
-// row (see createOrRefreshInvitation) rather than piling up duplicates.
+// separate audit table. a fresh invite after a decline re-uses the same
+// row (see createorrefreshinvitation) rather than piling up duplicates.
 export const projectInvitations = pgTable(
   "project_invitations",
   {
@@ -156,8 +156,8 @@ export const projectInvitations = pgTable(
   (table) => [
     index("project_invitations_project_id_idx").on(table.projectId),
     index("project_invitations_invitee_id_idx").on(table.inviteeId),
-    // One invitation row per (project, invitee) — re-inviting after a
-    // decline upserts this row (onConflictDoUpdate) instead of inserting
+    // one invitation row per (project, invitee) - re-inviting after a
+    // decline upserts this row (onconflictdoupdate) instead of inserting
     // a duplicate.
     uniqueIndex("project_invitations_project_invitee_unique").on(
       table.projectId,
@@ -195,11 +195,11 @@ export const tasks = pgTable(
     }),
     priority: priorityEnum("priority").notNull().default("medium"),
     dueDate: timestamp("due_date"),
-    // Set once a due-date reminder notification has gone out for this task,
+    // set once a due-date reminder notification has gone out for this task,
     // so the daily cron (app/api/cron/due-date-reminders) doesn't re-send
-    // one on every run. Cleared implicitly whenever dueDate changes to a
-    // later date, since that's a new deadline to remind about — see the
-    // due_date_changed handling in updateTaskAction.
+    // one on every run. cleared implicitly whenever duedate changes to a
+    // later date, since that's a new deadline to remind about - see the
+    // due_date_changed handling in updatetaskaction.
     dueReminderSentAt: timestamp("due_reminder_sent_at"),
     position: integer("position").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -216,7 +216,7 @@ export const labels = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
-    // hex color, e.g. "#8B5CF6" — validated at the zod layer, not here
+    // hex color, e.g. "#8b5cf6" - validated at the zod layer, not here
     color: text("color").notNull(),
     projectId: uuid("project_id")
       .notNull()
@@ -263,12 +263,12 @@ export const comments = pgTable(
   ]
 )
 
-// Append-only audit log for a task. One row per notable change (created,
+// append-only audit log for a task. one row per notable change (created,
 // field edits, label add/remove, comment add/delete). `metadata` holds
-// type-specific, human-renderable details — e.g. { from: "medium", to:
-// "high" } for a priority_changed row, or { commentId } for comment_added —
+// type-specific, human-renderable details - e.g. { from: "medium", to:
+// "high" } for a priority_changed row, or { commentid } for comment_added -
 // so the activity feed doesn't need to re-derive "what changed" after the
-// fact. Rows are never updated or deleted once written; deleting the task
+// fact. rows are never updated or deleted once written; deleting the task
 // cascades them away.
 export const activities = pgTable(
   "activities",
@@ -290,10 +290,10 @@ export const activities = pgTable(
   ]
 )
 
-// One row per notification a user receives. Unlike `activities` (an
-// append-only log scoped to a task), this is scoped to the *recipient* —
-// readAt tracks per-user read state, and rows are queried by recipientId,
-// not taskId. `actorId` is nullable since system-generated notifications
+// one row per notification a user receives. unlike `activities` (an
+// append-only log scoped to a task), this is scoped to the *recipient* -
+// readat tracks per-user read state, and rows are queried by recipientid,
+// not taskid. `actorid` is nullable since system-generated notifications
 // (due-date reminders) have no acting user.
 export const notifications = pgTable(
   "notifications",
@@ -317,9 +317,9 @@ export const notifications = pgTable(
   ]
 )
 
-// One row per user, created lazily on first preference change (see
-// upsertNotificationPreferences). Absence of a row means "all enabled" —
-// isNotificationTypeEnabled() falls back to true when no row exists, so
+// one row per user, created lazily on first preference change (see
+// upsertnotificationpreferences). absence of a row means "all enabled" -
+// isnotificationtypeenabled() falls back to true when no row exists, so
 // this matches the column defaults below without needing a backfill.
 export const notificationPreferences = pgTable(
   "notification_preferences",
@@ -339,7 +339,7 @@ export const notificationPreferences = pgTable(
   (table) => [index("notification_preferences_user_id_idx").on(table.userId)]
 )
 
-// RELATIONS
+// relations
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   ownedProjects: many(projects),
@@ -376,8 +376,8 @@ export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
   }),
 }))
 
-// Two FKs into `users` (inviter, invitee) need relationName to disambiguate,
-// same pattern as notificationsRelations below.
+// two fks into `users` (inviter, invitee) need relationname to disambiguate,
+// same pattern as notificationsrelations below.
 export const projectInvitationsRelations = relations(projectInvitations, ({ one }) => ({
   project: one(projects, {
     fields: [projectInvitations.projectId],
@@ -439,8 +439,8 @@ export const activitiesRelations = relations(activities, ({ one }) => ({
   }),
 }))
 
-// Two FKs into `users` (recipient, actor) need relationName to disambiguate
-// which is which — without it, drizzle can't tell the two apart.
+// two fks into `users` (recipient, actor) need relationname to disambiguate
+// which is which - without it, drizzle can't tell the two apart.
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   recipient: one(users, {
     fields: [notifications.recipientId],
@@ -488,7 +488,7 @@ export const taskLabelsRelations = relations(taskLabels, ({ one }) => ({
   }),
 }))
 
-// INFERRED-TYPES
+// inferred-types
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
  

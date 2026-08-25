@@ -48,8 +48,8 @@ export function useTasks(projectId: string) {
     // apply immediately (optimistic update)
     const snapshot = useBoardStore.getState().lists
     if (input.listId) moveTaskInStore(taskId, input.listId)
-    // `labelIds` isn't a store field (the store holds resolved `labels`
-    // objects for rendering) — skip it optimistically and let the
+    // `labelids` isn't a store field (the store holds resolved `labels`
+    // objects for rendering) - skip it optimistically and let the
     // confirmed response below fill in the resolved label set.
     const { listId, labelIds, ...fields } = input
     updateTaskInStore(taskId, fields)
@@ -96,7 +96,7 @@ export function useTasks(projectId: string) {
   /**
    * retains drag + drop result. The task is already sitting in its new
    * column optimistically by the time this is called (board.tsx applies
-   * moveTask/reorderTasksInList to the store on drop) — this just confirms
+   * moveTask/reorderTasksInList to the store on drop) - this just confirms
    * with the server, so the card gets a pending indicator until it lands.
    */
   function moveTask(

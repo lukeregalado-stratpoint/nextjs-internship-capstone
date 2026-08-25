@@ -216,7 +216,7 @@ Call log:
   118 |     await page.getByText(title).click()
   119 | 
   120 |     await page.getByRole("button", { name: /comments/i }).click()
-  121 |     const commentText = `Looks good to me — ${Date.now()}`
+  121 |     const commentText = `Looks good to me - ${Date.now()}`
   122 |     await page.getByPlaceholder(/write a comment/i).fill(commentText)
   123 |     await page.getByRole("button", { name: "Post" }).click()
   124 | 

@@ -401,7 +401,7 @@ As you progress through development, you'll need to replace placeholder dependen
    ```bash
    cd project
    vercel link
-   # Follow the prompts — create a new project or link to existing
+   # Follow the prompts - create a new project or link to existing
    ```
 
 4. **Set environment variables on Vercel**
@@ -435,13 +435,13 @@ As you progress through development, you'll need to replace placeholder dependen
 
 ## ⚙️ GitHub Actions Workflow (Disabled by Default)
 
-The file `.github/workflows/deploy.yml` contains a Vercel deployment workflow. It is **disabled by default** — the automatic triggers are commented out so nothing runs on push or pull request until you explicitly enable them.
+The file `.github/workflows/deploy.yml` contains a Vercel deployment workflow. It is **disabled by default** - the automatic triggers are commented out so nothing runs on push or pull request until you explicitly enable them.
 
 ### How to enable automatic deployments
 
 Open `.github/workflows/deploy.yml` and uncomment the trigger block you want:
 
-**Option A — Deploy on every push to `main`:**
+**Option A - Deploy on every push to `main`:**
 ```yaml
 on:
   push:
@@ -450,7 +450,7 @@ on:
   workflow_dispatch:
 ```
 
-**Option B — Preview deploy on pull requests:**
+**Option B - Preview deploy on pull requests:**
 ```yaml
 on:
   pull_request:
@@ -459,7 +459,7 @@ on:
   workflow_dispatch:
 ```
 
-**Option C — Both push to main and pull requests:**
+**Option C - Both push to main and pull requests:**
 ```yaml
 on:
   push:

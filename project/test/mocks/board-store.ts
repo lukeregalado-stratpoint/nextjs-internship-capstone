@@ -28,7 +28,7 @@ interface BoardState {
 /**
  * A real (not vi.fn()-mocked) zustand store, purpose-built to satisfy the
  * subset of the board-store contract that use-tasks.ts and kanban-board.tsx
- * actually call. Using a real store — rather than stubbing every method —
+ * actually call. Using a real store - rather than stubbing every method -
  * means optimistic-update and rollback tests exercise genuine state
  * transitions instead of just asserting "was called".
  *
@@ -106,7 +106,7 @@ export function createTestBoardStore() {
     selectTasks: (taskIds) => set({ selectedTaskIds: new Set(taskIds) }),
     clearSelection: () => set({ selectedTaskIds: new Set() }),
   }))
-  // Note: zustand's `create()` already attaches `.getState()` / `.setState()`
-  // / `.subscribe()` to the returned hook itself — use-tasks.ts relies on
-  // `useBoardStore.getState()`, which works automatically here.
+  // note: zustand's `create()` already attaches `.getstate()` / `.setstate()`
+  // / `.subscribe()` to the returned hook itself - use-tasks.ts relies on
+  // `useboardstore.getstate()`, which works automatically here.
 }

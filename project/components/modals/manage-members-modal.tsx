@@ -56,7 +56,7 @@ export function ManageMembersModal({
   const [invitedMessage, setInvitedMessage] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Debounce the autocomplete: wait for a pause in typing before hitting
+  // debounce the autocomplete: wait for a pause in typing before hitting
   // the server, so we're not firing a search on every keystroke.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -106,8 +106,8 @@ export function ManageMembersModal({
       })
       return
     }
-    // Fallback: no autocomplete suggestion was picked (e.g. they typed a
-    // full email for someone who didn't show up in search results — search
+    // fallback: no autocomplete suggestion was picked (e.g. they typed a
+    // full email for someone who didn't show up in search results - search
     // is prefix/substring matched, this catches an exact-match edge case).
     const typed = query.trim()
     if (!typed) return

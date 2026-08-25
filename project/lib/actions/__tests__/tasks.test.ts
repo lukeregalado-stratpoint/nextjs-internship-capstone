@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
-// --- Mocks for everything tasks.ts talks to ---------------------------
+// --- mocks for everything tasks.ts talks to ---------------------------
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 
 vi.mock("@/lib/auth", () => ({
@@ -31,9 +31,9 @@ vi.mock("@/lib/db/queries", () => ({
   setTaskLabels: vi.fn().mockResolvedValue(undefined),
 }))
 
-// Real zod schemas aren't available in this context — a permissive mock
+// real zod schemas aren't available in this context - a permissive mock
 // keeps these tests focused on tasks.ts's own branching (permissions,
-// diffing, activity logs) rather than re-verifying zod. Validation-schema
+// diffing, activity logs) rather than re-verifying zod. validation-schema
 // behavior itself belongs in lib/validations.test.ts against the real file.
 vi.mock("@/lib/validations", () => ({
   taskSchema: { safeParse: vi.fn((input) => ({ success: true, data: input })) },

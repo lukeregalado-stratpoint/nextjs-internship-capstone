@@ -39,7 +39,7 @@ function formatTimestamp(date: Date | string) {
   })
 }
 
-/** Turns an activity row + its metadata into a human-readable sentence. */
+/** turns an activity row + its metadata into a human-readable sentence. */
 function describeActivity(activity: ActivityWithUser): string {
   const meta = (activity.metadata ?? {}) as Record<string, unknown>
 

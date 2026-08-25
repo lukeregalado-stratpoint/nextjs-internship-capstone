@@ -45,7 +45,7 @@ test.describe("Project members", () => {
     await page.getByRole("button", { name: /manage/i }).click()
 
     await expect(page.getByRole("heading", { name: "Manage members" })).toBeVisible()
-    // the E2E test user is the project owner in the seeded fixture
+    // the e2e test user is the project owner in the seeded fixture
     await expect(page.getByText("Owner", { exact: true }).last()).toBeVisible()
   })
 })

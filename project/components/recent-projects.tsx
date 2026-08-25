@@ -72,7 +72,7 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
                     {members.slice(0, 4).map((member) => (
                       <div
                         key={member.userId}
-                        title={`${member.user.name} — ${ROLE_LABELS[member.role]}`}
+                        title={`${member.user.name} - ${ROLE_LABELS[member.role]}`}
                         className="h-6 w-6 rounded-sm ring-2 ring-surface dark:ring-surface-dark bg-signal-wash dark:bg-signal-wash-dark flex items-center justify-center text-[10px] font-medium text-signal-text dark:text-signal-text-dark"
                       >
                         {member.user.name.charAt(0).toUpperCase()}

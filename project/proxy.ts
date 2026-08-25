@@ -1,15 +1,15 @@
-// TODO: Task 2.2 - Configure authentication middleware for route protection
-// import { authMiddleware } from "@clerk/nextjs"
+// todo: task 2.2 - configure authentication middleware for route protection
+// import { authmiddleware } from "@clerk/nextjs"
 
-// NOTE: Next.js 16+ - The "middleware" file convention is deprecated.
-// When implementing authentication, consider using the new "proxy" pattern.
-// Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+// note: next.js 16+ - the "middleware" file convention is deprecated.
+// when implementing authentication, consider using the new "proxy" pattern.
+// learn more: https://nextjs.org/docs/messages/middleware-to-proxy
 
-// Placeholder middleware - currently allows all routes for development
-// TODO: Replace with actual Clerk authMiddleware when authentication is implemented
+// placeholder middleware - currently allows all routes for development
+// todo: replace with actual clerk authmiddleware when authentication is implemented
 import { clerkMiddleware } from "@clerk/nextjs/server"
  
-// const isProtectedRoute = createRouteMatcher([
+// const isprotectedroute = createroutematcher([
 //   "/dashboard(.*)",
 //   "/projects(.*)",
 //   "/analytics(.*)",
@@ -19,7 +19,7 @@ import { clerkMiddleware } from "@clerk/nextjs/server"
 // ])
 
 
-// Clock skew tolerance widened from Clerk's 5s default: a dev machine (or,
+// clock skew tolerance widened from clerk's 5s default: a dev machine (or,
 // in principle, any host) running a few seconds fast/slow otherwise causes
 // every refreshed session token to look "issued in the future" and trips
 // an infinite refresh loop. 20s covers realistic drift without meaningfully
@@ -32,11 +32,11 @@ export default clerkMiddleware({
  
 export const config = {
   matcher: [
-    // skip Next.js, unless found in search params
+    // skip next.js, unless found in search params
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // always run for API routes
+    // always run for api routes
     "/(api|trpc)(.*)",
-    // always run for Clerk-specific frontend API routes
+    // always run for clerk-specific frontend api routes
     "/__clerk/(.*)",
   ],
 }

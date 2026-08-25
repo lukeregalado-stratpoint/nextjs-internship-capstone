@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     # E2E hits a real (disposable) Neon branch + Clerk test instance via
-    # repo/environment secrets — see playwright.config.ts webServer.env.
+    # repo/environment secrets - see playwright.config.ts webServer.env.
     environment: e2e-test
     steps:
       - uses: actions/checkout@v4

@@ -1,4 +1,4 @@
-// TODO: Task 5.3 - Set up client-side state management with Zustand
+// todo: task 5.3 - set up client-side state management with zustand
 
 /*
 TODO: Implementation Notes for Interns:
@@ -17,21 +17,21 @@ Example structure:
 import { create } from 'zustand'
 
 interface UIState {
-  // Modal states
+  // modal states
   isCreateProjectModalOpen: boolean
   isCreateTaskModalOpen: boolean
   isTaskDetailModalOpen: boolean
   selectedTaskId: string | null
 
-  // UI states
+  // ui states
   sidebarOpen: boolean
   theme: 'light' | 'dark'
 
-  // Loading states
+  // loading states
   isLoading: boolean
   loadingMessage: string
 
-  // Actions
+  // actions
   openCreateProjectModal: () => void
   closeCreateProjectModal: () => void
   openCreateTaskModal: () => void
@@ -48,7 +48,7 @@ export const useUIStore = create<UIState>((set) => ({
 }))
 */
 
-// Placeholder to prevent import errors
+// placeholder to prevent import errors
 export const useUIStore = () => {
   console.log("TODO: Implement UI store with Zustand")
   return {

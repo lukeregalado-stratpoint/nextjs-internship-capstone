@@ -16,7 +16,7 @@ type ActionResult<T> =
 
 /**
  * Updates the signed-in user's display name. This is intentionally the
- * only editable field here — `email` on `users` is populated from Clerk
+ * only editable field here - `email` on `users` is populated from Clerk
  * (see the webhook route + `getOrCreateCurrentUser` in `lib/auth.ts`) and
  * isn't meant to drift from the auth provider's record, and there's no
  * `role` column on `users` at all: role is scoped per-project via

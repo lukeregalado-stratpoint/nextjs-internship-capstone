@@ -26,7 +26,7 @@ function formatTimestamp(date: Date | string) {
 interface TaskCommentsProps {
   comments: CommentWithAuthor[]
   currentUserId: string
-  /** Lets a comment be deleted by someone other than its author (the project owner moderating). */
+  /** lets a comment be deleted by someone other than its author (the project owner moderating). */
   canModerate?: boolean
   onAddComment: (content: string) => void
   onEditComment: (commentId: string, content: string) => void

@@ -44,7 +44,7 @@
     --card-foreground: 40 12% 92%;
     --popover: 260 12% 14%;
     --popover-foreground: 40 12% 92%;
-    --primary: 158 50% 45%;        /* jade — brighter for contrast on dark bg */
+    --primary: 158 50% 45%;        /* jade - brighter for contrast on dark bg */
     --primary-foreground: 0 0% 100%;
     --secondary: 260 12% 17%;
     --secondary-foreground: 40 12% 92%;
@@ -101,14 +101,14 @@
   --color-slate: #6e6875;
   --color-slate-dark: #9a94a3;
 
-  /* signal — full saturation, reserved for nav rule + focus ring only */
+  /* signal - full saturation, reserved for nav rule + focus ring only */
   --color-signal: #8d8fc7;
   --color-signal-wash: #ecedf7;
   --color-signal-wash-dark: #2a2a3d;
   --color-signal-text: #4a4c82;
   --color-signal-text-dark: #b3b5e0;
 
-  /* status semantics — mid tone for icons/borders, wash for backgrounds, text for labels on wash */
+  /* status semantics - mid tone for icons/borders, wash for backgrounds, text for labels on wash */
   --color-done: #7fa487;
   --color-done-wash: #e8f0e9;
   --color-done-wash-dark: #263029;

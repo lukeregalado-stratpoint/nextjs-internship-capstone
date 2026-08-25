@@ -12,7 +12,7 @@ import {
 /**
  * Accept/decline for a single project_invitation notification. Kept
  * separate from useMembers (owner-side invite/revoke) since this acts as
- * the invitee, not the project owner — different actor, different checks.
+ * the invitee, not the project owner - different actor, different checks.
  */
 export function useInvitations() {
   const router = useRouter()
@@ -45,8 +45,8 @@ export function useInvitations() {
     })
   }
 
-  // For the notification bell: a project_invitation notification only
-  // carries a projectId, not an invitationId — see the *ForProjectAction
+  // for the notification bell: a project_invitation notification only
+  // carries a projectid, not an invitationid - see the *forprojectaction
   // comment in lib/actions/invitations.ts for why that's still safe.
   function acceptInvitationForProject(projectId: string, onSuccess?: (projectId: string) => void) {
     setError(null)

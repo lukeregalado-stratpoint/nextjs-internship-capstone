@@ -9,7 +9,7 @@ Usage:
     python3 fix-colors.py
 
 It walks app/ and components/, rewriting .tsx/.ts/.css files in place.
-Run your grep again afterward — a handful of one-off combinations (unusual
+Run your grep again afterward - a handful of one-off combinations (unusual
 shades, typos like missing spaces between classes) won't match and will need
 a manual look, the script will print any files where an old token is still
 found after replacement.
@@ -206,7 +206,7 @@ def main() -> None:
 
     print(f"Updated {len(changed)} file(s).")
     if still_flagged:
-        print("\nThese still contain an old token after the automated pass —")
+        print("\nThese still contain an old token after the automated pass -")
         print("open them and check manually (likely a one-off combo the script didn't cover):")
         for p in still_flagged:
             print(f"  {p}")

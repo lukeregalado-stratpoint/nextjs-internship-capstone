@@ -9,7 +9,7 @@ import { CreateTaskModal } from "@/components/modals/create-task-modal"
 /**
  * Relies on the board store already being hydrated (KanbanBoard does this
  * on mount for the current project), so this button should be rendered
- * on a page where the board is present — e.g. the project detail page.
+ * on a page where the board is present - e.g. the project detail page.
  */
 export function CreateTaskButton({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false)

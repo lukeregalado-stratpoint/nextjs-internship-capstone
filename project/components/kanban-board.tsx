@@ -71,23 +71,23 @@ export function KanbanBoard({
   const [addingColumn, setAddingColumn] = useState(false)
   const [newColumnName, setNewColumnName] = useState("")
   const [labels, setLabels] = useState<Label[]>(initialLabels)
-  // `task` present means editing that task, absent means creating a new one in `listId`
+  // `task` present means editing that task, absent means creating a new one in `listid`
   const [taskModal, setTaskModal] = useState<{ listId: string; task?: TaskWithLabels } | null>(
     null
   )
-  // bumped every time we (re)open a fresh create modal so React remounts
-  // CreateTaskModal instead of reusing one with stale field values, which
+  // bumped every time we (re)open a fresh create modal so react remounts
+  // createtaskmodal instead of reusing one with stale field values, which
   // is needed for the "create another" flow below.
   const [taskModalKey, setTaskModalKey] = useState(0)
-  // lives here (not inside CreateTaskModal) so the checkbox's value
+  // lives here (not inside createtaskmodal) so the checkbox's value
   // survives that remount instead of resetting to false each time.
   const [createAnother, setCreateAnother] = useState(false)
   const [activeTask, setActiveTask] = useState<TaskWithLabels | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
   // columns stack vertically below the sm breakpoint (see the board's
-  // className below), so the drag strategy for reordering columns needs
-  // to match: horizontalListSortingStrategy assumes a row, and produces
+  // classname below), so the drag strategy for reordering columns needs
+  // to match: horizontallistsortingstrategy assumes a row, and produces
   // wrong drag transforms once the layout is actually a column.
   const [isMobileLayout, setIsMobileLayout] = useState(false)
   useEffect(() => {
@@ -138,7 +138,7 @@ export function KanbanBoard({
 
   const dragSnapshotRef = useRef<ListWithTasks[] | null>(null)
 
-  // hydrate: useLayoutEffect instead of useEffect so this flushes before
+  // hydrate: uselayouteffect instead of useeffect so this flushes before
   // the browser paints. the store's initial `lists` is always `[]`, so on
   // a fresh mount there'd otherwise be one visible frame of an empty
   // board before this fills it in.
@@ -224,17 +224,17 @@ export function KanbanBoard({
     bulkDeleteTasks,
   ])
 
-  // one PointerSensor handles mouse and touch. running separate MouseSensor
-  // + TouchSensor instances used to be the standard pattern, but on mobile
-  // they race each other: TouchSensor's delay-based activation loses to the
+  // one pointersensor handles mouse and touch. running separate mousesensor
+  // + touchsensor instances used to be the standard pattern, but on mobile
+  // they race each other: touchsensor's delay-based activation loses to the
   // browser's own scroll gesture recognition, which decides "this is a
   // scroll" on the very first touchmove, before our 150ms hold even
-  // elapses. PointerSensor goes through the Pointer Events API instead,
+  // elapses. pointersensor goes through the pointer events api instead,
   // which respects the card's `touch-action: none` (the `touch-none` class
-  // below) from the first frame rather than relying on a JS
-  // preventDefault() that shows up too late.
+  // below) from the first frame rather than relying on a js
+  // preventdefault() that shows up too late.
   //
-  // note: dnd-kit's activationConstraint is distance-or-delay, not both,
+  // note: dnd-kit's activationconstraint is distance-or-delay, not both,
   // passing both silently drops the delay, which is the one that matters
   // for touch (distance alone can't tell a scroll from a drag since
   // scrolling moves distance too). delay+tolerance works fine for mouse
@@ -245,9 +245,9 @@ export function KanbanBoard({
     })
   )
 
-  // stable across renders (deps are just setState functions, which React
+  // stable across renders (deps are just setstate functions, which react
   // guarantees are stable) so they can be passed straight into memoized
-  // BoardColumn instances without invalidating them every render.
+  // boardcolumn instances without invalidating them every render.
   const handleAddTask = useCallback((listId: string) => {
     setTaskModalKey((k) => k + 1)
     setTaskModal({ listId })
@@ -726,7 +726,7 @@ const BoardColumn = memo(function BoardColumn({
 
   // read this column's own pending flag straight from the store instead of
   // taking it as a prop. a prop here would mean any list's rename/delete
-  // forces a new value down through KanbanBoard -> every BoardColumn,
+  // forces a new value down through kanbanboard -> every boardcolumn,
   // defeating memo for columns that aren't the one changing. subscribing
   // directly means only this column re-renders when its pending state flips.
   const isColumnPending = useBoardStore((s) => s.pendingListIds.has(list.id))
@@ -972,9 +972,9 @@ const SortableTaskCard = memo(function SortableTaskCard({
   )
 })
 
-// same idea as SortableTaskCard but without drag wiring, used for the
+// same idea as sortabletaskcard but without drag wiring, used for the
 // non-draggable search-results list. kept as its own memoized component
-// (rather than inlining useBoardStore in the .map() above) so each card
+// (rather than inlining useboardstore in the .map() above) so each card
 // only re-renders for its own pending-state change.
 const SearchResultTaskCard = memo(function SearchResultTaskCard({
   task,

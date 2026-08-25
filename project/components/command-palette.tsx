@@ -66,8 +66,8 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  // Global ⌘K / Ctrl+K shortcut, works from anywhere while a dashboard
-  // route is mounted (this component lives in DashboardLayout).
+  // global ⌘k / ctrl+k shortcut, works from anywhere while a dashboard
+  // route is mounted (this component lives in dashboardlayout).
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -79,9 +79,9 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [togglePalette])
 
-  // Reset to a clean slate every time it opens, focus the input, and make
+  // reset to a clean slate every time it opens, focus the input, and make
   // sure the local search index is loaded (cheap no-op if it was already
-  // fetched recently — see `search-index-store`'s staleness check).
+  // fetched recently - see `search-index-store`'s staleness check).
   useEffect(() => {
     if (!isOpen) return
     setQuery("")

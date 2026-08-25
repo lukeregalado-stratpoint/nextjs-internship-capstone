@@ -1,5 +1,5 @@
-// TODO: Task 4.4 - Build task creation and editing functionality
-// TODO: Task 5.6 - Create task detail modals and editing interfaces
+// todo: task 4.4 - build task creation and editing functionality
+// todo: task 5.6 - create task detail modals and editing interfaces
 
 /*
 TODO: Implementation Notes for Interns:
@@ -61,21 +61,21 @@ interface ProjectLabel {
 }
 
 interface CreateTaskModalProps {
-  /** Columns available to file the task under. */
+  /** columns available to file the task under. */
   lists: ListWithTasks[]
-  /** Project owner + members, for the assignee picker. */
+  /** project owner + members, for the assignee picker. */
   members?: { id: string; name: string }[]
-  /** The project's available labels, for the label picker. */
+  /** the project's available labels, for the label picker. */
   labels?: ProjectLabel[]
-  /** Resolved from task.taskLabels by the parent (Task itself has no labels field). */
+  /** resolved from task.tasklabels by the parent (task itself has no labels field). */
   taskLabelIds?: string[]
-  /** Only project owners can create new labels inline from this modal. */
+  /** only project owners can create new labels inline from this modal. */
   isOwner?: boolean
-  /** Creates a new project label; the parent is expected to add it to `labels` on success. */
+  /** creates a new project label; the parent is expected to add it to `labels` on success. */
   onCreateLabel?: (values: { name: string; color: string }) => void
-  /** Presence of `task` puts the modal in edit mode. */
+  /** presence of `task` puts the modal in edit mode. */
   task?: Task
-  /** Column to preselect in create mode. */
+  /** column to preselect in create mode. */
   defaultListId?: string
   onClose: () => void
   onSubmit: (values: TaskFormSubmitValues) => void
@@ -84,7 +84,7 @@ interface CreateTaskModalProps {
   error?: string | null
   /**
    * Lifted to the parent (rather than local state) so the checkbox keeps
-   * its value across the "create another" remount — a fresh modal instance
+   * its value across the "create another" remount - a fresh modal instance
    * still reflects whatever the user last chose.
    */
   createAnother: boolean
@@ -172,7 +172,7 @@ export function CreateTaskModal({
     onSubmit({
       title: trimmedTitle,
       description: description.trim() || undefined,
-      // In edit mode, only send listId if it actually changed — this is
+      // in edit mode, only send listid if it actually changed - this is
       // what tells the action to treat it as a move.
       listId: isEditing ? (listId !== task?.listId ? listId : undefined) : listId,
       priority,

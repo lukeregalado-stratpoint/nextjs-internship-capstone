@@ -6,7 +6,7 @@ const CARDS_PER_COLUMN = [3, 4, 2, 3]
 export default function ProjectDetailLoading() {
   return (
     <div className="space-y-6">
-      {/* ProjectHeader: title row + stats strip */}
+      {/* projectheader: title row + stats strip */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="p-6 flex items-start justify-between gap-4">
           <div className="space-y-2 min-w-0 flex-1">
@@ -37,12 +37,12 @@ export default function ProjectDetailLoading() {
         </div>
       </div>
 
-      {/* TaskSearchBar */}
+      {/* tasksearchbar */}
       <div className="px-3 sm:px-0">
         <Skeleton className="h-10 w-full sm:max-w-md rounded-xl" />
       </div>
 
-      {/* Kanban columns (mirrors BoardColumn: 288px/72 wide, ~67dvh tall) */}
+      {/* kanban columns (mirrors boardcolumn: 288px/72 wide, ~67dvh tall) */}
       <div className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto pb-4 px-3 -mx-3 sm:mx-0 sm:px-0">
         {Array.from({ length: COLUMN_COUNT }).map((_, colIndex) => (
           <div

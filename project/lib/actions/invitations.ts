@@ -22,7 +22,7 @@ type InvitationWithContext = ProjectInvitation & {
   inviter: { id: string; name: string; email: string }
 }
 
-/** Invites addressed to the current user — powers a pending-invites list/badge. */
+/** invites addressed to the current user - powers a pending-invites list/badge. */
 export async function getMyInvitationsAction(): Promise<ActionResult<InvitationWithContext[]>> {
   const user = await requireUser()
   const invitations = await getPendingInvitationsForUser(user.id)
@@ -32,7 +32,7 @@ export async function getMyInvitationsAction(): Promise<ActionResult<InvitationW
 /**
  * The only place a project_invitations row turns into a real
  * project_members row. Re-checks the invite is still pending and actually
- * addressed to this user — a stale notification link (already responded
+ * addressed to this user - a stale notification link (already responded
  * to, or since revoked) fails cleanly instead of double-adding someone.
  */
 export async function acceptInvitationAction(input: unknown): Promise<ActionResult<{ projectId: string }>> {
@@ -52,7 +52,7 @@ export async function acceptInvitationAction(input: unknown): Promise<ActionResu
     return { success: false, error: "This invitation has already been responded to" }
   }
 
-  // Guards against a race where the owner re-added the person some other
+  // guards against a race where the owner re-added the person some other
   // way while the invite sat unopened.
   const existingMember = await getProjectMember(invite.projectId, user.id)
   if (!existingMember) {

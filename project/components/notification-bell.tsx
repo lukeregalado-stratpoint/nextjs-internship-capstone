@@ -36,9 +36,9 @@ export function NotificationBell({
   const setOpen = useNotificationStore((s) => s.setOpen)
   const setInvitationStatus = useNotificationStore((s) => s.setInvitationStatus)
 
-  // invitationStatus comes from project_invitations itself (see
-  // getNotificationsForUser), so it survives a refresh instead of resetting
-  // like local component state would. setInvitationStatus updates the store
+  // invitationstatus comes from project_invitations itself (see
+  // getnotificationsforuser), so it survives a refresh instead of resetting
+  // like local component state would. setinvitationstatus updates the store
   // right away so the buttons swap out without waiting on a refetch.
   function handleAccept(n: AppNotification) {
     if (!n.projectId) return
@@ -160,7 +160,7 @@ export function NotificationBell({
 
                   // a pending invitation isn't "go look at this" like other
                   // notification types, it needs an explicit accept/decline,
-                  // so it renders as a plain row instead of a navigating Link.
+                  // so it renders as a plain row instead of a navigating link.
                   if (isPendingInvite) {
                     return (
                       <li key={n.id} className={rowClassName}>

@@ -30,12 +30,12 @@ import {
   type ProjectMember,
 } from "@/lib/db/schema"
 
-// PROJECTS
+// projects
 
 /**
  * Projects a user can see on the projects list: ones they own, plus ones
  * they've been added to as a member. Previously this only checked
- * `ownerId`, so members never saw projects they'd been added to — fixed by
+ * `ownerId`, so members never saw projects they'd been added to - fixed by
  * also matching against their project_members rows.
  */
 export async function getProjectsForUser(userId: string) {
@@ -56,7 +56,7 @@ export async function getProjectsForUser(userId: string) {
       members: true,
       lists: {
         orderBy: [asc(lists.position)],
-        // Only `id` is used below (for counts/progress) — pulling full
+        // only `id` is used below (for counts/progress) - pulling full
         // task rows (title, description, dates, etc.) here was shipping
         // every field of every task on the projects list page for no
         // reason.
@@ -80,8 +80,8 @@ export async function getProjectsForUser(userId: string) {
       taskCount: allTasks.length,
       listCount: project.lists.length,
       progress: allTasks.length === 0 ? 0 : Math.round((doneCount / allTasks.length) * 100),
-      // New fields, additive — existing consumers that don't read these are
-      // unaffected. Lets the list UI distinguish "yours" from "shared with
+      // new fields, additive - existing consumers that don't read these are
+      // unaffected. lets the list ui distinguish "yours" from "shared with
       // you" if you want to show that.
       isOwner: project.ownerId === userId,
       ownerName: project.owner.name,
@@ -106,7 +106,7 @@ export async function getAccessibleProjectIds(userId: string) {
   return new Set([...owned.map((p) => p.id), ...memberOf.map((m) => m.projectId)])
 }
 
-/** Detail view: project + owner + members + lists + tasks, ordered for the board. */
+/** detail view: project + owner + members + lists + tasks, ordered for the board. */
 export async function getProjectById(projectId: string) {
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
@@ -131,10 +131,10 @@ export async function getProjectById(projectId: string) {
 
   if (!project) return project
 
-  // Flatten the task_labels join rows into a plain `labels` array so every
-  // consumer (the board store, TaskCard, CreateTaskModal) works with the
-  // same TaskWithLabels shape, whether the task just came from this query
-  // or from createTaskAction/updateTaskAction.
+  // flatten the task_labels join rows into a plain `labels` array so every
+  // consumer (the board store, taskcard, createtaskmodal) works with the
+  // same taskwithlabels shape, whether the task just came from this query
+  // or from createtaskaction/updatetaskaction.
   return {
     ...project,
     lists: project.lists.map((list) => ({
@@ -197,7 +197,7 @@ export async function deleteProject(projectId: string) {
   await db.delete(projects).where(eq(projects.id, projectId))
 }
 
-// projects.ownderId only
+// projects.ownderid only
 export async function ownsProject(projectId: string, userId: string) {
   const project = await db.query.projects.findFirst({
     where: and(eq(projects.id, projectId), eq(projects.ownerId, userId)),
@@ -206,7 +206,7 @@ export async function ownsProject(projectId: string, userId: string) {
   return !!project
 }
 
-/** Just id/name — used to compose notification text without pulling the full project graph. */
+/** just id/name - used to compose notification text without pulling the full project graph. */
 export async function getProjectSummary(projectId: string) {
   const [project] = await db
     .select({ id: projects.id, name: projects.name })
@@ -266,8 +266,8 @@ export async function getDashboardStatsForOwner(userId: string) {
     return { activeProjects: 0, completedTasks: 0, inProgressTasks: 0, backlogTasks: 0 }
   }
 
-  // Per-list task counts computed with COUNT/GROUP BY, instead of pulling
-  // every task row across every project just to add them up in JS. Only
+  // per-list task counts computed with count/group by, instead of pulling
+  // every task row across every project just to add them up in js. only
   // scales with (number of lists), not (number of tasks).
   const listTaskCounts = db
     .select({
@@ -281,9 +281,9 @@ export async function getDashboardStatsForOwner(userId: string) {
     .groupBy(lists.id)
     .as("list_task_counts")
 
-  // Rank each list within its project by position so its count can be
+  // rank each list within its project by position so its count can be
   // bucketed as backlog (first list) / done (last list) / in-progress
-  // (everything between) — same semantics as the board's columns.
+  // (everything between) - same semantics as the board's columns.
   const rows = await db
     .select({
       rank: sql<number>`row_number() over (partition by ${listTaskCounts.projectId} order by ${listTaskCounts.position} asc)`,
@@ -318,7 +318,7 @@ export async function getDashboardStatsForOwner(userId: string) {
   }
 }
 
-// LISTS 
+// lists
 export async function getListsForProject(projectId: string) {
   return db.query.lists.findMany({
     where: eq(lists.projectId, projectId),
@@ -391,7 +391,7 @@ export async function ownsList(listId: string, userId: string) {
   return list?.project.ownerId === userId
 }
 
-// TASKS
+// tasks
 
 export async function getNextTaskPosition(listId: string) {
   const [row] = await db
@@ -440,8 +440,8 @@ export async function moveTask(taskId: string, destListId: string, orderedTaskId
 
   if (orderedTaskIds.length === 0) return
 
-  // Same batched-update pattern as reorderLists below: one round trip for
-  // the whole destination column instead of one UPDATE per task.
+  // same batched-update pattern as reorderlists below: one round trip for
+  // the whole destination column instead of one update per task.
   const positionCase = sql.join(
     orderedTaskIds.map((id, index) => sql`WHEN ${id} THEN ${index}`),
     sql` `
@@ -469,7 +469,7 @@ export async function ownsTask(taskId: string, userId: string) {
 
 /**
  * Owner OR project member. Editing/moving a task is still owner-only
- * (see `ownsTask`), but commenting is a collaborative action — every
+ * (see `ownsTask`), but commenting is a collaborative action - every
  * member assigned to the project should be able to leave a comment on a
  * task, not just the owner.
  */
@@ -492,12 +492,12 @@ export async function canAccessTask(taskId: string, userId: string) {
   return project.ownerId === userId || project.members.some((m) => m.userId === userId)
 }
 
-// BULK TASK OPERATIONS (task 5 — multi-select actions on the board)
+// bulk task operations (task 5 - multi-select actions on the board)
 
 /**
  * All of `taskIds` must exist AND belong to a list owned by `userId`, same
  * ownership rule as `ownsTask`. A mismatched count (some id doesn't exist,
- * or points at another user's task) fails the whole batch — bulk actions
+ * or points at another user's task) fails the whole batch - bulk actions
  * are all-or-nothing rather than silently skipping tasks the caller
  * shouldn't have been able to select in the first place.
  */
@@ -517,7 +517,7 @@ export async function bulkDeleteTasks(taskIds: string[]) {
 }
 
 /**
- * Applies the same field updates to a set of tasks at once — priority,
+ * Applies the same field updates to a set of tasks at once - priority,
  * assignee, and/or moving them all to a different list. Unlike `moveTask`
  * (drag-and-drop of a single task, which takes an explicit full ordering
  * for the destination list), a bulk move just appends the selected tasks
@@ -554,7 +554,7 @@ export async function bulkUpdateTasks(
     .returning()
 }
 
-// LABELS
+// labels
 
 export async function getLabelsForProject(projectId: string) {
   return db.query.labels.findMany({
@@ -580,7 +580,7 @@ export async function deleteLabel(labelId: string) {
   await db.delete(labels).where(eq(labels.id, labelId))
 }
 
-// labels are owner-managed only, so this checks projects.ownerId same as ownsProject
+// labels are owner-managed only, so this checks projects.ownerid same as ownsproject
 export async function ownsLabel(labelId: string, userId: string) {
   const label = await db.query.labels.findFirst({
     where: eq(labels.id, labelId),
@@ -591,7 +591,7 @@ export async function ownsLabel(labelId: string, userId: string) {
 
 /**
  * Replaces a task's full label set with `labelIds`. Called from the task
- * create/update actions rather than exposed as its own server action —
+ * create/update actions rather than exposed as its own server action -
  * labels are always edited as a set from the task modal, not incrementally.
  */
 export async function setTaskLabels(taskId: string, labelIds: string[]) {
@@ -608,7 +608,7 @@ export async function getLabelsForTask(taskId: string) {
   return rows.map((r) => r.label)
 }
 
-// PROJECT MEMBERS
+// project members
 
 export async function findUserByEmail(email: string) {
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1)
@@ -625,7 +625,7 @@ export async function getUserById(userId: string) {
  * member" autocomplete. Scoped to a project: the owner and everyone already
  * on the project are excluded so results only show people who could
  * actually be added. Deliberately NOT exposed for a global/unscoped user
- * search — see the advisory note on task 4, this keeps the picker from
+ * search - see the advisory note on task 4, this keeps the picker from
  * leaking the full user directory outside the context of a specific project.
  */
 export async function searchUsersForProject(projectId: string, query: string, limit = 8) {
@@ -694,11 +694,11 @@ export async function removeProjectMember(memberId: string) {
   await db.delete(projectMembers).where(eq(projectMembers.id, memberId))
 }
 
-// PROJECT INVITATIONS
+// project invitations
 
 /**
- * Creates a pending invitation, or — if this project/invitee pair already
- * has a row (e.g. a previous invite was declined, or expired off-screen) —
+ * Creates a pending invitation, or - if this project/invitee pair already
+ * has a row (e.g. a previous invite was declined, or expired off-screen) -
  * resets that existing row back to pending with the latest role instead of
  * inserting a duplicate. Relies on the unique index on (projectId,
  * inviteeId). This is the only way a project_members row gets created now;
@@ -722,7 +722,7 @@ export async function createOrRefreshInvitation(data: NewProjectInvitation) {
   return invitation
 }
 
-/** Used to block re-inviting someone who already has an outstanding invite. */
+/** used to block re-inviting someone who already has an outstanding invite. */
 export async function getPendingInvitation(projectId: string, inviteeId: string) {
   return db.query.projectInvitations.findFirst({
     where: and(
@@ -744,7 +744,7 @@ export async function getInvitationById(invitationId: string) {
   })
 }
 
-/** Pending invitations on a project, for the "manage members" modal's owner-side view. */
+/** pending invitations on a project, for the "manage members" modal's owner-side view. */
 export async function getPendingInvitationsForProject(projectId: string) {
   return db.query.projectInvitations.findMany({
     where: and(eq(projectInvitations.projectId, projectId), eq(projectInvitations.status, "pending")),
@@ -755,7 +755,7 @@ export async function getPendingInvitationsForProject(projectId: string) {
   })
 }
 
-/** Pending invitations addressed to a user, for their notification bell / an "invites" list. */
+/** pending invitations addressed to a user, for their notification bell / an "invites" list. */
 export async function getPendingInvitationsForUser(userId: string) {
   return db.query.projectInvitations.findMany({
     where: and(eq(projectInvitations.inviteeId, userId), eq(projectInvitations.status, "pending")),
@@ -776,12 +776,12 @@ export async function updateInvitationStatus(invitationId: string, status: Invit
   return invitation ?? null
 }
 
-/** Owner revoking a still-pending invite (equivalent of removeProjectMember, pre-acceptance). */
+/** owner revoking a still-pending invite (equivalent of removeprojectmember, pre-acceptance). */
 export async function deleteInvitation(invitationId: string) {
   await db.delete(projectInvitations).where(eq(projectInvitations.id, invitationId))
 }
 
-/** Owner or member — used to gate project-detail page access. */
+/** owner or member - used to gate project-detail page access. */
 export async function canAccessProject(projectId: string, userId: string) {
   const owns = await ownsProject(projectId, userId)
   if (owns) return true
@@ -790,7 +790,7 @@ export async function canAccessProject(projectId: string, userId: string) {
 }
 
 /**
- * Everyone the given user shares a project with — as the owner of a
+ * Everyone the given user shares a project with - as the owner of a
  * project they're a member on, or as a fellow member of a project they
  * own/belong to. Powers the Team page. A person can show up once per
  * project they're connected through, each with that project's role, since
@@ -851,14 +851,14 @@ export async function getTeammatesForUser(userId: string) {
     }
   }
 
-  // Projects the user owns: every member on them is a teammate.
+  // projects the user owns: every member on them is a teammate.
   for (const project of owned) {
     for (const m of project.members) {
       addTeammate(m.user, project.id, project.name, m.role)
     }
   }
 
-  // Projects the user is a member on: the owner and every other member
+  // projects the user is a member on: the owner and every other member
   // are teammates too.
   for (const project of memberOf) {
     addTeammate(project.owner, project.id, project.name, "owner")
@@ -870,9 +870,9 @@ export async function getTeammatesForUser(userId: string) {
   return Array.from(teammates.values()).sort((a, b) => a.name.localeCompare(b.name))
 }
 
-// COMMENTS
+// comments
 
-/** Oldest first, like a normal comment thread. */
+/** oldest first, like a normal comment thread. */
 export async function getCommentsForTask(taskId: string) {
   return db.query.comments.findMany({
     where: eq(comments.taskId, taskId),
@@ -903,7 +903,7 @@ export async function getCommentById(commentId: string) {
   return db.query.comments.findFirst({ where: eq(comments.id, commentId) })
 }
 
-/** Only the person who wrote it can edit/delete their own comment. */
+/** only the person who wrote it can edit/delete their own comment. */
 export async function ownsComment(commentId: string, userId: string) {
   const comment = await db.query.comments.findFirst({
     where: eq(comments.id, commentId),
@@ -912,10 +912,10 @@ export async function ownsComment(commentId: string, userId: string) {
   return comment?.authorId === userId
 }
 
-// ACTIVITY
+// activity
 
 /**
- * Full activity feed for a task, newest first — mirrors the order you'd
+ * Full activity feed for a task, newest first - mirrors the order you'd
  * scroll a changelog in. Comments are stored separately (see above) but
  * a "comment_added"/"comment_deleted" activity row is still logged
  * alongside them so the feed reads as one continuous timeline.
@@ -934,7 +934,7 @@ export async function createActivity(data: NewActivity) {
 }
 
 /**
- * Convenience wrapper around `createActivity` for the common case — most
+ * Convenience wrapper around `createActivity` for the common case - most
  * call sites just have (taskId, userId, type, metadata) and don't need the
  * raw insert shape. Failures here are swallowed by the caller (see
  * `logActivitySafe` usage in the task actions) since a broken activity log
@@ -949,9 +949,9 @@ export async function logActivity(
   return createActivity({ taskId, userId, type, metadata })
 }
 
-// NOTIFICATIONS
+// notifications
 
-/** Shape returned by getNotificationsForUser, includes the real invite status. */
+/** shape returned by getnotificationsforuser, includes the real invite status. */
 export type NotificationWithInvitationStatus = Awaited<
   ReturnType<typeof getNotificationsForUser>
 >[number]
@@ -962,7 +962,7 @@ export async function createNotification(data: NewNotification) {
 }
 
 /**
- * Newest first, capped — the dropdown only ever shows a bounded recent list.
+ * Newest first, capped - the dropdown only ever shows a bounded recent list.
  *
  * notifications is a plain event log with no status of its own, so a
  * project_invitation row can't say by itself whether it's still pending.
@@ -1043,7 +1043,7 @@ export async function markAllNotificationsRead(userId: string) {
     .where(and(eq(notifications.recipientId, userId), isNull(notifications.readAt)))
 }
 
-// NOTIFICATION PREFERENCES
+// notification preferences
 
 export async function getNotificationPreferences(userId: string) {
   const [prefs] = await db
@@ -1075,14 +1075,14 @@ const NOTIFICATION_PREFERENCE_COLUMN_BY_TYPE: Record<NotificationType, keyof Not
   project_invitation: "projectInvitation",
 }
 
-/** No row yet = every type enabled, matching the notificationPreferences column defaults. */
+/** no row yet = every type enabled, matching the notificationpreferences column defaults. */
 export async function isNotificationTypeEnabled(userId: string, type: NotificationType) {
   const prefs = await getNotificationPreferences(userId)
   if (!prefs) return true
   return prefs[NOTIFICATION_PREFERENCE_COLUMN_BY_TYPE[type]]
 }
 
-// ANALYTICS
+// analytics
 
 /**
  * top-level numbers for the analytics page. reuses getDashboardStatsForOwner
@@ -1214,22 +1214,22 @@ export async function getActivityTimelineForOwner(userId: string, days = 14) {
   return result
 }
 
-// CALENDAR
+// calendar
 
 /**
  * Tasks assigned to `userId` that have a due date, for the calendar page.
- * Deliberately not scoped to projects the user owns — assignment, not
+ * Deliberately not scoped to projects the user owns - assignment, not
  * ownership, is what should surface a task on someone's personal calendar,
  * so this also picks up tasks assigned to a member on a project they don't
  * own.
  */
-// GLOBAL SEARCH (command palette)
+// global search (command palette)
 
 /**
  * Lightweight, one-shot search index for the command palette: every
  * accessible project and a bounded set of recently-touched tasks, in two
  * queries instead of the five `globalSearchForUser` runs per keystroke.
- * Unlike `globalSearchForUser`, this takes no `query` — the caller (the
+ * Unlike `globalSearchForUser`, this takes no `query` - the caller (the
  * palette, via `search-index-store`) fetches this once when it opens and
  * filters client-side, so access-scoping still happens here (server-side,
  * behind `requireUser` in the action) but text matching doesn't need a
@@ -1287,7 +1287,7 @@ export async function getSearchIndexForUser(userId: string, taskLimit = 300) {
  * command palette. Scoped the same way the rest of the app scopes
  * visibility: owned projects plus projects the user is a member of, via
  * `getAccessibleProjectIds`. Two extra round trips (accessible project ids,
- * then accessible list ids) — same tradeoff `getProjectsForUser` already
+ * then accessible list ids) - same tradeoff `getProjectsForUser` already
  * makes elsewhere in this file, favoring simple queries over one clever
  * join for a feature that isn't hot-path.
  *

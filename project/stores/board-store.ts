@@ -24,14 +24,14 @@ interface BoardState {
   clearSelection: () => void
 
   // bulk mutations, optimistic counterparts to the single-task actions
-  // above. applied from useTasks().bulkUpdateTasks / bulkDeleteTasks.
+  // above. applied from usetasks().bulkupdatetasks / bulkdeletetasks.
   bulkUpdateTasks: (taskIds: string[], updates: Partial<TaskWithLabels>) => void
   bulkRemoveTasks: (taskIds: string[]) => void
 
   // pending state, granular in-flight tracking so components can show a
   // loading spinner on just the thing that's saving, not a blanket
-  // "something on the board is loading" flag. plain Sets instead of
-  // useTransition because one shared transition per hook can't tell you
+  // "something on the board is loading" flag. plain sets instead of
+  // usetransition because one shared transition per hook can't tell you
   // which task or list actually triggered it.
   pendingTaskIds: Set<string>
   setTaskPending: (taskId: string, pending: boolean) => void
@@ -76,12 +76,12 @@ export const useBoardStore = create<BoardState>((set) => ({
     })),
 
   // in-place field update only, does not move the task between lists.
-  // use `moveTask` for that (kept separate so a listId change can't
+  // use `movetask` for that (kept separate so a listid change can't
   // accidentally get applied to the wrong list's task array).
   //
-  // only the one list that actually contains `taskId` gets a new object
+  // only the one list that actually contains `taskid` gets a new object
   // reference, every other list passes through untouched, so
-  // React.memo(BoardColumn) can skip re-rendering the other columns.
+  // react.memo(boardcolumn) can skip re-rendering the other columns.
   updateTask: (taskId, updates) =>
     set((state) => {
       const listIndex = state.lists.findIndex((l) => l.tasks.some((t) => t.id === taskId))
@@ -185,7 +185,7 @@ export const useBoardStore = create<BoardState>((set) => ({
       const idSet = new Set(taskIds)
       const { listId: destListId, ...fields } = updates
 
-      // no column change -> plain field merge, same shape as `updateTask`.
+      // no column change -> plain field merge, same shape as `updatetask`.
       // skip any list that doesn't contain a selected task at all.
       if (!destListId) {
         let changed = false
@@ -202,7 +202,7 @@ export const useBoardStore = create<BoardState>((set) => ({
 
       // column change -> only lists that actually hold a selected task
       // (sources losing tasks, plus the destination) get rebuilt.
-      // everything else passes through by reference, same as `moveTask`.
+      // everything else passes through by reference, same as `movetask`.
       const touchedListIds = new Set(
         state.lists.filter((l) => l.tasks.some((t) => idSet.has(t.id))).map((l) => l.id)
       )

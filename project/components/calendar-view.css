@@ -1,4 +1,4 @@
-/* Calendar overrides — brings react-big-calendar's default styling in line
+/* Calendar overrides - brings react-big-calendar's default styling in line
    with the app's flat surface/line design system (rounded-md, hairline
    borders, no shadows/blur). Scoped to .custom-calendar so it never leaks
    into other pages. The default rbc toolbar is replaced entirely (see
@@ -131,7 +131,7 @@
   color: var(--color-slate-dark);
 }
 
-/* Event color coding: task priority + project due dates */
+/* event color coding: task priority + project due dates */
 .custom-calendar .rbc-event.event-task-low {
   background-color: var(--color-done);
   color: #ffffff;

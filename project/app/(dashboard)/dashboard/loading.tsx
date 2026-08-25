@@ -3,13 +3,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 export default function DashboardLoading() {
   return (
     <div className="space-y-6">
-      {/* Page heading */}
+      {/* page heading */}
       <div className="space-y-2">
         <Skeleton className="h-9 w-48" />
         <Skeleton className="h-5 w-96 max-w-full" />
       </div>
 
-      {/* DashboardStats: 4 stat cards */}
+      {/* dashboardstats: 4 stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
@@ -25,7 +25,7 @@ export default function DashboardLoading() {
         ))}
       </div>
 
-      {/* RecentProjects */}
+      {/* recentprojects */}
       <div className="bg-card rounded-2xl border border-border p-6">
         <div className="flex items-center justify-between mb-4">
           <Skeleton className="h-6 w-36" />

@@ -122,8 +122,8 @@ export async function updateTaskAction(
     }
   }
 
-  // Fetched before the write so we have a "before" snapshot to diff the
-  // incoming values against — the form always submits the full set of
+  // fetched before the write so we have a "before" snapshot to diff the
+  // incoming values against - the form always submits the full set of
   // fields (not just the ones the user touched), so `fields !== undefined`
   // doesn't mean "changed".
   const previous = await getTaskById(taskId)
@@ -134,7 +134,7 @@ export async function updateTaskAction(
   const { listId, labelIds, ...fields } = parsed.data
   let updateData: Partial<Task> = fields
 
-  // A changed due date means a new deadline to potentially remind about —
+  // a changed due date means a new deadline to potentially remind about -
   // clear the guard so app/api/cron/due-date-reminders doesn't skip it as
   // "already reminded" based on the old date.
   if ("dueDate" in fields) {
@@ -147,7 +147,7 @@ export async function updateTaskAction(
 
   // moving to a different column -> verify ownership of the destination and
   // re-slot the task at the end of it (drag-and-drop reordering uses
-  // moveTaskAction/moveTask instead)
+  // movetaskaction/movetask instead)
   if (listId) {
     const ownsDestList = await ownsList(listId, user.id)
     if (!ownsDestList) {
@@ -163,7 +163,7 @@ export async function updateTaskAction(
   }
 
   // undefined means "not included in this edit" -> leave labels as-is;
-  // an explicit [] means "cleared" -> setTaskLabels handles both correctly
+  // an explicit [] means "cleared" -> settasklabels handles both correctly
   // since it always replaces the full set.
   if (labelIds !== undefined) {
     await setTaskLabels(taskId, labelIds)
@@ -198,7 +198,7 @@ export async function updateTaskAction(
  * Compares the task's pre-update snapshot against the fields being written
  * and logs one activity row per field that genuinely changed. Kept out of
  * updateTaskAction's main flow so that flow stays readable; failures here
- * are non-fatal to the update itself (see the try/catch below) — a broken
+ * are non-fatal to the update itself (see the try/catch below) - a broken
  * activity write shouldn't roll back or block a task edit that otherwise
  * succeeded.
  */
@@ -357,7 +357,7 @@ export async function bulkDeleteTasksAction(
  * Bulk edit for the board's multi-select toolbar: move the whole selection
  * to a different column, and/or set priority/assignee across all of them.
  * Unlike updateTaskAction, per-field diffing against each task's prior
- * value isn't done here (that would mean an extra query per task) — bulk
+ * value isn't done here (that would mean an extra query per task) - bulk
  * activity rows just record the value being applied.
  */
 export async function bulkUpdateTasksAction(
@@ -398,8 +398,8 @@ export async function bulkUpdateTasksAction(
 
   await bulkUpdateTasksRow(taskIds, updates)
 
-  // Best-effort activity logging — same non-fatal try/catch pattern as
-  // logTaskUpdateActivities, since a broken activity write shouldn't roll
+  // best-effort activity logging - same non-fatal try/catch pattern as
+  // logtaskupdateactivities, since a broken activity write shouldn't roll
   // back a bulk edit that otherwise succeeded.
   try {
     await Promise.all(

@@ -34,18 +34,18 @@ type InvitationWithInvitee = ProjectInvitation & {
   invitee: { id: string; name: string; email: string }
 }
 
-// Membership management is owner-only. Members (any role) can view and work
-// in a project, but only the owner can add/remove people or change roles —
-// see getAccessibleProjectIds / canAccessProject for the view-side rule.
+// membership management is owner-only. members (any role) can view and work
+// in a project, but only the owner can add/remove people or change roles -
+// see getaccessibleprojectids / canaccessproject for the view-side rule.
 //
-// "Adding" someone no longer inserts a project_members row directly: it
+// "adding" someone no longer inserts a project_members row directly: it
 // creates a pending project_invitations row and notifies the invitee (see
-// inviteUserToProject below). The row only becomes real membership once
-// they accept it — see acceptInvitationAction in lib/actions/invitations.ts.
-// This keeps someone from being silently dropped into a project's
+// inviteusertoproject below). the row only becomes real membership once
+// they accept it - see acceptinvitationaction in lib/actions/invitations.ts.
+// this keeps someone from being silently dropped into a project's
 // boards/tasks without agreeing to join it.
 
-/** Shared by addMemberAction/addMemberByIdAction once the invitee is resolved. */
+/** shared by addmemberaction/addmemberbyidaction once the invitee is resolved. */
 async function inviteUserToProject(
   projectId: string,
   inviter: { id: string; name: string },
@@ -84,9 +84,9 @@ async function inviteUserToProject(
       body: `Role: ${role.replace("_", " ")}`,
     })
   } catch (err) {
-    // Best-effort, same as every other notifyUser call site — a failed
-    // notification shouldn't fail the invitation itself. The invitee will
-    // still see it via getPendingInvitationsForUser on next load.
+    // best-effort, same as every other notifyuser call site - a failed
+    // notification shouldn't fail the invitation itself. the invitee will
+    // still see it via getpendinginvitationsforuser on next load.
     console.error("Failed to notify invitee of project invitation", err)
   }
 
@@ -122,8 +122,8 @@ export async function addMemberAction(input: unknown): Promise<ActionResult<Invi
     }
   }
 
-  // requireUser() is an auth-session shape, not necessarily a full users
-  // row — resolve the actual row so we have a display name for the
+  // requireuser() is an auth-session shape, not necessarily a full users
+  // row - resolve the actual row so we have a display name for the
   // notification title, same as we already look invitee up by row.
   const inviter = await getUserById(user.id)
   if (!inviter) {
@@ -136,7 +136,7 @@ export async function addMemberAction(input: unknown): Promise<ActionResult<Invi
 /**
  * Powers the "add member" autocomplete: registered users matching the
  * typed name/email, already filtered to exclude the owner and existing
- * members. Owner-only, same as adding — this intentionally does not
+ * members. Owner-only, same as adding - this intentionally does not
  * expose a global directory search, only "who could I add to *this*
  * project right now".
  */
@@ -163,7 +163,7 @@ export async function searchMembersAction(input: unknown): Promise<ActionResult<
 /**
  * Adds a member picked from the autocomplete results (searchMembersAction),
  * so we already know their userId rather than re-resolving an email. Same
- * checks as addMemberAction otherwise — kept as a separate action rather
+ * checks as addMemberAction otherwise - kept as a separate action rather
  * than overloading addMemberSchema so each stays a simple, single-shaped input.
  */
 export async function addMemberByIdAction(
@@ -195,7 +195,7 @@ export async function addMemberByIdAction(
   return inviteUserToProject(projectId, inviter, invitee, role)
 }
 
-/** Owner-side list of outstanding invites, for the manage-members modal. */
+/** owner-side list of outstanding invites, for the manage-members modal. */
 export async function getPendingInvitationsAction(
   projectId: string
 ): Promise<ActionResult<InvitationWithInvitee[]>> {
@@ -210,7 +210,7 @@ export async function getPendingInvitationsAction(
   return { success: true, data: invitations }
 }
 
-/** Owner cancelling a still-pending invite. Does nothing to project_members. */
+/** owner cancelling a still-pending invite. does nothing to project_members. */
 export async function revokeInvitationAction(input: unknown): Promise<ActionResult<{ id: string }>> {
   const user = await requireUser()
 

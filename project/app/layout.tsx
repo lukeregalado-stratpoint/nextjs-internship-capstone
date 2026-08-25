@@ -4,8 +4,8 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ClerkProvider } from "@clerk/nextjs"
 import { ThemeProvider } from "@/components/theme-provider"
-// TODO: Task 2.1 - Set up Clerk authentication service
-// import { ClerkProvider } from "@clerk/nextjs"
+// todo: task 2.1 - set up clerk authentication service
+// import { clerkprovider } from "@clerk/nextjs"
 
 
 const inter = Inter({ subsets: ["latin"] })

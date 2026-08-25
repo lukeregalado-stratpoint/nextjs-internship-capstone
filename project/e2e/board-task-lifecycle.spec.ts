@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test"
 import { setupClerkTestingToken } from "@clerk/testing/playwright"
 
-// These specs assume a project already exists for the E2E test user and
-// that its first project has at least two columns (e.g. "To Do", "Doing")
-// seeded by a test-database fixture — see README note below the file for
-// the seeding approach. Adjust the `PROJECT_NAME` / column names to match
+// these specs assume a project already exists for the e2e test user and
+// that its first project has at least two columns (e.g. "to do", "doing")
+// seeded by a test-database fixture - see readme note below the file for
+// the seeding approach. adjust the `project_name` / column names to match
 // your actual seed data.
 const PROJECT_NAME = "E2E Test Project"
 
@@ -118,7 +118,7 @@ test.describe("Task lifecycle", () => {
     await page.getByText(title).click()
 
     await page.getByRole("button", { name: /comments/i }).click()
-    const commentText = `Looks good to me — ${Date.now()}`
+    const commentText = `Looks good to me - ${Date.now()}`
     await page.getByPlaceholder(/write a comment/i).fill(commentText)
     await page.getByRole("button", { name: "Post" }).click()
 

@@ -15,9 +15,9 @@ import type { Label } from "@/lib/db/schema"
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
 
-// Labels are project-scoped and owner-managed (see AL-Management practicum
-// notes on project permissions) — members can apply labels to tasks via
-// taskSchema.labelIds, but only the owner can create/rename/delete them.
+// labels are project-scoped and owner-managed (see al-management practicum
+// notes on project permissions) - members can apply labels to tasks via
+// taskschema.labelids, but only the owner can create/rename/delete them.
 
 export async function getLabelsAction(projectId: string): Promise<ActionResult<Label[]>> {
   const user = await requireUser()

@@ -1,8 +1,8 @@
 import { create } from "zustand"
 import { getSearchIndexAction, type SearchIndex } from "@/lib/actions/search"
 
-// How long a fetched index is trusted before the palette refetches on next
-// open. Short enough that a project/task created moments ago shows up
+// how long a fetched index is trusted before the palette refetches on next
+// open. short enough that a project/task created moments ago shows up
 // almost immediately, long enough that reopening the palette a few times
 // in a row doesn't refetch on every open.
 const STALE_MS = 60_000

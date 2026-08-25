@@ -18,7 +18,7 @@ interface CommandPaletteUIState {
 }
 
 /**
- * Open/close state only — deliberately NOT persisted. `isOpen: true`
+ * Open/close state only - deliberately NOT persisted. `isOpen: true`
  * surviving a page reload from stale localStorage would pop the palette
  * open on every visit, which is worse than just defaulting closed.
  */

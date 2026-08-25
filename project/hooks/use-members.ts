@@ -29,9 +29,9 @@ export function useMembers(projectId: string) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  // Loaded client-side rather than threaded through as a server prop, so
+  // loaded client-side rather than threaded through as a server prop, so
   // adopting this hook doesn't require every page that renders
-  // ManageMembersModal to also fetch+pass invitations.
+  // managemembersmodal to also fetch+pass invitations.
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([])
   const [invitationsLoaded, setInvitationsLoaded] = useState(false)
 
@@ -46,8 +46,8 @@ export function useMembers(projectId: string) {
     refreshInvitations()
   }, [refreshInvitations])
 
-  // Search runs independently of the mutation `isPending`/`error` state
-  // above — a slow or failed search shouldn't disable the Add button or
+  // search runs independently of the mutation `ispending`/`error` state
+  // above - a slow or failed search shouldn't disable the add button or
   // surface as a form error, it just clears the suggestion list.
   const [searchResults, setSearchResults] = useState<MemberSearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -65,7 +65,7 @@ export function useMembers(projectId: string) {
     setIsSearching(true)
     ;(async () => {
       const result = await searchMembersAction({ projectId, query: trimmed })
-      // Ignore stale responses from an earlier keystroke that resolves late.
+      // ignore stale responses from an earlier keystroke that resolves late.
       if (requestId !== searchRequestId.current) return
       setIsSearching(false)
       setSearchResults(result.success ? result.data : [])

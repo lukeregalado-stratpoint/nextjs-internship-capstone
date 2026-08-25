@@ -25,7 +25,7 @@ export type ActivityWithUser = Activity & { userName: string }
 /**
  * Fetches a task's comments + activity together, for the modal's Comments
  * and Activity tabs. Client components can call this directly (it's a
- * server action, not a route) — see `onOpenTaskThread` in KanbanBoard.
+ * server action, not a route) - see `onOpenTaskThread` in KanbanBoard.
  */
 export async function getTaskThreadAction(
   taskId: string
@@ -52,7 +52,7 @@ export async function getTaskThreadAction(
 }
 
 /**
- * Any project member can comment — not just the owner. This is
+ * Any project member can comment - not just the owner. This is
  * intentionally looser than the owner-only checks on task edits
  * (`ownsTask`), since a comment thread is meant to be collaborative.
  */
@@ -86,7 +86,7 @@ export async function createCommentAction(
   return { success: true, data: { ...comment, authorName: user.name } }
 }
 
-/** Only the comment's own author can edit it. */
+/** only the comment's own author can edit it. */
 export async function updateCommentAction(
   commentId: string,
   taskId: string,
@@ -116,7 +116,7 @@ export async function updateCommentAction(
 }
 
 /**
- * The comment's author or the project owner can delete it — same
+ * The comment's author or the project owner can delete it - same
  * moderation shape as everything else in this app (owner can act on
  * anything in their project; everyone else can only act on their own
  * stuff).

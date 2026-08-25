@@ -3,11 +3,11 @@ import { renderHook, act, waitFor } from "@testing-library/react"
 import type { createTestBoardStore } from "../../test/mocks/board-store"
 
 // vi.mock factories that need real setup logic can be async and use a
-// dynamic import — this sidesteps the hoisting trap where a plain
+// dynamic import - this sidesteps the hoisting trap where a plain
 // top-level `const` referenced inside a (hoisted) vi.mock factory would be
 // accessed before it's initialized. zustand's create() attaches
-// getState/setState/subscribe directly onto the returned store function,
-// so Object.assign-ing it onto useBoardStore below means the mocked
+// getstate/setstate/subscribe directly onto the returned store function,
+// so object.assign-ing it onto useboardstore below means the mocked
 // export itself doubles as the plain store handle used in tests.
 vi.mock("@/stores/board-store", async () => {
   const { createTestBoardStore } = await import("../../test/mocks/board-store")
@@ -33,8 +33,8 @@ import * as actions from "@/lib/actions/tasks"
 import { useBoardStore } from "@/stores/board-store"
 import { useTasks } from "@/hooks/use-tasks"
 
-// Typed handle onto the mocked store — same object identity as the
-// `testStore` created inside the vi.mock factory above.
+// typed handle onto the mocked store - same object identity as the
+// `teststore` created inside the vi.mock factory above.
 const store = useBoardStore as unknown as ReturnType<typeof createTestBoardStore>
 
 
@@ -61,7 +61,7 @@ beforeEach(() => {
   })
 })
 
-describe("useTasks — createTask", () => {
+describe("useTasks - createTask", () => {
   it("adds the returned task to the store on success", async () => {
     seedList()
     vi.mocked(actions.createTaskAction).mockResolvedValue({
@@ -101,7 +101,7 @@ describe("useTasks — createTask", () => {
   })
 })
 
-describe("useTasks — updateTask (optimistic)", () => {
+describe("useTasks - updateTask (optimistic)", () => {
   it("applies the change immediately, then confirms with server data", async () => {
     seedList()
     vi.mocked(actions.updateTaskAction).mockResolvedValue({
@@ -142,7 +142,7 @@ describe("useTasks — updateTask (optimistic)", () => {
   })
 })
 
-describe("useTasks — deleteTask (optimistic)", () => {
+describe("useTasks - deleteTask (optimistic)", () => {
   it("removes the task immediately and does not restore it on success", async () => {
     seedList()
     vi.mocked(actions.deleteTaskAction).mockResolvedValue({
@@ -179,7 +179,7 @@ describe("useTasks — deleteTask (optimistic)", () => {
   })
 })
 
-describe("useTasks — bulk operations", () => {
+describe("useTasks - bulk operations", () => {
   it("bulkDeleteTasks removes all selected tasks optimistically and confirms on success", async () => {
     store.setState({
       lists: [

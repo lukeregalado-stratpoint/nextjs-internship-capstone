@@ -15,10 +15,10 @@ import {
   YAxis,
 } from "recharts"
 
-// recharts svg fills can't read tailwind classes, but they CAN read CSS
+// recharts svg fills can't read tailwind classes, but they can read css
 // custom properties directly, so we point at the same tokens globals.css
 // defines instead of hardcoding hex here. --color-primary is the only one
-// of these that changes between light/dark (via the --primary HSL var);
+// of these that changes between light/dark (via the --primary hsl var);
 // the done/blocked/review mid-tones are intentionally theme-stable per
 // their "mid tone for icons/borders" design in globals.css.
 const COLORS = {

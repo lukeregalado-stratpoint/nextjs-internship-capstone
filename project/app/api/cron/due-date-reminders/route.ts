@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 /**
  * Runs once a day (see vercel.json). Notifies each task's assignee when the
  * task is due within the next 24h. Guarded by `dueReminderSentAt` so a task
- * only gets one reminder per deadline, not one per cron run — that guard is
+ * only gets one reminder per deadline, not one per cron run - that guard is
  * cleared automatically if the due date is later pushed back
  * (updateTaskAction in lib/actions/tasks.ts).
  */

@@ -1,4 +1,4 @@
-// TODO: Task 2.3 - Create sign-in and sign-up pages
+// todo: task 2.3 - create sign-in and sign-up pages
 import { SignUp } from "@clerk/nextjs"
 
 export default function SignUpPage() {

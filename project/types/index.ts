@@ -1,5 +1,5 @@
-// TypeScript type definitions
-// Task 1.3: Set up project structure and folder organization
+// typescript type definitions
+// task 1.3: set up project structure and folder organization
 
 export interface User {
   id: string
@@ -54,5 +54,5 @@ export interface Comment {
   updatedAt: Date
 }
 
-// Note for interns: These types should match your database schema
-// Update as needed when implementing the actual database schema
+// note for interns: these types should match your database schema
+// update as needed when implementing the actual database schema

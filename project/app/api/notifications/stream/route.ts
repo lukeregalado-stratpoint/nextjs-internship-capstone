@@ -25,7 +25,7 @@ export async function GET(request: Request) {
         send("notification", notification)
       })
 
-      // Keeps the connection alive through proxies/load balancers that drop
+      // keeps the connection alive through proxies/load balancers that drop
       // idle connections after ~30-60s, and gives the client a signal to
       // detect a dead stream.
       const heartbeat = setInterval(() => send("ping", { t: Date.now() }), HEARTBEAT_MS)
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
         }
       }
 
-      // Fires when the client disconnects (tab closed, navigation, etc.)
+      // fires when the client disconnects (tab closed, navigation, etc.)
       request.signal.addEventListener("abort", cleanup)
     },
   })

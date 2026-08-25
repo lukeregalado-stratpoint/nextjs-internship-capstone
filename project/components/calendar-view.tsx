@@ -49,7 +49,7 @@ type CalendarViewProps = {
 
 // tasks only have a due date, no due time, so this is one `date` field
 // instead of a start/end range.
-// start/end/allDay only get added back on for react-big-calendar's month
+// start/end/allday only get added back on for react-big-calendar's month
 // grid since that's the shape it needs.
 type CalendarItem = {
   id: string
@@ -85,7 +85,7 @@ const localizer = dateFnsLocalizer({
 
 // agenda doesn't really have a "page" to move through, it's just everything
 // in order.
-// so prev/next are hidden there and Today just scrolls instead of moving a
+// so prev/next are hidden there and today just scrolls instead of moving a
 // date cursor.
 function CalendarToolbar({
   view,
@@ -538,8 +538,8 @@ export function CalendarView({ tasks, projects }: CalendarViewProps) {
     [itemsByDay]
   )
 
-  // only the month grid needs start/end/allDay, so it gets added here
-  // instead of carrying it through the whole CalendarItem type
+  // only the month grid needs start/end/allday, so it gets added here
+  // instead of carrying it through the whole calendaritem type
   const monthEvents = useMemo(
     () => items.map((item) => ({ ...item, start: item.date, end: item.date, allDay: true })),
     [items]

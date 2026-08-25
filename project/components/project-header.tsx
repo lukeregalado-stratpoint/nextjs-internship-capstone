@@ -25,13 +25,13 @@ interface MemberRow {
 interface ProjectHeaderProps {
   project: ProjectHeaderData
   isOwner: boolean
-  /** The signed-in user's role on this project: "owner" or a project_members role. */
+  /** the signed-in user's role on this project: "owner" or a project_members role. */
   currentUserRole: ProjectMember["role"] | "owner" | null
   owner: { name: string; email: string }
   members: MemberRow[]
-  /** Number of board columns — shown in the stats strip. */
+  /** number of board columns - shown in the stats strip. */
   listCount: number
-  /** Total tasks across every column — shown in the stats strip. */
+  /** total tasks across every column - shown in the stats strip. */
   taskCount: number
 }
 
@@ -42,7 +42,7 @@ function initials(name: string) {
   return (first + last).toUpperCase()
 }
 
-// "product_owner" -> "Product owner"
+// "product_owner" -> "product owner"
 function formatRole(role: string) {
   const spaced = role.replace(/_/g, " ")
   return spaced.charAt(0).toUpperCase() + spaced.slice(1)
@@ -69,7 +69,7 @@ export function ProjectHeader({
   }
 
   const isOverdue = project.dueDate ? new Date(project.dueDate) < new Date() : false
-  // Owner isn't part of `members` (that's the junction table), so combine
+  // owner isn't part of `members` (that's the junction table), so combine
   // them here for the avatar stack / headcount.
   const people = [{ name: owner.name }, ...members.map((m) => ({ name: m.user.name }))]
   const visiblePeople = people.slice(0, 4)
@@ -85,7 +85,7 @@ export function ProjectHeader({
       </Link>
 
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        {/* Title row */}
+        {/* title row */}
         <div className="p-6 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
@@ -128,7 +128,7 @@ export function ProjectHeader({
           )}
         </div>
 
-        {/* Stats strip — avatars, list/task counts, due date */}
+        {/* stats strip - avatars, list/task counts, due date */}
         <div className="border-t border-border bg-muted/60 px-6 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
           <button
             type="button"

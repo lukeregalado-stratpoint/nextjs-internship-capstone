@@ -6,8 +6,8 @@ afterEach(() => {
   cleanup()
 })
 
-// jsdom doesn't implement matchMedia — needed by theme-provider/theme-toggle
-// and any Tailwind dark-mode-aware component under test.
+// jsdom doesn't implement matchmedia - needed by theme-provider/theme-toggle
+// and any tailwind dark-mode-aware component under test.
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({
@@ -22,7 +22,7 @@ Object.defineProperty(window, "matchMedia", {
   })),
 })
 
-// dnd-kit and the calendar view both call ResizeObserver; jsdom has none.
+// dnd-kit and the calendar view both call resizeobserver; jsdom has none.
 class MockResizeObserver {
   observe() {}
   unobserve() {}
@@ -30,11 +30,11 @@ class MockResizeObserver {
 }
 window.ResizeObserver = window.ResizeObserver ?? (MockResizeObserver as unknown as typeof ResizeObserver)
 
-// Radix/shadcn-style menus call scrollIntoView on the elements they focus.
+// radix/shadcn-style menus call scrollintoview on the elements they focus.
 window.HTMLElement.prototype.scrollIntoView = vi.fn()
 
 // window.confirm is used directly by kanban-board.tsx for delete
-// confirmations. Default to "confirm" so tests don't hang; override
-// per-test with vi.spyOn(window, "confirm").mockReturnValue(false) to
+// confirmations. default to "confirm" so tests don't hang; override
+// per-test with vi.spyon(window, "confirm").mockreturnvalue(false) to
 // exercise the cancel path.
 window.confirm = vi.fn().mockReturnValue(true)

@@ -20,7 +20,7 @@ export interface ParsedSearchQuery {
 
 const TAG_PATTERN = new RegExp(`\\b(${TAG_NAMES.join("|")}):`, "gi")
 
-// PARSER
+// parser
 export function parseSearchQuery(raw: string): ParsedSearchQuery {
   const result: ParsedSearchQuery = { all: [], title: [], description: [], priority: [], assignee: [] }
 
@@ -92,7 +92,7 @@ export function filterTasks(
   return tasks.filter((task) => taskMatchesQuery(task, parsed, memberNameById))
 }
 
-// SUGGESTION KEYWORDS
+// suggestion keywords
 export interface TagSuggestion {
   id: string
   label: string

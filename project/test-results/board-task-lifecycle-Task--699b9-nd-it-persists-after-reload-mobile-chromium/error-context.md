@@ -310,7 +310,7 @@ Call log:
 ```ts
   4   | // These specs assume a project already exists for the E2E test user and
   5   | // that its first project has at least two columns (e.g. "To Do", "Doing")
-  6   | // seeded by a test-database fixture — see README note below the file for
+  6   | // seeded by a test-database fixture - see README note below the file for
   7   | // the seeding approach. Adjust the `PROJECT_NAME` / column names to match
   8   | // your actual seed data.
   9   | const PROJECT_NAME = "E2E Test Project"
@@ -426,7 +426,7 @@ Call log:
   118 |     await page.getByText(title).click()
   119 | 
   120 |     await page.getByRole("button", { name: /comments/i }).click()
-  121 |     const commentText = `Looks good to me — ${Date.now()}`
+  121 |     const commentText = `Looks good to me - ${Date.now()}`
   122 |     await page.getByPlaceholder(/write a comment/i).fill(commentText)
   123 |     await page.getByRole("button", { name: "Post" }).click()
   124 | 

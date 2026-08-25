@@ -1,4 +1,4 @@
-/** @type {import('next').NextConfig} */
+/** @type {import('next').nextconfig} */
 const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,

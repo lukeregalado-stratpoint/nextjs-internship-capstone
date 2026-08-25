@@ -67,7 +67,7 @@ export function SettingsForm({ user }: { user: { name: string; email: string } }
               className="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
             />
             <p className="text-xs text-muted-foreground mt-1.5">
-              Managed through your sign-in provider — use the account menu to change it.
+              Managed through your sign-in provider - use the account menu to change it.
             </p>
           </div>
 

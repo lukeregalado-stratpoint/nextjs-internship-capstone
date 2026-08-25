@@ -11,13 +11,13 @@ export default function ProjectsLoading() {
         <Skeleton className="h-10 w-36 rounded-lg shrink-0" />
       </div>
 
-      {/* ProjectsExplorer toolbar (search / filters) */}
+      {/* projectsexplorer toolbar (search / filters) */}
       <div className="flex items-center gap-3">
         <Skeleton className="h-10 flex-1 max-w-sm rounded-lg" />
         <Skeleton className="h-10 w-28 rounded-lg" />
       </div>
 
-      {/* ProjectGrid */}
+      {/* projectgrid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
